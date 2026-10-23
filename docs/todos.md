@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 6 | 20 | +14 |
+| Tasks Completed | 10 | 20 | +10 |
 | Supported Wallpaper Themes | 6 | 6 | 0 |
 | Min SDK Target | 31 (Android 12) | 31 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
@@ -27,12 +27,12 @@
 - [x] T005 [P] [US2] Validate and bundle vector drawables for all six wallpaper themes app/src/main/res/drawable/
 - [x] T006 [US2] Add unit tests for WallpaperRepository fallback behavior app/src/test/java/com/ambientfold/wallpaper/model/WallpaperRepositoryTest.kt
 
-## Phase 3 -- Multi-Display Handoff & Battery Cutoff
+## Phase 3 -- Multi-Display Handoff & Battery Cutoff [DONE]
 
-- [ ] T007 [US3] Implement dual-display bitmap caching for cover and inner screens app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
-- [ ] T008 [US3] Enforce strict battery safeguards and sensor unregistration on visibility change app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
-- [ ] T009 [US3] Refine interactive preview activity with fold simulator slider and wallpaper intent launcher app/src/main/java/com/ambientfold/wallpaper/ui/MainActivity.kt
-- [ ] T010 [US3] Run lint and test suite for activity and service lifecycles app/src/main/java/com/ambientfold/wallpaper/ui/MainActivity.kt
+- [x] T007 [US3] Implement dual-display bitmap caching for cover and inner screens app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
+- [x] T008 [US3] Enforce strict battery safeguards and sensor unregistration on visibility change app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
+- [x] T009 [US3] Refine interactive preview activity with fold simulator slider and wallpaper intent launcher app/src/main/java/com/ambientfold/wallpaper/ui/MainActivity.kt
+- [x] T010 [US3] Run lint and test suite for activity and service lifecycles app/src/main/java/com/ambientfold/wallpaper/ui/MainActivity.kt
 
 ## Phase 4 -- Architecture Refactor, Known-Gaps Reconciliation, and CI/CD
 
