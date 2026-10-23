@@ -1,75 +1,150 @@
-package com.ambientfold.wallpaper.model
+﻿package com.ambientfold.wallpaper.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.graphics.Color
+import androidx.annotation.DrawableRes
 import com.ambientfold.wallpaper.R
+
+enum class WallpaperCategory(val displayName: String) {
+    LANDSCAPES("4K Landscapes"),
+    ABSTRACT_DYNAMIC("Dynamic Abstract"),
+    MINIMAL("Minimal & Dark")
+}
+
+data class WallpaperItem(
+    val id: String,
+    val title: String,
+    val description: String,
+    val category: WallpaperCategory,
+    @DrawableRes val drawableResId: Int,
+    val isDynamic: Boolean = true,
+    val particleColor: Int = Color.parseColor("#FFE082")
+)
 
 object WallpaperRepository {
 
-    const val PREFS_NAME = "ambient_fold_prefs"
-    const val KEY_ACTIVE_WALLPAPER = "active_wallpaper_id"
-    const val KEY_MAX_BLUR_RADIUS = "max_blur_radius"
-    const val DEFAULT_MAX_BLUR = 42.0f
+    const val PREFS_NAME = "ambient_fold_wallpaper_prefs"
+    const val KEY_ACTIVE_WALLPAPER_ID = "pref_active_wallpaper_id"
+    const val KEY_MAX_BLUR_RADIUS = "pref_max_blur_radius"
+    const val KEY_OPENING_EFFECT = "pref_opening_effect"
+    const val KEY_DYNAMIC_MOTION_ENABLED = "pref_dynamic_motion_enabled"
+    const val KEY_ANIMATION_DURATION_MS = "pref_animation_duration_ms"
+
+    const val EFFECT_DUO_BLUR = "duo_blur"
+    const val EFFECT_CREASE_BLOOM = "crease_bloom"
+    const val EFFECT_APERTURE_ZOOM = "aperture_zoom"
+    const val EFFECT_PRISMATIC_WAVE = "prismatic_wave"
+
+    const val DEFAULT_MAX_BLUR = 65.0f
+    const val DEFAULT_ANIMATION_DURATION = 600L
+    const val DEFAULT_OPENING_EFFECT = EFFECT_DUO_BLUR
 
     val wallpapers: List<WallpaperItem> = listOf(
-        // Landscapes
         WallpaperItem(
-            id = "aurora_landscape",
-            title = "Cyber Aurora",
+            id = "mountain_sunset",
+            title = "Alpine Glacier Dusk",
+            description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with floating starlight.",
             category = WallpaperCategory.LANDSCAPES,
-            isDark = true,
-            drawableResId = R.drawable.bg_aurora_landscape,
-            description = "Ethereal northern lights over nocturnal mountain ridges."
+            drawableResId = R.drawable.wp_mountain_sunset,
+            isDynamic = true,
+            particleColor = Color.parseColor("#FFE082")
         ),
         WallpaperItem(
-            id = "dunes_sunset",
-            title = "Dunes Horizon",
+            id = "starry_galaxy",
+            title = "Cosmic Milky Way",
+            description = "High-resolution 4K night sky over snowy alpine peaks with shimmering celestial dust.",
             category = WallpaperCategory.LANDSCAPES,
-            isDark = true,
-            drawableResId = R.drawable.bg_dunes_sunset,
-            description = "Warm desert ridges under a sunset atmosphere."
-        ),
-
-        // Geometric
-        WallpaperItem(
-            id = "geometric_prism",
-            title = "Prismatic Crystal",
-            category = WallpaperCategory.GEOMETRIC,
-            isDark = true,
-            drawableResId = R.drawable.bg_geometric_prism,
-            description = "Faceted crystalline geometry with neon refractions."
+            drawableResId = R.drawable.wp_starry_galaxy,
+            isDynamic = true,
+            particleColor = Color.parseColor("#80D8FF")
         ),
         WallpaperItem(
-            id = "geometric_matrix",
-            title = "Material Matrix",
-            category = WallpaperCategory.GEOMETRIC,
-            isDark = false,
-            drawableResId = R.drawable.bg_geometric_matrix,
-            description = "Crisp polygonal planes in a bright modern palette."
-        ),
-
-        // Minimal
-        WallpaperItem(
-            id = "minimal_dark",
-            title = "OLED Ambient Rings",
-            category = WallpaperCategory.MINIMAL,
-            isDark = true,
-            drawableResId = R.drawable.bg_minimalist_dark,
-            description = "Deep blacks with subtle concentric ring accents."
+            id = "misty_forest",
+            title = "Misty Emerald Pines",
+            description = "High-resolution 4K Pacific Northwest forest with drifting morning fog and atmospheric motes.",
+            category = WallpaperCategory.LANDSCAPES,
+            drawableResId = R.drawable.wp_misty_forest,
+            isDynamic = true,
+            particleColor = Color.parseColor("#E0F2F1")
         ),
         WallpaperItem(
-            id = "minimal_light",
-            title = "Clean Polar",
-            category = WallpaperCategory.MINIMAL,
-            isDark = false,
-            drawableResId = R.drawable.bg_minimalist_light,
-            description = "Minimalist light canvas with faint orbital geometry."
+            id = "ocean_golden",
+            title = "Golden Horizon Ocean",
+            description = "High-resolution 4K coastal wave at golden hour with shimmering ambient light rays.",
+            category = WallpaperCategory.LANDSCAPES,
+            drawableResId = R.drawable.wp_ocean_golden,
+            isDynamic = true,
+            particleColor = Color.parseColor("#FFD54F")
+        ),
+        WallpaperItem(
+            id = "aurora_borealis",
+            title = "Northern Lights",
+            description = "High-resolution 4K emerald and violet aurora borealis flowing over snowy peaks.",
+            category = WallpaperCategory.LANDSCAPES,
+            drawableResId = R.drawable.wp_aurora_borealis,
+            isDynamic = true,
+            particleColor = Color.parseColor("#69F0AE")
+        ),
+        WallpaperItem(
+            id = "dark_prism",
+            title = "Obsidian Prism",
+            description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons.",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            drawableResId = R.drawable.wp_dark_prism,
+            isDynamic = true,
+            particleColor = Color.parseColor("#E040FB")
         )
     )
 
-    fun resolveWallpaper(candidateId: String?): WallpaperItem {
-        if (candidateId.isNullOrBlank()) return wallpapers.first()
-        return wallpapers.firstOrNull { it.id == candidateId } ?: wallpapers.first()
+    fun getPrefs(context: Context): SharedPreferences {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    fun getActiveWallpaper(context: Context): WallpaperItem {
+        val savedId = getPrefs(context).getString(KEY_ACTIVE_WALLPAPER_ID, null)
+        return resolveWallpaper(savedId)
+    }
+
+    fun setActiveWallpaper(context: Context, wallpaperId: String) {
+        getPrefs(context).edit().putString(KEY_ACTIVE_WALLPAPER_ID, wallpaperId).apply()
+    }
+
+    fun getOpeningEffect(context: Context): String {
+        return getPrefs(context).getString(KEY_OPENING_EFFECT, DEFAULT_OPENING_EFFECT) ?: DEFAULT_OPENING_EFFECT
+    }
+
+    fun setOpeningEffect(context: Context, effect: String) {
+        getPrefs(context).edit().putString(KEY_OPENING_EFFECT, effect).apply()
+    }
+
+    fun isDynamicMotionEnabled(context: Context): Boolean {
+        return getPrefs(context).getBoolean(KEY_DYNAMIC_MOTION_ENABLED, true)
+    }
+
+    fun setDynamicMotionEnabled(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_DYNAMIC_MOTION_ENABLED, enabled).apply()
+    }
+
+    fun getMaxBlurRadius(context: Context): Float {
+        return getPrefs(context).getFloat(KEY_MAX_BLUR_RADIUS, DEFAULT_MAX_BLUR)
+    }
+
+    fun setMaxBlurRadius(context: Context, radius: Float) {
+        getPrefs(context).edit().putFloat(KEY_MAX_BLUR_RADIUS, radius.coerceIn(20f, 120f)).apply()
+    }
+
+    fun getAnimationDuration(context: Context): Long {
+        return getPrefs(context).getLong(KEY_ANIMATION_DURATION_MS, DEFAULT_ANIMATION_DURATION)
+    }
+
+    fun setAnimationDuration(context: Context, durationMs: Long) {
+        getPrefs(context).edit().putLong(KEY_ANIMATION_DURATION_MS, durationMs).apply()
+    }
+
+    fun resolveWallpaper(id: String?): WallpaperItem {
+        if (id.isNullOrBlank()) return wallpapers.first()
+        return wallpapers.firstOrNull { it.id == id } ?: wallpapers.first()
     }
 
     fun getWallpaperById(id: String): WallpaperItem? {
@@ -78,27 +153,5 @@ object WallpaperRepository {
 
     fun getWallpapersByCategory(category: WallpaperCategory): List<WallpaperItem> {
         return wallpapers.filter { it.category == category }
-    }
-
-    fun getActiveWallpaper(context: Context): WallpaperItem {
-        val prefs = getPrefs(context)
-        val activeId = prefs.getString(KEY_ACTIVE_WALLPAPER, wallpapers.first().id)
-        return resolveWallpaper(activeId)
-    }
-
-    fun setActiveWallpaper(context: Context, wallpaperId: String) {
-        getPrefs(context).edit().putString(KEY_ACTIVE_WALLPAPER, wallpaperId).apply()
-    }
-
-    fun getMaxBlurRadius(context: Context): Float {
-        return getPrefs(context).getFloat(KEY_MAX_BLUR_RADIUS, DEFAULT_MAX_BLUR)
-    }
-
-    fun setMaxBlurRadius(context: Context, radius: Float) {
-        getPrefs(context).edit().putFloat(KEY_MAX_BLUR_RADIUS, radius).apply()
-    }
-
-    fun getPrefs(context: Context): SharedPreferences {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
     }
 }
