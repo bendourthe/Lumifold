@@ -1,4 +1,4 @@
-﻿package com.ambientfold.wallpaper.model
+package com.ambientfold.wallpaper.model
 
 import android.content.Context
 import android.content.SharedPreferences

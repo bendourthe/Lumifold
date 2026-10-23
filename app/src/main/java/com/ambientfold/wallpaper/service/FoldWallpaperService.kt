@@ -1,4 +1,4 @@
-﻿package com.ambientfold.wallpaper.service
+package com.ambientfold.wallpaper.service
 
 import android.animation.ValueAnimator
 import android.content.SharedPreferences

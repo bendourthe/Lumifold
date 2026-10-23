@@ -1,4 +1,4 @@
-﻿package com.ambientfold.wallpaper.model
+package com.ambientfold.wallpaper.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
