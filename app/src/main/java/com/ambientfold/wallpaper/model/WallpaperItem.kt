@@ -1,6 +1,5 @@
 package com.ambientfold.wallpaper.model
 
-import android.graphics.Color
 import androidx.annotation.DrawableRes
 
 enum class WallpaperCategory {
@@ -18,5 +17,5 @@ data class WallpaperItem(
     @DrawableRes val drawableResId: Int,
     val description: String,
     val isDynamic: Boolean = true,
-    val particleColor: Int = Color.WHITE
+    val particleColor: Int = -0x1
 )
