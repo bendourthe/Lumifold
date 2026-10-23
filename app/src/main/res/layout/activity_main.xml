@@ -137,49 +137,61 @@
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAngleClosed"
-                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="36dp"
                             android:layout_marginEnd="4dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
                             android:text="0° Cover"
                             android:textColor="#CBD5E1"
-                            android:textSize="10.5sp"
+                            android:textSize="10sp"
                             app:strokeColor="#2A374F" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAngleHandoff"
-                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="36dp"
                             android:layout_marginEnd="4dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
                             android:text="90° V-Fold"
                             android:textColor="#CBD5E1"
-                            android:textSize="10.5sp"
+                            android:textSize="10sp"
                             app:strokeColor="#2A374F" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAngleOpen"
-                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            style="@style/Widget.Material3.Button.OutlinedButton"
                             android:layout_width="0dp"
                             android:layout_height="36dp"
                             android:layout_marginEnd="4dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
                             android:text="180° Flat"
                             android:textColor="#CBD5E1"
-                            android:textSize="10.5sp"
+                            android:textSize="10sp"
                             app:strokeColor="#2A374F" />
 
                         <com.google.android.material.button.MaterialButton
                             android:id="@+id/btnAngleAuto"
-                            style="@style/Widget.Material3.Button.TonalButton.Dense"
+                            style="@style/Widget.Material3.Button.TonalButton"
                             android:layout_width="0dp"
                             android:layout_height="36dp"
                             android:layout_weight="1"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:padding="0dp"
                             android:text="▶ Auto"
                             android:textColor="#E0E7FF"
-                            android:textSize="10.5sp"
+                            android:textSize="10sp"
                             app:backgroundTint="#312E81" />
                     </LinearLayout>
 
