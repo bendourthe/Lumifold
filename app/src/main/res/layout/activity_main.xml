@@ -5,7 +5,7 @@
     android:id="@+id/rootCoordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#070A10"
+    android:background="#050811"
     tools:context=".ui.MainActivity">
 
     <androidx.core.widget.NestedScrollView
@@ -32,13 +32,13 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.imageview.ShapeableImageView
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="50dp"
+                    android:layout_height="50dp"
                     android:contentDescription="DuoBlur App Icon"
                     android:scaleType="centerCrop"
                     android:src="@drawable/ic_launcher_fg"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
-                    app:strokeColor="#38445A"
+                    app:strokeColor="#2E3C54"
                     app:strokeWidth="1.2dp" />
 
                 <LinearLayout
@@ -67,16 +67,171 @@
                 </LinearLayout>
             </LinearLayout>
 
-            <!-- 3D FOLDABLE PHONE PREVIEW CARD -->
+            <!-- LIVE HARDWARE TELEMETRY HUD CARD (1px Translucent Border #1AFFFFFF) -->
             <com.google.android.material.card.MaterialCardView
+                android:id="@+id/cardTelemetryHud"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="16dp"
                 app:cardBackgroundColor="#0D1322"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="6dp"
+                app:strokeColor="#26FFFFFF"
+                app:strokeWidth="1dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:fontFamily="sans-serif-bold"
+                            android:letterSpacing="0.08"
+                            android:text="HARDWARE TELEMETRY HUD"
+                            android:textColor="#818CF8"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/txtHudPowerLock"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="#1E1B4B"
+                            android:fontFamily="sans-serif-medium"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
+                            android:text="SCREEN LOCK ACTIVE"
+                            android:textColor="#A5B4FC"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <!-- Large Hinge Angle and Phase Label -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="bottom"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/txtHudAngle"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-black"
+                            android:text="140.0°"
+                            android:textColor="#FFFFFF"
+                            android:textSize="32sp" />
+
+                        <TextView
+                            android:id="@+id/txtHudPhase"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginBottom="4dp"
+                            android:layout_weight="1"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-medium"
+                            android:maxLines="1"
+                            android:text="Phase 3: Inner Defrosting"
+                            android:textColor="#38BDF8"
+                            android:textSize="13sp" />
+                    </LinearLayout>
+
+                    <!-- Two-Phase Normalized Frost Progress Bar -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif"
+                            android:text="Optical Frost:"
+                            android:textColor="#94A3B8"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.progressindicator.LinearProgressIndicator
+                            android:id="@+id/progressHudFrost"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginHorizontal="10dp"
+                            android:layout_weight="1"
+                            android:max="100"
+                            android:progress="45"
+                            app:indicatorColor="#6366F1"
+                            app:trackColor="#1E293B"
+                            app:trackCornerRadius="4dp"
+                            app:trackThickness="6dp" />
+
+                        <TextView
+                            android:id="@+id/txtHudFrostPercent"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-bold"
+                            android:text="0.45"
+                            android:textColor="#FFFFFF"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <!-- Telemetry Metadata Badges -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/txtHudDisplayId"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="#151D2C"
+                            android:fontFamily="sans-serif-medium"
+                            android:padding="8dp"
+                            android:text="Display 1: Inner Main"
+                            android:textColor="#E2E8F0"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/txtHudCreaseAxis"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:background="#151D2C"
+                            android:fontFamily="sans-serif-medium"
+                            android:padding="8dp"
+                            android:text="Crease Axis: x = 50%"
+                            android:textColor="#E2E8F0"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 3D BOOK FOLDABLE PREVIEW CARD (1px Translucent Border #1AFFFFFF) -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="#0B0F19"
                 app:cardCornerRadius="22dp"
                 app:cardElevation="8dp"
-                app:strokeColor="#1E293B"
-                app:strokeWidth="1.2dp">
+                app:strokeColor="#26FFFFFF"
+                app:strokeWidth="1dp">
 
                 <LinearLayout
                     android:layout_width="match_parent"
@@ -84,7 +239,7 @@
                     android:orientation="vertical"
                     android:padding="12dp">
 
-                    <!-- Foldable Phone Mockup Canvas -->
+                    <!-- Two-Leaf Book Foldable Phone Mockup Canvas -->
                     <com.ambientfold.wallpaper.ui.FoldablePhoneMockupView
                         android:id="@+id/mockupFoldable"
                         android:layout_width="match_parent"
@@ -94,7 +249,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="8dp"
+                        android:layout_marginTop="6dp"
                         android:gravity="center_vertical"
                         android:orientation="horizontal">
 
@@ -102,7 +257,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:fontFamily="sans-serif-medium"
-                            android:text="0° (Folded)"
+                            android:text="0° (Cover)"
                             android:textColor="#64748B"
                             android:textSize="11sp" />
 
@@ -131,7 +286,7 @@
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginTop="4dp"
+                        android:layout_marginTop="2dp"
                         android:gravity="center"
                         android:orientation="horizontal">
 

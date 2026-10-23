@@ -20,6 +20,7 @@ import android.service.wallpaper.WallpaperService
 import android.view.MotionEvent
 import android.view.SurfaceHolder
 import android.view.animation.DecelerateInterpolator
+import com.ambientfold.wallpaper.model.DuoBlurStateManager
 import com.ambientfold.wallpaper.model.WallpaperItem
 import com.ambientfold.wallpaper.model.WallpaperRepository
 import com.ambientfold.wallpaper.render.DuoBlurShader
@@ -29,24 +30,42 @@ import kotlin.math.max
 /**
  * Native Android Live Wallpaper Service for Google Pixel Foldables.
  * Implements:
- * 1. DuoBlur iPhone Duo Optical Opening Transition: Directional progressive frost sweeps from hinge,
- *    perspective compression, luminance attenuation, and crease defrosting via GPU AGSL RuntimeShader.
- * 2. Shared Image Base & Center-Crop: Preserves true 1:1 image aspect ratio on folded and unfolded displays.
- * 3. Dynamic Motion Engine: Continuous 60fps living motion with atmospheric clouds, golden sunlight sweeps,
- *    and fluid liquid glass flow.
- * 4. Two-Phase Sensor Handoff: Smooth continuous transition between cover screen (0°-90°) and inner screen (90°-180°).
+ * 1. Physical Foldable Topology Handoff: Seamless state continuity across Outer Cover Display
+ *    (Display 0) and Inner Main Display (Display 1).
+ * 2. Synchronized Frosting at 90° Handoff: When the inner display illuminates at ~90°, it begins
+ *    at 100% peak frost and darkened luminance matching the outer display, clearing smoothly from
+ *    the center crease outward as the phone opens to 180°.
+ * 3. Continuous Hinge Telemetry: Shared DuoBlurStateManager keeps sensor observations active across
+ *    display reconfiguration and engine recreations.
+ * 4. 60fps Dynamic Motion: Living ambient motion active on both cover and inner displays.
  */
 class FoldWallpaperService : WallpaperService() {
+
+    private var sharedHingeObserver: HingeSensorObserver? = null
+
+    override fun onCreate() {
+        super.onCreate()
+        sharedHingeObserver = HingeSensorObserver(this) { _, _ ->
+            // DuoBlurStateManager is automatically updated by HingeSensorObserver
+        }
+        sharedHingeObserver?.start()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        sharedHingeObserver?.stop()
+        sharedHingeObserver = null
+    }
 
     override fun onCreateEngine(): Engine {
         return FoldEngine()
     }
 
     inner class FoldEngine : Engine(),
-        SharedPreferences.OnSharedPreferenceChangeListener {
+        SharedPreferences.OnSharedPreferenceChangeListener,
+        DuoBlurStateManager.TelemetryListener {
 
         private val mainHandler = Handler(Looper.getMainLooper())
-        private var hingeObserver: HingeSensorObserver? = null
         private val motionEngine = DynamicMotionEngine()
 
         private var activeWallpaper: WallpaperItem? = null
@@ -63,7 +82,7 @@ class FoldWallpaperService : WallpaperService() {
         private var maxBlurRadius: Float = WallpaperRepository.DEFAULT_MAX_BLUR
         private var animationDurationMs: Long = WallpaperRepository.DEFAULT_ANIMATION_DURATION
 
-        // 0.0 = fully open (crystal sharp), 1.0 = peak frost / closed
+        // 0.0 = crystal sharp, 1.0 = peak frost at 90° handoff
         private var currentBlurProgress: Float = 0.0f
         private var isUnfoldingAnimating: Boolean = false
         private var unfoldAnimator: ValueAnimator? = null
@@ -72,7 +91,7 @@ class FoldWallpaperService : WallpaperService() {
         private val seamPaint = Paint(Paint.ANTI_ALIAS_FLAG)
         private val matrix = Matrix()
 
-        // Hardware AGSL RuntimeShader for API 33+ (Pixel Fold series)
+        // Hardware AGSL RuntimeShader for API 33+ (Android 13/14/15/16/17 on Pixel Fold)
         private var duoBlurRuntimeShader: Any? = null
 
         private var isVisibleState = false
@@ -89,7 +108,7 @@ class FoldWallpaperService : WallpaperService() {
                 drawCurrentFrame()
 
                 if (isVisibleState && (isDynamicMotionEnabled || isUnfoldingAnimating || currentBlurProgress > 0.005f)) {
-                    mainHandler.postDelayed(this, 16L) // Solid 60 fps
+                    mainHandler.postDelayed(this, 16L) // 60 fps
                 } else {
                     isFrameLoopRunning = false
                 }
@@ -105,15 +124,7 @@ class FoldWallpaperService : WallpaperService() {
             reloadPreferences()
             initDuoBlurShaderIfSupported()
 
-            hingeObserver = HingeSensorObserver(this@FoldWallpaperService) { _, angleDegrees ->
-                if (!isUnfoldingAnimating) {
-                    val twoPhaseProgress = HingeSensorObserver.calculateTwoPhaseProgress(angleDegrees, isInnerScreenActive)
-                    currentBlurProgress = twoPhaseProgress
-                    if (!isFrameLoopRunning) {
-                        startFrameLoop()
-                    }
-                }
-            }
+            DuoBlurStateManager.addListener(this)
         }
 
         private fun initDuoBlurShaderIfSupported() {
@@ -145,9 +156,7 @@ class FoldWallpaperService : WallpaperService() {
                 sharedBitmap?.recycle()
                 sharedBitmap = null
 
-                val options = BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
+                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeResource(resources, drawableResId, options)
 
                 val maxDimension = 2560
@@ -169,9 +178,9 @@ class FoldWallpaperService : WallpaperService() {
 
         override fun onDestroy() {
             super.onDestroy()
+            DuoBlurStateManager.removeListener(this)
             WallpaperRepository.getPrefs(this@FoldWallpaperService)
                 .unregisterOnSharedPreferenceChangeListener(this)
-            hingeObserver?.stop()
             unfoldAnimator?.cancel()
             mainHandler.removeCallbacksAndMessages(null)
             sharedBitmap?.recycle()
@@ -181,11 +190,19 @@ class FoldWallpaperService : WallpaperService() {
         override fun onVisibilityChanged(visible: Boolean) {
             isVisibleState = visible
             if (visible) {
-                hingeObserver?.start()
-                triggerUnfoldEntranceAnimation()
+                // When inner screen powers on during unfolding, synchronize frost with current angle
+                if (isInnerScreenActive) {
+                    val angle = DuoBlurStateManager.currentAngle
+                    if (angle < 170f) {
+                        // Starts at matching frost (e.g. 100% at ~90°) and smoothly clears to 180°
+                        currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(angle, true)
+                        triggerInnerDefrostAnimation()
+                    } else {
+                        currentBlurProgress = 0.0f
+                    }
+                }
                 startFrameLoop()
             } else {
-                hingeObserver?.stop()
                 unfoldAnimator?.cancel()
                 mainHandler.removeCallbacksAndMessages(null)
                 isFrameLoopRunning = false
@@ -206,26 +223,29 @@ class FoldWallpaperService : WallpaperService() {
             surfaceWidth = width
             surfaceHeight = height
 
-            // Foldables: inner tablet aspect ratio is <= 1.35; cover display is >= 1.9
+            // Foldable topology detection: Inner tablet display is <= 1.35; Outer cover display is >= 1.8
             val newlyInner = newAspect <= 1.35f
             val displaySwitched = newlyInner != isInnerScreenActive
             isInnerScreenActive = newlyInner
+
+            DuoBlurStateManager.updateDisplayContext(if (newlyInner) 1 else 0, newlyInner)
 
             if (sharedBitmap == null && activeWallpaper != null) {
                 loadSharedBitmap(activeWallpaper!!.drawableResId)
             }
 
             if (displaySwitched && newlyInner) {
-                // Phase 3: Inner Defrosting as device opens to 180°
-                triggerUnfoldEntranceAnimation()
+                // Handoff to Inner Main Display: Start at 100% peak frost and unbend toward 180°
+                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(DuoBlurStateManager.currentAngle, true)
+                triggerInnerDefrostAnimation()
             } else {
+                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(DuoBlurStateManager.currentAngle, isInnerScreenActive)
                 startFrameLoop()
             }
         }
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             reloadPreferences()
-            triggerUnfoldEntranceAnimation()
             startFrameLoop()
         }
 
@@ -240,14 +260,33 @@ class FoldWallpaperService : WallpaperService() {
         }
 
         /**
-         * Triggers the signature DuoBlur unfolding entrance transition.
-         * Smoothly animates blur from 100% peak frost down to razor-sharp 4K clarity.
+         * Telemetry listener called whenever hardware hinge angle changes.
+         * Synchronously computes frost progress matching the active display leaf.
          */
-        fun triggerUnfoldEntranceAnimation() {
+        override fun onTelemetryUpdated(
+            angle: Float,
+            isInner: Boolean,
+            displayId: Int,
+            frostProgress: Float,
+            phaseLabel: String
+        ) {
+            if (!isUnfoldingAnimating) {
+                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(angle, isInnerScreenActive)
+                if (!isFrameLoopRunning) {
+                    startFrameLoop()
+                }
+            }
+        }
+
+        /**
+         * Smoothly animates the inner screen from its handoff frost (1.0) down to crystal clarity (0.0).
+         */
+        private fun triggerInnerDefrostAnimation() {
             unfoldAnimator?.cancel()
             isUnfoldingAnimating = true
 
-            unfoldAnimator = ValueAnimator.ofFloat(1.0f, 0.0f).apply {
+            val startFrost = currentBlurProgress.coerceAtLeast(0.85f)
+            unfoldAnimator = ValueAnimator.ofFloat(startFrost, 0.0f).apply {
                 duration = animationDurationMs
                 interpolator = DecelerateInterpolator(2.2f)
                 addUpdateListener { anim ->
@@ -285,7 +324,7 @@ class FoldWallpaperService : WallpaperService() {
                     val w = surfaceWidth
                     val h = surfaceHeight
 
-                    // If DuoBlur AGSL transition is active on API 33+
+                    // If DuoBlur AGSL transition is active
                     if (openingEffect == WallpaperRepository.EFFECT_DUO_BLUR &&
                         currentBlurProgress > 0.005f &&
                         Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -293,7 +332,7 @@ class FoldWallpaperService : WallpaperService() {
                     ) {
                         drawAgslDuoBlurFrame(canvas, bmp, w, h)
                     } else {
-                        // Render standard frame with dynamic motion engine and Center-Crop
+                        // Render wallpaper with Center-Crop and living motion engine
                         motionEngine.render(
                             canvas = canvas,
                             bitmap = bmp,
@@ -304,14 +343,14 @@ class FoldWallpaperService : WallpaperService() {
                             blurProgress = currentBlurProgress
                         )
 
-                        // Render overlay if non-AGSL opening effect is active
+                        // Render fallback overlay if effect is active
                         if (currentBlurProgress > 0.01f) {
                             drawFallbackOpeningOverlay(canvas)
                         }
                     }
                 }
             } catch (e: Exception) {
-                // Ignore transient surface interruptions during physical display handoff
+                // Surface transient during display power cycle
             } finally {
                 if (canvas != null) {
                     try {
@@ -323,13 +362,9 @@ class FoldWallpaperService : WallpaperService() {
             }
         }
 
-        /**
-         * Renders the authentic iPhone Duo progressive blur using AGSL RuntimeShader.
-         */
         private fun drawAgslDuoBlurFrame(canvas: Canvas, bitmap: Bitmap, width: Int, height: Int) {
             val shader = duoBlurRuntimeShader as? RuntimeShader ?: return
 
-            // Compute Center-Crop transformation matrix for the input shader
             val scaleBase = max(width.toFloat() / bitmap.width.toFloat(), height.toFloat() / bitmap.height.toFloat())
             val scaledW = bitmap.width * scaleBase
             val scaledH = bitmap.height * scaleBase
@@ -352,11 +387,11 @@ class FoldWallpaperService : WallpaperService() {
             effectPaint.shader = shader
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), effectPaint)
 
-            // Luminous optical hinge crease seam (on inner folding display)
-            if (isInnerScreenActive && currentBlurProgress > 0.03f) {
+            // Crease light bloom on inner folding screen (centered at x = 50%)
+            if (isInnerScreenActive && currentBlurProgress > 0.02f) {
                 val cx = width * 0.5f
                 val beamW = (6f + currentBlurProgress * 16f)
-                val alpha = (currentBlurProgress * 230f).toInt().coerceIn(0, 255)
+                val alpha = (currentBlurProgress * 235f).toInt().coerceIn(0, 255)
                 val beam = LinearGradient(
                     cx - beamW, 0f, cx + beamW, 0f,
                     intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 255, 255), Color.TRANSPARENT),
@@ -368,9 +403,6 @@ class FoldWallpaperService : WallpaperService() {
             }
         }
 
-        /**
-         * Fallback overlay for opening effects (or older Android versions).
-         */
         private fun drawFallbackOpeningOverlay(canvas: Canvas) {
             val w = surfaceWidth.toFloat()
             val h = surfaceHeight.toFloat()
@@ -379,8 +411,8 @@ class FoldWallpaperService : WallpaperService() {
 
             when (openingEffect) {
                 WallpaperRepository.EFFECT_DUO_BLUR -> {
-                    val edgeAlpha = (currentBlurProgress * 190f).toInt().coerceIn(0, 255)
-                    val midAlpha = (currentBlurProgress * 105f).toInt().coerceIn(0, 255)
+                    val edgeAlpha = (currentBlurProgress * 195f).toInt().coerceIn(0, 255)
+                    val midAlpha = (currentBlurProgress * 110f).toInt().coerceIn(0, 255)
 
                     val duoBlurGradient = LinearGradient(
                         0f, 0f, w, 0f,

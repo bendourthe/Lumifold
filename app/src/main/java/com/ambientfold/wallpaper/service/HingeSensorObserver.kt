@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
+import com.ambientfold.wallpaper.model.DuoBlurStateManager
 import kotlin.math.pow
 
 class HingeSensorObserver(
@@ -15,8 +16,8 @@ class HingeSensorObserver(
     private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? SensorManager
     private val hingeSensor: Sensor? = sensorManager?.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE)
 
-    private var smoothedAngle: Float = 180.0f
-    private val smoothingFactor = 0.35f // Exponential moving average smoothing factor
+    private var smoothedAngle: Float = DuoBlurStateManager.currentAngle
+    private val smoothingFactor = 0.28f // Responsive exponential smoothing
     private var isRegistered = false
 
     val isSensorAvailable: Boolean
@@ -42,6 +43,7 @@ class HingeSensorObserver(
             val rawAngle = event.values.firstOrNull() ?: 180.0f
             smoothedAngle = smoothAngle(smoothedAngle, rawAngle, smoothingFactor)
             val clampedAngle = smoothedAngle.coerceIn(0f, 180f)
+            DuoBlurStateManager.updateHingeAngle(clampedAngle)
             val blurProgress = calculateEaseInProgress(clampedAngle)
             onAngleChanged(blurProgress, clampedAngle)
         }
@@ -51,6 +53,8 @@ class HingeSensorObserver(
 
     fun simulateAngle(angleDegrees: Float) {
         val clamped = angleDegrees.coerceIn(0f, 180f)
+        smoothedAngle = clamped
+        DuoBlurStateManager.updateHingeAngle(clamped)
         val blurProgress = calculateEaseInProgress(clamped)
         onAngleChanged(blurProgress, clamped)
     }
@@ -62,16 +66,11 @@ class HingeSensorObserver(
 
         fun calculateEaseInProgress(angleDegrees: Float): Float {
             val normalized = (angleDegrees / 180.0f).coerceIn(0f, 1f)
-            // 1.8 power curve: stays crisp across 180° to 90°, elevates progressively below 90°
             return (1.0f - normalized).toDouble().pow(1.8).toFloat().coerceIn(0f, 1f)
         }
 
         fun calculateTwoPhaseProgress(angleDegrees: Float, isInnerScreen: Boolean): Float {
-            return if (!isInnerScreen) {
-                (angleDegrees / 90.0f).coerceIn(0f, 1f)
-            } else {
-                ((180.0f - angleDegrees) / 90.0f).coerceIn(0f, 1f)
-            }
+            return DuoBlurStateManager.getCurrentFrostProgress(angleDegrees, isInnerScreen)
         }
     }
 }

@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
+import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
@@ -13,12 +14,13 @@ import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ambientfold.wallpaper.R
 import com.ambientfold.wallpaper.databinding.ActivityMainBinding
+import com.ambientfold.wallpaper.model.DuoBlurStateManager
 import com.ambientfold.wallpaper.model.WallpaperCategory
 import com.ambientfold.wallpaper.model.WallpaperItem
 import com.ambientfold.wallpaper.model.WallpaperRepository
 import com.ambientfold.wallpaper.service.FoldWallpaperService
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), DuoBlurStateManager.TelemetryListener {
 
     private lateinit var binding: ActivityMainBinding
     private var selectedWallpaper: WallpaperItem? = null
@@ -28,13 +30,17 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        // Enable edge-to-edge layout while safely handling insets
+
+        // Prevent Outer Cover Display from turning off when cracking the hinge open (0° to 90°)
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+        // Edge-to-edge support with safe window insets
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        // Apply system bar insets so the brand header never collides with status bar/clock
+        // Prevent overlap with phone clock and top bar
         ViewCompat.setOnApplyWindowInsetsListener(binding.mainContentContainer) { view, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             view.updatePadding(
@@ -54,6 +60,39 @@ class MainActivity : AppCompatActivity() {
         setupEffectChips()
         setupMotionSegmentedTabs()
         setupApplyButton()
+
+        DuoBlurStateManager.addListener(this)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        DuoBlurStateManager.removeListener(this)
+    }
+
+    override fun onTelemetryUpdated(
+        angle: Float,
+        isInner: Boolean,
+        displayId: Int,
+        frostProgress: Float,
+        phaseLabel: String
+    ) {
+        // Real-Time Hardware Telemetry HUD
+        binding.txtHudAngle.text = String.format("%.1f°", angle)
+        binding.txtHudPhase.text = phaseLabel
+        binding.progressHudFrost.progress = (frostProgress * 100).toInt().coerceIn(0, 100)
+        binding.txtHudFrostPercent.text = String.format("%.2f", frostProgress)
+
+        binding.txtHudDisplayId.text = if (isInner) {
+            "Display 1: Inner Main (Flexible)"
+        } else {
+            "Display 0: Outer Cover (Single)"
+        }
+
+        binding.txtHudCreaseAxis.text = if (isInner) {
+            "Crease Axis: x = 50% (Center)"
+        } else {
+            "Hinge Axis: x = 0% (Left Edge)"
+        }
     }
 
     private fun setupMockup() {
@@ -64,36 +103,45 @@ class MainActivity : AppCompatActivity() {
         binding.mockupFoldable.setOpeningEffect(WallpaperRepository.getOpeningEffect(this))
         binding.mockupFoldable.setMotionEnabled(isDynamic)
 
-        // Sync slider when the mockup is auto-looping
-        binding.mockupFoldable.onAngleChangedListener = { angle, _ ->
+        // Sync slider and HUD when the 3D book mockup auto-loops
+        binding.mockupFoldable.onAngleChangedListener = { angle, phaseLabel, frostProgress ->
             if (!binding.sliderHingeAngle.isFocused && !isUpdatingSliderFromMockup) {
                 isUpdatingSliderFromMockup = true
                 binding.sliderHingeAngle.value = angle
                 isUpdatingSliderFromMockup = false
             }
+            DuoBlurStateManager.updateHingeAngle(angle)
         }
     }
 
     private fun setupMockupControls() {
         binding.sliderHingeAngle.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
+                binding.mockupFoldable.pauseAutoLoop()
                 binding.mockupFoldable.setAngle(value)
+                DuoBlurStateManager.updateHingeAngle(value)
             }
         }
 
         binding.btnAngleClosed.setOnClickListener {
+            binding.mockupFoldable.pauseAutoLoop()
             binding.sliderHingeAngle.value = 0f
             binding.mockupFoldable.setAngle(0f)
+            DuoBlurStateManager.updateHingeAngle(0f)
         }
 
         binding.btnAngleHandoff.setOnClickListener {
+            binding.mockupFoldable.pauseAutoLoop()
             binding.sliderHingeAngle.value = 90f
             binding.mockupFoldable.setAngle(90f)
+            DuoBlurStateManager.updateHingeAngle(90f)
         }
 
         binding.btnAngleOpen.setOnClickListener {
+            binding.mockupFoldable.pauseAutoLoop()
             binding.sliderHingeAngle.value = 180f
             binding.mockupFoldable.setAngle(180f)
+            DuoBlurStateManager.updateHingeAngle(180f)
         }
 
         binding.btnAngleAuto.setOnClickListener {
