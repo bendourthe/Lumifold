@@ -1,4 +1,4 @@
-﻿package com.ambientfold.wallpaper.ui
+package com.ambientfold.wallpaper.ui
 
 import android.animation.ValueAnimator
 import android.content.Context

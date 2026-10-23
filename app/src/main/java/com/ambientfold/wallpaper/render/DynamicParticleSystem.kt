@@ -1,4 +1,4 @@
-﻿package com.ambientfold.wallpaper.render
+package com.ambientfold.wallpaper.render
 
 import android.graphics.Canvas
 import android.graphics.Color
