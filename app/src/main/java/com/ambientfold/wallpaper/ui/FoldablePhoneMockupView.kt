@@ -3,6 +3,7 @@ package com.ambientfold.wallpaper.ui
 import android.animation.ValueAnimator
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Camera
 import android.graphics.Canvas
 import android.graphics.Color
@@ -11,23 +12,24 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RadialGradient
-import android.graphics.Rect
 import android.graphics.RectF
 import android.graphics.Shader
-import android.graphics.drawable.Drawable
+import android.os.SystemClock
 import android.util.AttributeSet
 import android.view.View
-import android.view.animation.DecelerateInterpolator
-import androidx.appcompat.content.res.AppCompatResources
-import androidx.core.graphics.drawable.toBitmap
+import android.view.animation.AccelerateDecelerateInterpolator
 import com.ambientfold.wallpaper.model.WallpaperItem
 import com.ambientfold.wallpaper.model.WallpaperRepository
-import com.ambientfold.wallpaper.render.DynamicParticleSystem
+import com.ambientfold.wallpaper.render.DynamicMotionEngine
+import kotlin.math.abs
 
 /**
- * Interactive Foldable Phone Mockup view for MainActivity.
- * Displays a 3D articulated foldable device frame, renders the active 4K wallpaper,
- * simulates real-time hinge angle transitions, and previews live dynamic particles and opening effects.
+ * Continuous cinematic 3D foldable phone mockup view.
+ * Loops smoothly through:
+ * 1. Folded state (outer screen viewing shared wallpaper base)
+ * 2. 3D perspective unfolding (0° to 180°) showcasing the selected opening effect (iPhone Duo progressive blur, crease bloom, etc.)
+ * 3. Opened state showing the full inner display with dynamic ambient motion or static mode
+ * 4. Smooth folding transition back to closed state
  */
 class FoldablePhoneMockupView @JvmOverloads constructor(
     context: Context,
@@ -35,107 +37,148 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    // 0 = closed (folded), 180 = flat open
-    var foldAngle: Float = 180f
+    // Current angle: 0f (closed) to 180f (fully open)
+    var currentAngle: Float = 180f
         private set
 
-    var onAngleChangedListener: ((Float) -> Unit)? = null
+    // 0.0f = fully open, 1.0f = fully closed
+    private var blurProgress: Float = 0.0f
 
     private var activeWallpaper: WallpaperItem? = null
     private var wallpaperBitmap: Bitmap? = null
+    private var loadedResId: Int = 0
     private var openingEffect: String = WallpaperRepository.DEFAULT_OPENING_EFFECT
     private var isDynamicMotionEnabled: Boolean = true
 
+    private val motionEngine = DynamicMotionEngine()
     private val camera = Camera()
     private val matrix3D = Matrix()
 
     private val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#1C1A24")
+        color = Color.parseColor("#0F172A")
     }
     private val bezelStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#3D374D")
+        color = Color.parseColor("#334155")
         style = Paint.Style.STROKE
-        strokeWidth = 3f
+        strokeWidth = 2.5f
     }
     private val hingeSpinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0F0D17")
-    }
-    private val creaseLinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#44D0BCFF")
-        strokeWidth = 2f
+        color = Color.parseColor("#1E293B")
     }
     private val effectPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-    private val bitmapPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
 
     private val leftPanelPath = Path()
     private val rightPanelPath = Path()
     private val leftPanelRect = RectF()
     private val rightPanelRect = RectF()
 
-    private val particleSystem = DynamicParticleSystem(28)
-    private var animator: ValueAnimator? = null
+    private var loopAnimator: ValueAnimator? = null
 
     init {
-        // Continuous animation loop for dynamic particles in mockup preview
-        post(object : Runnable {
-            override fun run() {
-                if (isAttachedToWindow) {
-                    invalidate()
-                    postDelayed(this, 16L) // ~60fps
-                }
-            }
-        })
+        startCinematicLoop()
     }
 
-    fun setWallpaper(item: WallpaperItem) {
-        activeWallpaper = item
-        wallpaperBitmap?.recycle()
-        wallpaperBitmap = null
-        val drawable: Drawable? = AppCompatResources.getDrawable(context, item.drawableResId)
-        wallpaperBitmap = drawable?.toBitmap(720, 720, Bitmap.Config.ARGB_8888)
-        particleSystem.setPrimaryColor(item.particleColor)
-        invalidate()
-    }
-
-    fun setOpeningEffect(effect: String) {
-        openingEffect = effect
-        invalidate()
-    }
-
-    fun setDynamicMotionEnabled(enabled: Boolean) {
-        isDynamicMotionEnabled = enabled
-        invalidate()
-    }
-
-    fun setFoldAngleDirect(angle: Float) {
-        foldAngle = angle.coerceIn(0f, 180f)
-        onAngleChangedListener?.invoke(foldAngle)
-        invalidate()
-    }
-
-    fun playOpeningAnimation(durationMs: Long = 650L) {
-        animator?.cancel()
-        animator = ValueAnimator.ofFloat(30f, 180f).apply {
-            duration = durationMs
-            interpolator = DecelerateInterpolator(2.0f)
+    /**
+     * Continuous 4-phase cinematic loop:
+     * 0.0 -> 0.2: Resting in folded state (outer cover screen)
+     * 0.2 -> 0.5: Unfolding in 3D perspective to 180°
+     * 0.5 -> 0.8: Resting in wide unfolded state (full inner display)
+     * 0.8 -> 1.0: Folding back to closed state
+     */
+    private fun startCinematicLoop() {
+        loopAnimator?.cancel()
+        loopAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
+            duration = 7200L // 7.2 second continuous loop
+            repeatCount = ValueAnimator.INFINITE
+            interpolator = AccelerateDecelerateInterpolator()
             addUpdateListener { anim ->
-                foldAngle = anim.animatedValue as Float
-                onAngleChangedListener?.invoke(foldAngle)
-                invalidate()
+                val progress = anim.animatedValue as Float
+                when {
+                    // Phase 1: Folded cover screen (0° to 10°)
+                    progress < 0.20f -> {
+                        currentAngle = 10f
+                        blurProgress = 1.0f
+                    }
+                    // Phase 2: Unfolding (10° to 180°)
+                    progress in 0.20f..0.50f -> {
+                        val subProgress = (progress - 0.20f) / 0.30f
+                        currentAngle = 10f + (subProgress * 170f)
+                        blurProgress = 1.0f - subProgress
+                    }
+                    // Phase 3: Opened full inner screen (180°)
+                    progress in 0.50f..0.80f -> {
+                        currentAngle = 180f
+                        blurProgress = 0.0f
+                    }
+                    // Phase 4: Folding back (180° to 10°)
+                    else -> {
+                        val subProgress = (progress - 0.80f) / 0.20f
+                        currentAngle = 180f - (subProgress * 170f)
+                        blurProgress = subProgress
+                    }
+                }
+                postInvalidateOnAnimation()
             }
             start()
         }
     }
 
-    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
-        super.onSizeChanged(w, h, oldw, oldh)
-        particleSystem.init(w, h, activeWallpaper?.particleColor ?: Color.parseColor("#FFE082"))
+    fun setWallpaper(wallpaper: WallpaperItem, isDynamic: Boolean) {
+        this.activeWallpaper = wallpaper
+        this.isDynamicMotionEnabled = isDynamic
+        loadBitmapIfNeeded(wallpaper.drawableResId)
+        invalidate()
+    }
+
+    fun setOpeningEffect(effect: String) {
+        this.openingEffect = effect
+        invalidate()
+    }
+
+    fun setMotionEnabled(enabled: Boolean) {
+        this.isDynamicMotionEnabled = enabled
+        invalidate()
+    }
+
+    private fun loadBitmapIfNeeded(drawableResId: Int) {
+        if (loadedResId == drawableResId && wallpaperBitmap != null && !wallpaperBitmap!!.isRecycled) return
+
+        try {
+            wallpaperBitmap?.recycle()
+            wallpaperBitmap = null
+
+            val options = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            BitmapFactory.decodeResource(resources, drawableResId, options)
+
+            var sampleSize = 1
+            while (options.outWidth / sampleSize > 1600 || options.outHeight / sampleSize > 1600) {
+                sampleSize *= 2
+            }
+
+            val decodeOptions = BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            wallpaperBitmap = BitmapFactory.decodeResource(resources, drawableResId, decodeOptions)
+            loadedResId = drawableResId
+        } catch (e: Throwable) {
+            // Fallback
+        }
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        if (loopAnimator?.isRunning != true) {
+            startCinematicLoop()
+        }
     }
 
     override fun onDetachedFromWindow() {
         super.onDetachedFromWindow()
-        animator?.cancel()
+        loopAnimator?.cancel()
         wallpaperBitmap?.recycle()
         wallpaperBitmap = null
     }
@@ -145,168 +188,307 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
 
         val w = width.toFloat()
         val h = height.toFloat()
-        if (w <= 0 || h <= 0) return
+        if (w <= 0f || h <= 0f) return
 
-        val padding = 16f
-        val deviceWidth = w - (padding * 2)
-        val deviceHeight = h - (padding * 2)
-        val cx = w / 2f
-        val cy = h / 2f
+        val cx = w * 0.5f
+        val cy = h * 0.5f
 
-        val halfDeviceW = deviceWidth / 2f
-        val panelW = halfDeviceW - 3f
-        val panelH = deviceHeight - 12f
-        val cornerRadius = 24f
+        // Mockup phone dimensions
+        val phoneH = (h * 0.82f).coerceAtLeast(180f)
+        val panelW = (phoneH * 0.52f).coerceAtLeast(90f) // Each foldable panel aspect ratio ~1:1.9
+        val cornerRadius = 18f
 
-        // 1. Draw Outer Foldable Phone Frame (Left & Right Chassis)
-        val frameLeft = cx - halfDeviceW
-        val frameRight = cx + halfDeviceW
-        val frameTop = cy - (deviceHeight / 2f)
-        val frameBottom = cy + (deviceHeight / 2f)
+        // Ambient floor shadow
+        val shadowW = (panelW * 2f) * (0.5f + (currentAngle / 180f) * 0.5f) + 30f
+        shadowPaint.shader = RadialGradient(
+            cx, cy + (phoneH * 0.5f) + 14f, shadowW * 0.6f,
+            intArrayOf(Color.argb(90, 0, 0, 0), Color.TRANSPARENT),
+            floatArrayOf(0.0f, 1.0f),
+            Shader.TileMode.CLAMP
+        )
+        canvas.drawOval(
+            cx - shadowW * 0.5f,
+            cy + (phoneH * 0.5f) - 6f,
+            cx + shadowW * 0.5f,
+            cy + (phoneH * 0.5f) + 26f,
+            shadowPaint
+        )
 
-        // Drop shadow for floating phone mockup
-        shadowPaint.color = Color.parseColor("#55000000")
-        canvas.drawRoundRect(frameLeft + 4f, frameTop + 10f, frameRight + 4f, frameBottom + 12f, cornerRadius + 4f, cornerRadius + 4f, shadowPaint)
-
-        // Matte Titanium Frame
-        canvas.drawRoundRect(frameLeft, frameTop, frameRight, frameBottom, cornerRadius, cornerRadius, framePaint)
-        canvas.drawRoundRect(frameLeft, frameTop, frameRight, frameBottom, cornerRadius, cornerRadius, bezelStrokePaint)
-
-        // 2. Compute 3D Perspective Rotation based on foldAngle (0 = folded, 180 = flat)
-        // Normalized fold progress: 0.0 (open) to 1.0 (closed)
-        val foldProgress = (1.0f - (foldAngle / 180f)).coerceIn(0f, 1f)
-        val rotationY = foldProgress * 65f // Panels angle inward up to 65 degrees
-
-        // 3. Draw Left Screen Panel with 3D perspective
-        leftPanelRect.set(cx - panelW - 2f, cy - (panelH / 2f), cx - 2f, cy + (panelH / 2f))
-        leftPanelPath.reset()
-        leftPanelPath.addRoundRect(leftPanelRect, floatArrayOf(
-            cornerRadius - 4f, cornerRadius - 4f,
-            4f, 4f,
-            4f, 4f,
-            cornerRadius - 4f, cornerRadius - 4f
-        ), Path.Direction.CW)
-
-        canvas.save()
-        camera.save()
-        camera.rotateY(rotationY)
-        camera.getMatrix(matrix3D)
-        camera.restore()
-        matrix3D.preTranslate(-cx, -cy)
-        matrix3D.postTranslate(cx, cy)
-        canvas.concat(matrix3D)
-
-        canvas.clipPath(leftPanelPath)
-        drawPanelContent(canvas, leftPanelRect, isLeft = true, foldProgress = foldProgress)
-        canvas.restore()
-
-        // 4. Draw Right Screen Panel with 3D perspective
-        rightPanelRect.set(cx + 2f, cy - (panelH / 2f), cx + panelW + 2f, cy + (panelH / 2f))
-        rightPanelPath.reset()
-        rightPanelPath.addRoundRect(rightPanelRect, floatArrayOf(
-            4f, 4f,
-            cornerRadius - 4f, cornerRadius - 4f,
-            cornerRadius - 4f, cornerRadius - 4f,
-            4f, 4f
-        ), Path.Direction.CW)
-
-        canvas.save()
-        camera.save()
-        camera.rotateY(-rotationY)
-        camera.getMatrix(matrix3D)
-        camera.restore()
-        matrix3D.preTranslate(-cx, -cy)
-        matrix3D.postTranslate(cx, cy)
-        canvas.concat(matrix3D)
-
-        canvas.clipPath(rightPanelPath)
-        drawPanelContent(canvas, rightPanelRect, isLeft = false, foldProgress = foldProgress)
-        canvas.restore()
-
-        // 5. Draw Central Hinge Spine & Crease Line
-        canvas.drawRect(cx - 3f, frameTop + 4f, cx + 3f, frameBottom - 4f, hingeSpinePaint)
-        canvas.drawLine(cx, frameTop + 10f, cx, frameBottom - 10f, creaseLinePaint)
-
-        // 6. Draw Hinge shadow deepening as the phone folds
-        if (foldProgress > 0.05f) {
-            val creaseShadowAlpha = (foldProgress * 160f).toInt().coerceIn(0, 220)
-            val creaseShadow = LinearGradient(
-                cx - 35f, 0f, cx + 35f, 0f,
-                intArrayOf(Color.TRANSPARENT, Color.argb(creaseShadowAlpha, 0, 0, 0), Color.TRANSPARENT),
-                floatArrayOf(0.0f, 0.5f, 1.0f),
-                Shader.TileMode.CLAMP
-            )
-            shadowPaint.shader = creaseShadow
-            canvas.drawRect(cx - 35f, frameTop, cx + 35f, frameBottom, shadowPaint)
-        }
-    }
-
-    private fun drawPanelContent(canvas: Canvas, rect: RectF, isLeft: Boolean, foldProgress: Float) {
         val bmp = wallpaperBitmap
-        if (bmp != null && !bmp.isRecycled) {
-            val srcRect = if (isLeft) {
-                Rect(0, 0, bmp.width / 2, bmp.height)
-            } else {
-                Rect(bmp.width / 2, 0, bmp.width, bmp.height)
-            }
-            canvas.drawBitmap(bmp, srcRect, rect, bitmapPaint)
+        val item = activeWallpaper
+
+        if (currentAngle <= 25f) {
+            // --- DRAW CLOSED PHONE (COVER DISPLAY) ---
+            drawClosedCoverDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
         } else {
-            canvas.drawColor(Color.parseColor("#151221"))
-        }
-
-        // Live Dynamic Particles inside mockup screen
-        if (isDynamicMotionEnabled) {
-            particleSystem.updateAndDraw(canvas, foldProgress)
-        }
-
-        // Selected Opening Effect Simulation inside mockup screen
-        if (foldProgress > 0.01f) {
-            drawMockupEffect(canvas, rect, isLeft, foldProgress)
+            // --- DRAW 3D UNFOLDING INNER DISPLAY ---
+            drawUnfoldingInnerDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
         }
     }
 
-    private fun drawMockupEffect(canvas: Canvas, rect: RectF, isLeft: Boolean, foldProgress: Float) {
-        val cx = width / 2f
-        val alpha = (foldProgress * 180f).toInt().coerceIn(0, 255)
+    private fun drawClosedCoverDisplay(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        panelW: Float,
+        phoneH: Float,
+        cornerRadius: Float,
+        bmp: Bitmap?,
+        item: WallpaperItem?
+    ) {
+        val left = cx - (panelW * 0.5f)
+        val top = cy - (phoneH * 0.5f)
+        val right = cx + (panelW * 0.5f)
+        val bottom = cy + (phoneH * 0.5f)
+        val rect = RectF(left, top, right, bottom)
+
+        // Outer chassis
+        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, framePaint)
+        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, bezelStrokePaint)
+
+        // Cover display screen
+        val screenInset = 8f
+        val screenRect = RectF(left + screenInset, top + screenInset, right - screenInset, bottom - screenInset)
+        val screenRadius = cornerRadius - 4f
+
+        canvas.save()
+        val clipPath = Path().apply {
+            addRoundRect(screenRect, screenRadius, screenRadius, Path.Direction.CW)
+        }
+        canvas.clipPath(clipPath)
+
+        if (bmp != null && item != null) {
+            motionEngine.render(
+                canvas = canvas,
+                bitmap = bmp,
+                width = screenRect.width().toInt(),
+                height = screenRect.height().toInt(),
+                wallpaper = item,
+                isDynamic = isDynamicMotionEnabled,
+                blurProgress = 0f
+            )
+        } else {
+            canvas.drawColor(Color.parseColor("#1E293B"))
+        }
+
+        // Camera punch hole
+        val camPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#090D16") }
+        canvas.drawCircle(cx, screenRect.top + 14f, 4.5f, camPaint)
+
+        canvas.restore()
+    }
+
+    private fun drawUnfoldingInnerDisplay(
+        canvas: Canvas,
+        cx: Float,
+        cy: Float,
+        panelW: Float,
+        phoneH: Float,
+        cornerRadius: Float,
+        bmp: Bitmap?,
+        item: WallpaperItem?
+    ) {
+        // Hinge angle rotation: 0° (flat open) to -85° (half closed)
+        val openFactor = (currentAngle / 180f).coerceIn(0.0f, 1.0f)
+        val rotAngle = (1.0f - openFactor) * 75f
+
+        val top = cy - (phoneH * 0.5f)
+        val bottom = cy + (phoneH * 0.5f)
+
+        leftPanelRect.set(cx - panelW, top, cx, bottom)
+        rightPanelRect.set(cx, top, cx + panelW, bottom)
+
+        val totalInnerW = (panelW * 2f).toInt()
+        val totalInnerH = phoneH.toInt()
+
+        // 1. Draw Left Panel (Articulated in 3D)
+        canvas.save()
+        camera.save()
+        camera.rotateY(-rotAngle * 0.6f)
+        camera.getMatrix(matrix3D)
+        camera.restore()
+        matrix3D.preTranslate(-cx, -cy)
+        matrix3D.postTranslate(cx, cy)
+        canvas.concat(matrix3D)
+
+        leftPanelPath.reset()
+        leftPanelPath.addRoundRect(
+            leftPanelRect,
+            floatArrayOf(cornerRadius, cornerRadius, 0f, 0f, 0f, 0f, cornerRadius, cornerRadius),
+            Path.Direction.CW
+        )
+
+        canvas.save()
+        canvas.clipPath(leftPanelPath)
+        canvas.drawRect(leftPanelRect, framePaint)
+
+        // Inner wallpaper on left panel
+        if (bmp != null && item != null) {
+            canvas.save()
+            canvas.translate(cx - panelW, top)
+            motionEngine.render(
+                canvas = canvas,
+                bitmap = bmp,
+                width = totalInnerW,
+                height = totalInnerH,
+                wallpaper = item,
+                isDynamic = isDynamicMotionEnabled,
+                blurProgress = blurProgress
+            )
+            canvas.restore()
+        }
+
+        // Opening effect on left panel
+        drawMockupOpeningEffect(canvas, leftPanelRect, cx, top, panelW, phoneH, true)
+
+        canvas.drawPath(leftPanelPath, bezelStrokePaint)
+        canvas.restore()
+        canvas.restore()
+
+        // 2. Draw Right Panel (Articulated in 3D Unfold)
+        canvas.save()
+        camera.save()
+        camera.rotateY(rotAngle)
+        camera.getMatrix(matrix3D)
+        camera.restore()
+        matrix3D.preTranslate(-cx, -cy)
+        matrix3D.postTranslate(cx, cy)
+        canvas.concat(matrix3D)
+
+        rightPanelPath.reset()
+        rightPanelPath.addRoundRect(
+            rightPanelRect,
+            floatArrayOf(0f, 0f, cornerRadius, cornerRadius, cornerRadius, cornerRadius, 0f, 0f),
+            Path.Direction.CW
+        )
+
+        canvas.save()
+        canvas.clipPath(rightPanelPath)
+        canvas.drawRect(rightPanelRect, framePaint)
+
+        // Inner wallpaper on right panel (continuous shared base)
+        if (bmp != null && item != null) {
+            canvas.save()
+            canvas.translate(cx - panelW, top)
+            motionEngine.render(
+                canvas = canvas,
+                bitmap = bmp,
+                width = totalInnerW,
+                height = totalInnerH,
+                wallpaper = item,
+                isDynamic = isDynamicMotionEnabled,
+                blurProgress = blurProgress
+            )
+            canvas.restore()
+        }
+
+        // Opening effect on right panel
+        drawMockupOpeningEffect(canvas, rightPanelRect, cx, top, panelW, phoneH, false)
+
+        canvas.drawPath(rightPanelPath, bezelStrokePaint)
+        canvas.restore()
+        canvas.restore()
+
+        // 3. Central Hinge Crease Spine & Luminous Seam
+        val spineW = 4f
+        val spineRect = RectF(cx - (spineW * 0.5f), top, cx + (spineW * 0.5f), bottom)
+        canvas.drawRect(spineRect, hingeSpinePaint)
+
+        if (blurProgress > 0.05f) {
+            val bloomAlpha = (blurProgress * 230f).toInt().coerceIn(0, 255)
+            val bloomPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                color = Color.argb(bloomAlpha, 255, 255, 255)
+                strokeWidth = 2.5f
+            }
+            canvas.drawLine(cx, top, cx, bottom, bloomPaint)
+        }
+    }
+
+    private fun drawMockupOpeningEffect(
+        canvas: Canvas,
+        panelRect: RectF,
+        cx: Float,
+        top: Float,
+        panelW: Float,
+        phoneH: Float,
+        isLeft: Boolean
+    ) {
+        if (blurProgress <= 0.02f) return
 
         when (openingEffect) {
-            WallpaperRepository.EFFECT_CREASE_BLOOM -> {
-                // Radiant light beam along fold edge
-                val startX = if (isLeft) rect.right - 50f else rect.left
-                val endX = if (isLeft) rect.right else rect.left + 50f
-                val colors = if (isLeft) {
-                    intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 255, 255))
-                } else {
-                    intArrayOf(Color.argb(alpha, 255, 255, 255), Color.TRANSPARENT)
-                }
-                val grad = LinearGradient(startX, 0f, endX, 0f, colors, null, Shader.TileMode.CLAMP)
-                effectPaint.shader = grad
-                canvas.drawRect(rect, effectPaint)
-            }
-            WallpaperRepository.EFFECT_APERTURE_ZOOM -> {
-                // Vignette radial focus
-                val grad = RadialGradient(
-                    cx, rect.centerY(), rect.width() * 1.2f,
-                    intArrayOf(Color.TRANSPARENT, Color.argb((foldProgress * 150f).toInt().coerceIn(0, 255), 10, 8, 20)),
-                    floatArrayOf(0.4f, 1.0f),
-                    Shader.TileMode.CLAMP
-                )
-                effectPaint.shader = grad
-                canvas.drawRect(rect, effectPaint)
-            }
-            WallpaperRepository.EFFECT_PRISMATIC_WAVE -> {
-                // Chromatic edge glow
-                val startX = if (isLeft) rect.right - 60f else rect.left
-                val endX = if (isLeft) rect.right else rect.left + 60f
-                val color = if (isLeft) Color.argb(alpha, 0, 229, 255) else Color.argb(alpha, 224, 64, 251)
-                val grad = LinearGradient(startX, 0f, endX, 0f, intArrayOf(Color.TRANSPARENT, color), null, Shader.TileMode.CLAMP)
-                effectPaint.shader = grad
-                canvas.drawRect(rect, effectPaint)
-            }
             WallpaperRepository.EFFECT_DUO_BLUR -> {
-                // Duo depth blur overlay simulation
-                val blurOverlayAlpha = (foldProgress * 140f).toInt().coerceIn(0, 255)
-                canvas.drawColor(Color.argb(blurOverlayAlpha, 25, 20, 45))
+                // iPhone Duo Optical Progressive Blur:
+                // Sharp at center crease, frosted blur softening toward the moving outer edge
+                val edgeAlpha = (blurProgress * 190f).toInt().coerceIn(0, 255)
+                val midAlpha = (blurProgress * 100f).toInt().coerceIn(0, 255)
+
+                val gradient = if (isLeft) {
+                    LinearGradient(
+                        panelRect.left, 0f, panelRect.right, 0f,
+                        intArrayOf(Color.argb(edgeAlpha, 240, 245, 255), Color.argb(midAlpha, 230, 240, 250), Color.TRANSPARENT),
+                        floatArrayOf(0.0f, 0.6f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                } else {
+                    LinearGradient(
+                        panelRect.left, 0f, panelRect.right, 0f,
+                        intArrayOf(Color.TRANSPARENT, Color.argb(midAlpha, 230, 240, 250), Color.argb(edgeAlpha, 240, 245, 255)),
+                        floatArrayOf(0.0f, 0.4f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                effectPaint.shader = gradient
+                canvas.drawRect(panelRect, effectPaint)
+            }
+
+            WallpaperRepository.EFFECT_CREASE_BLOOM -> {
+                val alpha = (blurProgress * 210f).toInt().coerceIn(0, 255)
+                val beamW = panelW * (0.15f + blurProgress * 0.4f)
+                val gradient = if (isLeft) {
+                    LinearGradient(
+                        panelRect.right - beamW, 0f, panelRect.right, 0f,
+                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 250, 220)),
+                        floatArrayOf(0.0f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                } else {
+                    LinearGradient(
+                        panelRect.left, 0f, panelRect.left + beamW, 0f,
+                        intArrayOf(Color.argb(alpha, 255, 250, 220), Color.TRANSPARENT),
+                        floatArrayOf(0.0f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                effectPaint.shader = gradient
+                canvas.drawRect(panelRect, effectPaint)
+            }
+
+            WallpaperRepository.EFFECT_LIQUID_GLASS -> {
+                val alpha = (blurProgress * 170f).toInt().coerceIn(0, 255)
+                val gradient = if (isLeft) {
+                    LinearGradient(
+                        panelRect.left, 0f, panelRect.right, 0f,
+                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 99, 102, 241), Color.argb(alpha, 236, 72, 153)),
+                        floatArrayOf(0.0f, 0.7f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                } else {
+                    LinearGradient(
+                        panelRect.left, 0f, panelRect.right, 0f,
+                        intArrayOf(Color.argb(alpha, 236, 72, 153), Color.argb(alpha, 56, 189, 248), Color.TRANSPARENT),
+                        floatArrayOf(0.0f, 0.3f, 1.0f),
+                        Shader.TileMode.CLAMP
+                    )
+                }
+                effectPaint.shader = gradient
+                canvas.drawRect(panelRect, effectPaint)
+            }
+
+            WallpaperRepository.EFFECT_APERTURE_HORIZON -> {
+                val alpha = (blurProgress * 150f).toInt().coerceIn(0, 255)
+                effectPaint.shader = null
+                effectPaint.color = Color.argb(alpha, 15, 23, 42)
+                canvas.drawRect(panelRect, effectPaint)
             }
         }
     }

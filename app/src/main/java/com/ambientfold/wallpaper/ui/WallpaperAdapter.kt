@@ -9,7 +9,7 @@ import com.ambientfold.wallpaper.databinding.ItemWallpaperCardBinding
 import com.ambientfold.wallpaper.model.WallpaperItem
 
 class WallpaperAdapter(
-    private val items: List<WallpaperItem>,
+    private var items: List<WallpaperItem>,
     private var selectedId: String,
     private val onItemSelected: (WallpaperItem) -> Unit
 ) : RecyclerView.Adapter<WallpaperAdapter.WallpaperViewHolder>() {
@@ -32,7 +32,7 @@ class WallpaperAdapter(
 
         with(holder.binding) {
             txtWallpaperTitle.text = item.title
-            txtWallpaperCategory.text = item.category.name.lowercase().replaceFirstChar { it.uppercase() }
+            txtWallpaperCategory.text = item.category.displayName
             imgThumbnail.setImageDrawable(
                 AppCompatResources.getDrawable(root.context, item.drawableResId)
             )
@@ -43,7 +43,8 @@ class WallpaperAdapter(
             root.setOnClickListener {
                 val previousSelected = selectedId
                 selectedId = item.id
-                notifyItemChanged(items.indexOfFirst { it.id == previousSelected })
+                val oldIndex = items.indexOfFirst { it.id == previousSelected }
+                if (oldIndex != -1) notifyItemChanged(oldIndex)
                 notifyItemChanged(position)
                 onItemSelected(item)
             }
@@ -51,6 +52,12 @@ class WallpaperAdapter(
     }
 
     override fun getItemCount(): Int = items.size
+
+    fun setCategoryItems(newItems: List<WallpaperItem>, currentSelectedId: String) {
+        items = newItems
+        selectedId = currentSelectedId
+        notifyDataSetChanged()
+    }
 
     fun updateSelection(newId: String) {
         val oldIndex = items.indexOfFirst { it.id == selectedId }

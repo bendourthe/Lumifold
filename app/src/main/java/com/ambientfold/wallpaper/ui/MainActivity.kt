@@ -8,17 +8,17 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ambientfold.wallpaper.R
 import com.ambientfold.wallpaper.databinding.ActivityMainBinding
+import com.ambientfold.wallpaper.model.WallpaperCategory
 import com.ambientfold.wallpaper.model.WallpaperItem
 import com.ambientfold.wallpaper.model.WallpaperRepository
 import com.ambientfold.wallpaper.service.FoldWallpaperService
-import com.ambientfold.wallpaper.service.HingeSensorObserver
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private var hingeObserver: HingeSensorObserver? = null
     private var selectedWallpaper: WallpaperItem? = null
-    private var isSimulating = false
+    private var currentCategory: WallpaperCategory = WallpaperCategory.LANDSCAPES
+    private lateinit var wallpaperAdapter: WallpaperAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -26,62 +26,70 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         selectedWallpaper = WallpaperRepository.getActiveWallpaper(this)
+        currentCategory = selectedWallpaper?.category ?: WallpaperCategory.LANDSCAPES
 
         setupMockup()
-        setupEffectChips()
-        setupMotionControls()
+        setupCategoryChips()
         setupWallpaperCarousel()
-        setupSlider()
+        setupEffectChips()
+        setupMotionChips()
         setupApplyButton()
-
-        hingeObserver = HingeSensorObserver(this) { _, angleDegrees ->
-            if (!isSimulating) {
-                runOnUiThread {
-                    binding.mockupFoldable.setFoldAngleDirect(angleDegrees)
-                    binding.sliderFoldAngle.value = angleDegrees
-                    updateAngleBadge(angleDegrees)
-                }
-            }
-        }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        if (hingeObserver?.isSensorAvailable == true) {
-            hingeObserver?.start()
-        }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        hingeObserver?.stop()
     }
 
     private fun setupMockup() {
+        val isDynamic = WallpaperRepository.isDynamicMotionEnabled(this)
         selectedWallpaper?.let {
-            binding.mockupFoldable.setWallpaper(it)
+            binding.mockupFoldable.setWallpaper(it, isDynamic)
         }
         binding.mockupFoldable.setOpeningEffect(WallpaperRepository.getOpeningEffect(this))
-        binding.mockupFoldable.setDynamicMotionEnabled(WallpaperRepository.isDynamicMotionEnabled(this))
+        binding.mockupFoldable.setMotionEnabled(isDynamic)
+    }
 
-        binding.mockupFoldable.onAngleChangedListener = { angle ->
-            updateAngleBadge(angle)
+    private fun setupCategoryChips() {
+        when (currentCategory) {
+            WallpaperCategory.LANDSCAPES -> binding.chipCatLandscapes.isChecked = true
+            WallpaperCategory.ABSTRACT_DYNAMIC -> binding.chipCatAbstract.isChecked = true
+            WallpaperCategory.TEXTURES -> binding.chipCatTextures.isChecked = true
+            else -> binding.chipCatLandscapes.isChecked = true
         }
 
-        binding.btnPreviewUnfold.setOnClickListener {
-            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
+        binding.chipGroupCategories.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
+            currentCategory = when (checkedIds.first()) {
+                R.id.chipCatLandscapes -> WallpaperCategory.LANDSCAPES
+                R.id.chipCatAbstract -> WallpaperCategory.ABSTRACT_DYNAMIC
+                R.id.chipCatTextures -> WallpaperCategory.TEXTURES
+                else -> WallpaperCategory.LANDSCAPES
+            }
+            updateWallpaperListForCategory()
         }
     }
 
-    private fun updateAngleBadge(angle: Float) {
-        val label = when {
-            angle >= 170f -> "${angle.toInt()}° Flat Open"
-            angle in 75f..120f -> "${angle.toInt()}° Tabletop Mode"
-            angle < 45f -> "${angle.toInt()}° Folded"
-            else -> "${angle.toInt()}° Flex Mode"
+    private fun setupWallpaperCarousel() {
+        val activeItem = selectedWallpaper ?: WallpaperRepository.wallpapers.first()
+        val categoryItems = WallpaperRepository.getWallpapersByCategory(currentCategory).ifEmpty {
+            WallpaperRepository.wallpapers
         }
-        binding.txtLiveAngleBadge.text = label
-        binding.txtFoldSliderLabel.text = "Angle: ${angle.toInt()}°"
+
+        wallpaperAdapter = WallpaperAdapter(
+            items = categoryItems,
+            selectedId = activeItem.id
+        ) { item ->
+            selectedWallpaper = item
+            WallpaperRepository.setActiveWallpaper(this, item.id)
+            val isDynamic = WallpaperRepository.isDynamicMotionEnabled(this)
+            binding.mockupFoldable.setWallpaper(item, isDynamic)
+        }
+
+        binding.rvWallpapers.layoutManager =
+            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
+        binding.rvWallpapers.adapter = wallpaperAdapter
+    }
+
+    private fun updateWallpaperListForCategory() {
+        val categoryItems = WallpaperRepository.getWallpapersByCategory(currentCategory)
+        val activeId = selectedWallpaper?.id ?: ""
+        wallpaperAdapter.setCategoryItems(categoryItems, activeId)
     }
 
     private fun setupEffectChips() {
@@ -89,8 +97,9 @@ class MainActivity : AppCompatActivity() {
         when (currentEffect) {
             WallpaperRepository.EFFECT_DUO_BLUR -> binding.chipEffectDuo.isChecked = true
             WallpaperRepository.EFFECT_CREASE_BLOOM -> binding.chipEffectBloom.isChecked = true
-            WallpaperRepository.EFFECT_APERTURE_ZOOM -> binding.chipEffectAperture.isChecked = true
-            WallpaperRepository.EFFECT_PRISMATIC_WAVE -> binding.chipEffectPrismatic.isChecked = true
+            WallpaperRepository.EFFECT_LIQUID_GLASS -> binding.chipEffectLiquid.isChecked = true
+            WallpaperRepository.EFFECT_APERTURE_HORIZON -> binding.chipEffectAperture.isChecked = true
+            else -> binding.chipEffectDuo.isChecked = true
         }
 
         binding.chipGroupEffects.setOnCheckedStateChangeListener { _, checkedIds ->
@@ -98,82 +107,29 @@ class MainActivity : AppCompatActivity() {
             val selectedEffect = when (checkedIds.first()) {
                 R.id.chipEffectDuo -> WallpaperRepository.EFFECT_DUO_BLUR
                 R.id.chipEffectBloom -> WallpaperRepository.EFFECT_CREASE_BLOOM
-                R.id.chipEffectAperture -> WallpaperRepository.EFFECT_APERTURE_ZOOM
-                R.id.chipEffectPrismatic -> WallpaperRepository.EFFECT_PRISMATIC_WAVE
+                R.id.chipEffectLiquid -> WallpaperRepository.EFFECT_LIQUID_GLASS
+                R.id.chipEffectAperture -> WallpaperRepository.EFFECT_APERTURE_HORIZON
                 else -> WallpaperRepository.EFFECT_DUO_BLUR
             }
             WallpaperRepository.setOpeningEffect(this, selectedEffect)
             binding.mockupFoldable.setOpeningEffect(selectedEffect)
-            // Immediately preview the opening effect in the top mockup
-            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
         }
     }
 
-    private fun setupMotionControls() {
-        val isMotionEnabled = WallpaperRepository.isDynamicMotionEnabled(this)
-        binding.switchDynamicMotion.isChecked = isMotionEnabled
-        binding.switchDynamicMotion.setOnCheckedChangeListener { _, isChecked ->
-            WallpaperRepository.setDynamicMotionEnabled(this, isChecked)
-            binding.mockupFoldable.setDynamicMotionEnabled(isChecked)
+    private fun setupMotionChips() {
+        val isDynamic = WallpaperRepository.isDynamicMotionEnabled(this)
+        if (isDynamic) {
+            binding.chipMotionDynamic.isChecked = true
+        } else {
+            binding.chipMotionStatic.isChecked = true
         }
 
-        val currentBlur = WallpaperRepository.getMaxBlurRadius(this)
-        when {
-            currentBlur <= 40f -> binding.chipBlurSubtle.isChecked = true
-            currentBlur >= 80f -> binding.chipBlurCinematic.isChecked = true
-            else -> binding.chipBlurBalanced.isChecked = true
-        }
-
-        binding.chipGroupBlur.setOnCheckedStateChangeListener { _, checkedIds ->
+        binding.chipGroupMotion.setOnCheckedStateChangeListener { _, checkedIds ->
             if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
-            val blur = when (checkedIds.first()) {
-                R.id.chipBlurSubtle -> 35.0f
-                R.id.chipBlurCinematic -> 95.0f
-                else -> 65.0f
-            }
-            WallpaperRepository.setMaxBlurRadius(this, blur)
-            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
+            val dynamic = checkedIds.first() == R.id.chipMotionDynamic
+            WallpaperRepository.setDynamicMotionEnabled(this, dynamic)
+            binding.mockupFoldable.setMotionEnabled(dynamic)
         }
-    }
-
-    private fun setupWallpaperCarousel() {
-        val activeItem = selectedWallpaper ?: WallpaperRepository.wallpapers.first()
-        val adapter = WallpaperAdapter(
-            items = WallpaperRepository.wallpapers,
-            selectedId = activeItem.id
-        ) { item ->
-            selectedWallpaper = item
-            WallpaperRepository.setActiveWallpaper(this, item.id)
-            binding.mockupFoldable.setWallpaper(item)
-            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
-        }
-
-        binding.rvWallpapers.layoutManager =
-            LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false)
-        binding.rvWallpapers.adapter = adapter
-    }
-
-    private fun setupSlider() {
-        binding.sliderFoldAngle.addOnChangeListener { _, value, fromUser ->
-            if (fromUser) {
-                isSimulating = true
-                binding.mockupFoldable.setFoldAngleDirect(value)
-                updateAngleBadge(value)
-            }
-        }
-
-        binding.sliderFoldAngle.addOnSliderTouchListener(object :
-            com.google.android.material.slider.Slider.OnSliderTouchListener {
-            override fun onStartTrackingTouch(slider: com.google.android.material.slider.Slider) {
-                isSimulating = true
-            }
-
-            override fun onStopTrackingTouch(slider: com.google.android.material.slider.Slider) {
-                if (hingeObserver?.isSensorAvailable == true) {
-                    binding.root.postDelayed({ isSimulating = false }, 1800)
-                }
-            }
-        })
     }
 
     private fun setupApplyButton() {
