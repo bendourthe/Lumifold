@@ -31,14 +31,17 @@ class FoldWallpaperService : WallpaperService() {
         private var hingeObserver: HingeSensorObserver? = null
 
         private var activeWallpaper: WallpaperItem? = null
-        private var wallpaperBitmap: Bitmap? = null
         private var surfaceWidth: Int = 1080
         private var surfaceHeight: Int = 2400
 
-        private var foldProgress: Float = 1.0f // 1.0 = fully open (no blur), 0.0 = closed (max blur)
+        // Dual-display bitmap cache for instantaneous fold / unfold transitions
+        private var coverBitmap: Bitmap? = null // For aspect ratio > 1.4 (tall cover display)
+        private var innerBitmap: Bitmap? = null // For aspect ratio <= 1.4 (square unfolded inner display)
+
+        private var foldProgress: Float = 0.0f // 0.0 = fully open (no blur), 1.0 = closed (max blur)
         private var targetBlurRadius: Float = 0f
         private var currentBlurRadius: Float = 0f
-        private var maxBlurRadius: Float = 42f
+        private var maxBlurRadius: Float = WallpaperRepository.DEFAULT_MAX_BLUR
 
         private val paint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
         private var renderNode: RenderNode? = null
@@ -58,8 +61,8 @@ class FoldWallpaperService : WallpaperService() {
                 renderNode = RenderNode("FoldWallpaperRenderNode")
             }
 
-            hingeObserver = HingeSensorObserver(this@FoldWallpaperService) { progress, _ ->
-                onHingeProgressChanged(progress)
+            hingeObserver = HingeSensorObserver(this@FoldWallpaperService) { blurProgress, _ ->
+                onHingeProgressChanged(blurProgress)
             }
         }
 
@@ -68,8 +71,8 @@ class FoldWallpaperService : WallpaperService() {
             WallpaperRepository.getPrefs(this@FoldWallpaperService)
                 .unregisterOnSharedPreferenceChangeListener(this)
             hingeObserver?.stop()
-            wallpaperBitmap?.recycle()
-            wallpaperBitmap = null
+            mainHandler.removeCallbacksAndMessages(null)
+            clearBitmapCache()
         }
 
         override fun onVisibilityChanged(visible: Boolean) {
@@ -78,7 +81,9 @@ class FoldWallpaperService : WallpaperService() {
                 hingeObserver?.start()
                 drawFrame()
             } else {
+                // Strict battery conservation: stop sensor polling and cancel pending frame draws
                 hingeObserver?.stop()
+                mainHandler.removeCallbacksAndMessages(null)
             }
         }
 
@@ -87,21 +92,19 @@ class FoldWallpaperService : WallpaperService() {
             surfaceWidth = width
             surfaceHeight = height
             renderNode?.setPosition(0, 0, width, height)
-            reloadWallpaperBitmap()
             drawFrame()
         }
 
         override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
             activeWallpaper = WallpaperRepository.getActiveWallpaper(this@FoldWallpaperService)
             maxBlurRadius = WallpaperRepository.getMaxBlurRadius(this@FoldWallpaperService)
-            reloadWallpaperBitmap()
+            clearBitmapCache()
             drawFrame()
         }
 
-        private fun onHingeProgressChanged(progress: Float) {
-            foldProgress = progress
-            // Inverted relationship: Unfolded (1.0) = 0 blur; Folded/Closing (0.0) = max blur
-            targetBlurRadius = (1.0f - foldProgress) * maxBlurRadius
+        private fun onHingeProgressChanged(blurProgress: Float) {
+            foldProgress = blurProgress
+            targetBlurRadius = blurProgress * maxBlurRadius
 
             // Trigger redraw on UI thread
             mainHandler.post {
@@ -109,19 +112,50 @@ class FoldWallpaperService : WallpaperService() {
             }
         }
 
-        private fun reloadWallpaperBitmap() {
-            val item = activeWallpaper ?: return
-            if (surfaceWidth <= 0 || surfaceHeight <= 0) return
+        private fun clearBitmapCache() {
+            coverBitmap?.recycle()
+            coverBitmap = null
+            innerBitmap?.recycle()
+            innerBitmap = null
+        }
+
+        private fun getOrCreateCachedBitmap(width: Int, height: Int, item: WallpaperItem): Bitmap? {
+            if (width <= 0 || height <= 0) return null
+
+            val aspectRatio = height.toFloat() / width.toFloat()
+            val isCoverScreen = aspectRatio > 1.4f
+
+            val existing = if (isCoverScreen) coverBitmap else innerBitmap
+            if (existing != null && !existing.isRecycled && existing.width == width && existing.height == height) {
+                return existing
+            }
+
+            // Recycle old slot allocation before rasterizing new size
+            if (isCoverScreen) {
+                coverBitmap?.recycle()
+                coverBitmap = null
+            } else {
+                innerBitmap?.recycle()
+                innerBitmap = null
+            }
 
             val drawable: Drawable? = AppCompatResources.getDrawable(this@FoldWallpaperService, item.drawableResId)
-            drawable?.let {
-                wallpaperBitmap?.recycle()
-                wallpaperBitmap = it.toBitmap(surfaceWidth, surfaceHeight, Bitmap.Config.ARGB_8888)
+            val newBitmap = drawable?.toBitmap(width, height, Bitmap.Config.ARGB_8888)
+
+            if (isCoverScreen) {
+                coverBitmap = newBitmap
+            } else {
+                innerBitmap = newBitmap
             }
+            return newBitmap
         }
 
         private fun drawFrame() {
             if (!isVisibleState) return
+
+            val item = activeWallpaper ?: return
+            val bmp = getOrCreateCachedBitmap(surfaceWidth, surfaceHeight, item) ?: return
+            if (bmp.isRecycled) return
 
             val holder = surfaceHolder
             var canvas: Canvas? = null
@@ -133,13 +167,13 @@ class FoldWallpaperService : WallpaperService() {
                     holder.lockCanvas()
                 }
 
-                if (canvas != null && wallpaperBitmap != null && !wallpaperBitmap!!.isRecycled) {
+                if (canvas != null) {
                     currentBlurRadius = targetBlurRadius
 
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && canvas.isHardwareAccelerated) {
-                        drawWithRenderEffect(canvas)
+                        drawWithRenderEffect(canvas, bmp)
                     } else {
-                        drawFallback(canvas)
+                        drawFallback(canvas, bmp)
                     }
                 }
             } catch (e: Exception) {
@@ -155,15 +189,13 @@ class FoldWallpaperService : WallpaperService() {
             }
         }
 
-        private fun drawWithRenderEffect(canvas: Canvas) {
+        private fun drawWithRenderEffect(canvas: Canvas, bmp: Bitmap) {
             val node = renderNode ?: return
-            val bmp = wallpaperBitmap ?: return
 
-            // Record drawing inside hardware-accelerated RenderNode
             val nodeCanvas = node.beginRecording()
             try {
                 // Subtle scale zoom-out when folding (from 1.0 to 1.04)
-                val scale = 1.0f + (1.0f - foldProgress) * 0.04f
+                val scale = 1.0f + (foldProgress * 0.04f)
                 val cx = surfaceWidth / 2f
                 val cy = surfaceHeight / 2f
 
@@ -190,8 +222,7 @@ class FoldWallpaperService : WallpaperService() {
             canvas.drawRenderNode(node)
         }
 
-        private fun drawFallback(canvas: Canvas) {
-            val bmp = wallpaperBitmap ?: return
+        private fun drawFallback(canvas: Canvas, bmp: Bitmap) {
             val src = Rect(0, 0, bmp.width, bmp.height)
             val dst = Rect(0, 0, surfaceWidth, surfaceHeight)
             canvas.drawBitmap(bmp, src, dst, paint)
