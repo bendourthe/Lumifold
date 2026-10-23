@@ -2,7 +2,6 @@ package com.ambientfold.wallpaper.model
 
 import android.content.Context
 import android.content.SharedPreferences
-import android.graphics.Color
 import com.ambientfold.wallpaper.R
 
 object WallpaperRepository {
@@ -32,7 +31,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_mountain_sunset,
             description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with floating starlight.",
             isDynamic = true,
-            particleColor = Color.parseColor("#FFE082")
+            particleColor = 0xFFFFE082.toInt()
         ),
         WallpaperItem(
             id = "starry_galaxy",
@@ -42,7 +41,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_starry_galaxy,
             description = "High-resolution 4K night sky over snowy alpine peaks with shimmering celestial dust.",
             isDynamic = true,
-            particleColor = Color.parseColor("#80D8FF")
+            particleColor = 0xFF80D8FF.toInt()
         ),
         WallpaperItem(
             id = "misty_forest",
@@ -52,7 +51,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_misty_forest,
             description = "High-resolution 4K Pacific Northwest forest with drifting morning fog and atmospheric motes.",
             isDynamic = true,
-            particleColor = Color.parseColor("#E0F2F1")
+            particleColor = 0xFFE0F2F1.toInt()
         ),
         WallpaperItem(
             id = "ocean_golden",
@@ -62,7 +61,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_ocean_golden,
             description = "High-resolution 4K coastal wave at golden hour with shimmering ambient light rays.",
             isDynamic = true,
-            particleColor = Color.parseColor("#FFD54F")
+            particleColor = 0xFFFFD54F.toInt()
         ),
         WallpaperItem(
             id = "aurora_borealis",
@@ -72,7 +71,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_aurora_borealis,
             description = "High-resolution 4K emerald and violet aurora borealis flowing over snowy peaks.",
             isDynamic = true,
-            particleColor = Color.parseColor("#69F0AE")
+            particleColor = 0xFF69F0AE.toInt()
         ),
         WallpaperItem(
             id = "dark_prism",
@@ -82,7 +81,7 @@ object WallpaperRepository {
             drawableResId = R.drawable.wp_dark_prism,
             description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons.",
             isDynamic = true,
-            particleColor = Color.parseColor("#E040FB")
+            particleColor = 0xFFE040FB.toInt()
         )
     )
 
