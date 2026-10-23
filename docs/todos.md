@@ -8,18 +8,18 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 0 | 20 | +20 |
+| Tasks Completed | 3 | 20 | +17 |
 | Supported Wallpaper Themes | 6 | 6 | 0 |
 | Min SDK Target | 31 (Android 12) | 31 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
 
 ---
 
-## Phase 1 -- Core Live Wallpaper Engine & Sensor Pipeline
+## Phase 1 -- Core Live Wallpaper Engine & Sensor Pipeline [DONE]
 
-- [ ] T001 [US1] Implement HingeSensorObserver with smoothing filter and ease-in curve calculation app/src/main/java/com/ambientfold/wallpaper/service/HingeSensorObserver.kt
-- [ ] T002 [US1] Implement RenderNode hardware blur and center zoom pipeline in FoldWallpaperService app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
-- [ ] T003 [US1] Add unit tests for sensor smoothing and ease-in math app/src/test/java/com/ambientfold/wallpaper/service/HingeMathTest.kt
+- [x] T001 [US1] Implement HingeSensorObserver with smoothing filter and ease-in curve calculation app/src/main/java/com/ambientfold/wallpaper/service/HingeSensorObserver.kt
+- [x] T002 [US1] Implement RenderNode hardware blur and center zoom pipeline in FoldWallpaperService app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
+- [x] T003 [US1] Add unit tests for sensor smoothing and ease-in math app/src/test/java/com/ambientfold/wallpaper/service/HingeMathTest.kt
 
 ## Phase 2 -- Theme Collection & Preference Management
 

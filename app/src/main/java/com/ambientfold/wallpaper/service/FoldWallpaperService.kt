@@ -58,8 +58,8 @@ class FoldWallpaperService : WallpaperService() {
                 renderNode = RenderNode("FoldWallpaperRenderNode")
             }
 
-            hingeObserver = HingeSensorObserver(this@FoldWallpaperService) { progress, _ ->
-                onHingeProgressChanged(progress)
+            hingeObserver = HingeSensorObserver(this@FoldWallpaperService) { blurProgress, _ ->
+                onHingeProgressChanged(blurProgress)
             }
         }
 
@@ -98,10 +98,9 @@ class FoldWallpaperService : WallpaperService() {
             drawFrame()
         }
 
-        private fun onHingeProgressChanged(progress: Float) {
-            foldProgress = progress
-            // Inverted relationship: Unfolded (1.0) = 0 blur; Folded/Closing (0.0) = max blur
-            targetBlurRadius = (1.0f - foldProgress) * maxBlurRadius
+        private fun onHingeProgressChanged(blurProgress: Float) {
+            foldProgress = blurProgress
+            targetBlurRadius = blurProgress * maxBlurRadius
 
             // Trigger redraw on UI thread
             mainHandler.post {
@@ -163,7 +162,7 @@ class FoldWallpaperService : WallpaperService() {
             val nodeCanvas = node.beginRecording()
             try {
                 // Subtle scale zoom-out when folding (from 1.0 to 1.04)
-                val scale = 1.0f + (1.0f - foldProgress) * 0.04f
+                val scale = 1.0f + (foldProgress * 0.04f)
                 val cx = surfaceWidth / 2f
                 val cy = surfaceHeight / 2f
 

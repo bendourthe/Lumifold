@@ -45,4 +45,5 @@ dependencies {
     implementation(libs.androidx.activity)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.window)
+    testImplementation("junit:junit:4.13.2")
 }

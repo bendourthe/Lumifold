@@ -111,12 +111,12 @@ class MainActivity : AppCompatActivity() {
         )
         binding.txtLiveAngleBadge.text = "${angleDegrees.toInt()}°"
 
-        val progress = (angleDegrees / 180f).coerceIn(0f, 1f)
+        val blurProgress = HingeSensorObserver.calculateEaseInProgress(angleDegrees)
         val maxBlur = WallpaperRepository.getMaxBlurRadius(this)
-        val blurRadius = (1.0f - progress) * maxBlur
+        val blurRadius = blurProgress * maxBlur
 
-        // Scale zoom simulation
-        val scale = 1.0f + (1.0f - progress) * 0.05f
+        // Scale zoom simulation (1.0 to 1.04)
+        val scale = 1.0f + blurProgress * 0.04f
         binding.imgPreviewLive.scaleX = scale
         binding.imgPreviewLive.scaleY = scale
 
