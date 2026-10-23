@@ -1,4 +1,4 @@
-package com.ambientfold.wallpaper.model
+﻿package com.ambientfold.wallpaper.model
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -10,10 +10,11 @@ class WallpaperRepositoryTest {
 
     @Test
     fun testResolveWallpaperWithValidId() {
-        val wallpaper = WallpaperRepository.resolveWallpaper("dunes_sunset")
+        val wallpaper = WallpaperRepository.resolveWallpaper("mountain_sunset")
         assertNotNull(wallpaper)
-        assertEquals("Dunes Horizon", wallpaper.title)
+        assertEquals("Alpine Glacier Dusk", wallpaper.title)
         assertEquals(WallpaperCategory.LANDSCAPES, wallpaper.category)
+        assertTrue("Must be dynamic", wallpaper.isDynamic)
     }
 
     @Test
@@ -53,21 +54,27 @@ class WallpaperRepositoryTest {
     @Test
     fun testCategoryFiltering() {
         val landscapes = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.LANDSCAPES)
-        val geometric = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.GEOMETRIC)
-        val minimal = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.MINIMAL)
+        val abstractDynamic = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.ABSTRACT_DYNAMIC)
 
-        assertEquals("Must contain 2 landscape wallpapers", 2, landscapes.size)
-        assertEquals("Must contain 2 geometric wallpapers", 2, geometric.size)
-        assertEquals("Must contain 2 minimal wallpapers", 2, minimal.size)
+        assertTrue("Must contain landscape wallpapers", landscapes.size >= 4)
+        assertTrue("Must contain abstract dynamic wallpapers", abstractDynamic.isNotEmpty())
     }
 
     @Test
     fun testGetWallpaperById() {
-        val found = WallpaperRepository.getWallpaperById("geometric_prism")
+        val found = WallpaperRepository.getWallpaperById("dark_prism")
         assertNotNull(found)
-        assertEquals("Prismatic Crystal", found?.title)
+        assertEquals("Obsidian Prism", found?.title)
 
         val notFound = WallpaperRepository.getWallpaperById("invalid_id")
         assertNull(notFound)
+    }
+
+    @Test
+    fun testOpeningEffectConstants() {
+        assertEquals("duo_blur", WallpaperRepository.EFFECT_DUO_BLUR)
+        assertEquals("crease_bloom", WallpaperRepository.EFFECT_CREASE_BLOOM)
+        assertEquals("aperture_zoom", WallpaperRepository.EFFECT_APERTURE_ZOOM)
+        assertEquals("prismatic_wave", WallpaperRepository.EFFECT_PRISMATIC_WAVE)
     }
 }

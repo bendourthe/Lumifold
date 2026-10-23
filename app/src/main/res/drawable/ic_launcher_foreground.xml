@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Outer Foldable Device Chassis Shadow -->
+    <path
+        android:fillColor="#40000000"
+        android:pathData="M22,26h64c4.4,0 8,3.6 8,8v44c0,4.4 -3.6,8 -8,8H22c-4.4,0 -8,-3.6 -8,-8V34c0,-4.4 3.6,-8 8,-8z" />
+
+    <!-- Foldable Device Outer Frame (Matte Titanium / Deep Charcoal) -->
+    <path
+        android:fillColor="#1F1B2C"
+        android:strokeColor="#4A3F68"
+        android:strokeWidth="1.5"
+        android:pathData="M22,24h64c4.4,0 8,3.6 8,8v44c0,4.4 -3.6,8 -8,8H22c-4.4,0 -8,-3.6 -8,-8V32c0,-4.4 3.6,-8 8,-8z" />
+
+    <!-- Left Screen Panel (Blur / Unfolding Depth Side) -->
+    <path
+        android:fillColor="#151221"
+        android:pathData="M25,27h27v50H25c-2.8,0 -5,-2.2 -5,-5V32c0,-2.8 2.2,-5 5,-5z" />
+
+    <!-- Left Panel: Soft Blurred Landscape Sunset Gradient Shapes -->
+    <path
+        android:fillColor="#452778"
+        android:pathData="M20,56c8,-6 18,-4 32,2v19H20z" />
+    <path
+        android:fillColor="#683CA8"
+        android:pathData="M20,62c6,-4 16,-2 32,4v11H20z" />
+    <!-- Blurred Sun Bokeh Orb on Left -->
+    <path
+        android:fillColor="#55FFB74D"
+        android:pathData="M34,44m-7,0a7,7 0 1,0 14,0a7,7 0 1,0 -14,0" />
+    <path
+        android:fillColor="#88FFD54F"
+        android:pathData="M34,44m-4,0a4,4 0 1,0 8,0a4,4 0 1,0 -8,0" />
+    <!-- Blur Fog Overlay on Left Panel -->
+    <path
+        android:fillColor="#447E57C2"
+        android:pathData="M20,27h32v50H20z" />
+
+    <!-- Right Screen Panel (Crystal Sharp Side) -->
+    <path
+        android:fillColor="#131526"
+        android:pathData="M56,27h27c2.8,0 5,2.2 5,5v40c0,2.8 -2.2,5 -5,5H56V27z" />
+
+    <!-- Right Panel: Sharp Mountain Silhouette and Vibrant Sky -->
+    <path
+        android:fillColor="#241B45"
+        android:pathData="M56,52c6,-4 14,-10 24,-2 3,2 6,2 8,0v27H56z" />
+    <path
+        android:fillColor="#17112E"
+        android:pathData="M56,60c8,-3 16,-8 26,0 2,2 4,1 6,-1v18H56z" />
+    <!-- Sharp Starry / Prismatic Highlights on Right Panel -->
+    <path
+        android:fillColor="#00E5FF"
+        android:pathData="M68,36m-1.5,0a1.5,1.5 0 1,0 3,0a1.5,1.5 0 1,0 -3,0" />
+    <path
+        android:fillColor="#76FF03"
+        android:pathData="M78,42m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M62,40m-1,0a1,1 0 1,0 2,0a1,1 0 1,0 -2,0" />
+
+    <!-- Center Hinge Spine (Reflective Metallic Crease) -->
+    <path
+        android:fillColor="#161322"
+        android:pathData="M52.5,24h3v54h-3z" />
+    <path
+        android:strokeColor="#7C4DFF"
+        android:strokeWidth="1.2"
+        android:pathData="M54,24v54" />
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="0.8"
+        android:pathData="M54,32v38" />
+
+    <!-- Upper Speaker / Bezel Dot Accents -->
+    <path
+        android:fillColor="#3E3854"
+        android:pathData="M38,25.5h6v1h-6z" />
+    <path
+        android:fillColor="#3E3854"
+        android:pathData="M64,25.5h6v1h-6z" />
+</vector>

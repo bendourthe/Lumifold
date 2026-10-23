@@ -1,14 +1,10 @@
-package com.ambientfold.wallpaper.ui
+﻿package com.ambientfold.wallpaper.ui
 
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.content.res.AppCompatResources
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ambientfold.wallpaper.R
 import com.ambientfold.wallpaper.databinding.ActivityMainBinding
@@ -30,20 +26,20 @@ class MainActivity : AppCompatActivity() {
         setContentView(binding.root)
 
         selectedWallpaper = WallpaperRepository.getActiveWallpaper(this)
+
+        setupMockup()
+        setupEffectChips()
+        setupMotionControls()
         setupWallpaperCarousel()
         setupSlider()
         setupApplyButton()
-        updateLivePreview(180f)
 
-        hingeObserver = HingeSensorObserver(this) { progress, angleDegrees ->
+        hingeObserver = HingeSensorObserver(this) { _, angleDegrees ->
             if (!isSimulating) {
                 runOnUiThread {
-                    binding.txtSensorStatus.text =
-                        getString(R.string.sensor_status_active, angleDegrees.toInt())
+                    binding.mockupFoldable.setFoldAngleDirect(angleDegrees)
                     binding.sliderFoldAngle.value = angleDegrees
-                    binding.txtFoldSliderLabel.text =
-                        getString(R.string.slider_hinge_label, angleDegrees.toInt())
-                    updateLivePreview(angleDegrees)
+                    updateAngleBadge(angleDegrees)
                 }
             }
         }
@@ -53,14 +49,91 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         if (hingeObserver?.isSensorAvailable == true) {
             hingeObserver?.start()
-        } else {
-            binding.txtSensorStatus.text = getString(R.string.sensor_status_simulated)
         }
     }
 
     override fun onPause() {
         super.onPause()
         hingeObserver?.stop()
+    }
+
+    private fun setupMockup() {
+        selectedWallpaper?.let {
+            binding.mockupFoldable.setWallpaper(it)
+        }
+        binding.mockupFoldable.setOpeningEffect(WallpaperRepository.getOpeningEffect(this))
+        binding.mockupFoldable.setDynamicMotionEnabled(WallpaperRepository.isDynamicMotionEnabled(this))
+
+        binding.mockupFoldable.onAngleChangedListener = { angle ->
+            updateAngleBadge(angle)
+        }
+
+        binding.btnPreviewUnfold.setOnClickListener {
+            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
+        }
+    }
+
+    private fun updateAngleBadge(angle: Float) {
+        val label = when {
+            angle >= 170f -> "${angle.toInt()}° Flat Open"
+            angle in 75f..120f -> "${angle.toInt()}° Tabletop Mode"
+            angle < 45f -> "${angle.toInt()}° Folded"
+            else -> "${angle.toInt()}° Flex Mode"
+        }
+        binding.txtLiveAngleBadge.text = label
+        binding.txtFoldSliderLabel.text = "Angle: ${angle.toInt()}°"
+    }
+
+    private fun setupEffectChips() {
+        val currentEffect = WallpaperRepository.getOpeningEffect(this)
+        when (currentEffect) {
+            WallpaperRepository.EFFECT_DUO_BLUR -> binding.chipEffectDuo.isChecked = true
+            WallpaperRepository.EFFECT_CREASE_BLOOM -> binding.chipEffectBloom.isChecked = true
+            WallpaperRepository.EFFECT_APERTURE_ZOOM -> binding.chipEffectAperture.isChecked = true
+            WallpaperRepository.EFFECT_PRISMATIC_WAVE -> binding.chipEffectPrismatic.isChecked = true
+        }
+
+        binding.chipGroupEffects.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
+            val selectedEffect = when (checkedIds.first()) {
+                R.id.chipEffectDuo -> WallpaperRepository.EFFECT_DUO_BLUR
+                R.id.chipEffectBloom -> WallpaperRepository.EFFECT_CREASE_BLOOM
+                R.id.chipEffectAperture -> WallpaperRepository.EFFECT_APERTURE_ZOOM
+                R.id.chipEffectPrismatic -> WallpaperRepository.EFFECT_PRISMATIC_WAVE
+                else -> WallpaperRepository.EFFECT_DUO_BLUR
+            }
+            WallpaperRepository.setOpeningEffect(this, selectedEffect)
+            binding.mockupFoldable.setOpeningEffect(selectedEffect)
+            // Immediately preview the opening effect in the top mockup
+            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
+        }
+    }
+
+    private fun setupMotionControls() {
+        val isMotionEnabled = WallpaperRepository.isDynamicMotionEnabled(this)
+        binding.switchDynamicMotion.isChecked = isMotionEnabled
+        binding.switchDynamicMotion.setOnCheckedChangeListener { _, isChecked ->
+            WallpaperRepository.setDynamicMotionEnabled(this, isChecked)
+            binding.mockupFoldable.setDynamicMotionEnabled(isChecked)
+        }
+
+        val currentBlur = WallpaperRepository.getMaxBlurRadius(this)
+        when {
+            currentBlur <= 40f -> binding.chipBlurSubtle.isChecked = true
+            currentBlur >= 80f -> binding.chipBlurCinematic.isChecked = true
+            else -> binding.chipBlurBalanced.isChecked = true
+        }
+
+        binding.chipGroupBlur.setOnCheckedStateChangeListener { _, checkedIds ->
+            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
+            val blur = when (checkedIds.first()) {
+                R.id.chipBlurSubtle -> 35.0f
+                R.id.chipBlurCinematic -> 95.0f
+                else -> 65.0f
+            }
+            WallpaperRepository.setMaxBlurRadius(this, blur)
+            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
+        }
     }
 
     private fun setupWallpaperCarousel() {
@@ -71,8 +144,8 @@ class MainActivity : AppCompatActivity() {
         ) { item ->
             selectedWallpaper = item
             WallpaperRepository.setActiveWallpaper(this, item.id)
-            val currentAngle = binding.sliderFoldAngle.value
-            updateLivePreview(currentAngle)
+            binding.mockupFoldable.setWallpaper(item)
+            binding.mockupFoldable.playOpeningAnimation(WallpaperRepository.getAnimationDuration(this))
         }
 
         binding.rvWallpapers.layoutManager =
@@ -84,8 +157,8 @@ class MainActivity : AppCompatActivity() {
         binding.sliderFoldAngle.addOnChangeListener { _, value, fromUser ->
             if (fromUser) {
                 isSimulating = true
-                binding.txtFoldSliderLabel.text = getString(R.string.slider_hinge_label, value.toInt())
-                updateLivePreview(value)
+                binding.mockupFoldable.setFoldAngleDirect(value)
+                updateAngleBadge(value)
             }
         }
 
@@ -96,42 +169,11 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onStopTrackingTouch(slider: com.google.android.material.slider.Slider) {
-                // Return to hardware sensor readings after touch if sensor is present
                 if (hingeObserver?.isSensorAvailable == true) {
-                    binding.root.postDelayed({ isSimulating = false }, 1500)
+                    binding.root.postDelayed({ isSimulating = false }, 1800)
                 }
             }
         })
-    }
-
-    private fun updateLivePreview(angleDegrees: Float) {
-        val item = selectedWallpaper ?: return
-        binding.imgPreviewLive.setImageDrawable(
-            AppCompatResources.getDrawable(this, item.drawableResId)
-        )
-        binding.txtLiveAngleBadge.text = "${angleDegrees.toInt()}°"
-
-        val blurProgress = HingeSensorObserver.calculateEaseInProgress(angleDegrees)
-        val maxBlur = WallpaperRepository.getMaxBlurRadius(this)
-        val blurRadius = blurProgress * maxBlur
-
-        // Scale zoom simulation (1.0 to 1.04)
-        val scale = 1.0f + blurProgress * 0.04f
-        binding.imgPreviewLive.scaleX = scale
-        binding.imgPreviewLive.scaleY = scale
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            if (blurRadius > 0.5f) {
-                val blurEffect = RenderEffect.createBlurEffect(
-                    blurRadius,
-                    blurRadius,
-                    Shader.TileMode.CLAMP
-                )
-                binding.imgPreviewLive.setRenderEffect(blurEffect)
-            } else {
-                binding.imgPreviewLive.setRenderEffect(null)
-            }
-        }
     }
 
     private fun setupApplyButton() {

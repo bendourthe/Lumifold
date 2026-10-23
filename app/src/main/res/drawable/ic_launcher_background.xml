@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Deep midnight space gradient background -->
+    <path
+        android:fillColor="#0D0A18"
+        android:pathData="M0,0h108v108h-108z" />
+    <!-- Ambient upper violet radial glow -->
+    <path
+        android:fillColor="#241544"
+        android:pathData="M0,0h108v54c-28,14 -78,6 -108,-12z" />
+    <!-- Ambient lower cyan highlight -->
+    <path
+        android:fillColor="#0D2C3D"
+        android:pathData="M12,78c28,14 62,14 96,-4v34h-108z" />
+</vector>
