@@ -19,4 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Geometric: Prismatic Crystal, Material Matrix.
   - Minimal: OLED Ambient Rings, Clean Polar.
 - Interactive customizer and preview activity (`MainActivity`) with a 0° to 180° fold simulator slider and native Live Wallpaper Picker intent dispatch.
-- Project governance documentation and per-version release trees.
+- Dual-display in-memory bitmap cache for seamless cover-to-inner screen handoff.
+- Strict battery safeguards unregistering sensors and clearing handlers on screen power-down.
+- Unit test suite (`HingeMathTest`, `WallpaperRepositoryTest`, `FoldLifecycleTest`).
+- GitHub Actions automated CI workflow (`.github/workflows/android-ci.yml`).
+- Project governance documentation, architecture handbook, and manual QA checklist.
