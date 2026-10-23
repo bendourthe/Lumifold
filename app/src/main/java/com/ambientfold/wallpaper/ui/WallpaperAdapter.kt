@@ -1,5 +1,6 @@
 package com.ambientfold.wallpaper.ui
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -38,7 +39,8 @@ class WallpaperAdapter(
             )
 
             imgSelectedBadge.visibility = if (isSelected) View.VISIBLE else View.GONE
-            cardWallpaper.strokeWidth = if (isSelected) 6 else 0
+            cardWallpaper.strokeColor = if (isSelected) Color.parseColor("#818CF8") else Color.parseColor("#253248")
+            cardWallpaper.strokeWidth = if (isSelected) 4 else 2
 
             root.setOnClickListener {
                 val previousSelected = selectedId

@@ -21,7 +21,6 @@ class HingeMathTest {
     @Test
     fun testHalfFoldedProducesLessThanThirtyFivePercentBlur() {
         val progress = HingeSensorObserver.calculateEaseInProgress(90f)
-        // Under (1 - 0.5)^1.8 = 0.5^1.8 ≈ 0.287
         assertTrue("At 90° tabletop mode blur progress should be < 0.35, was $progress", progress < 0.35f)
         assertTrue("At 90° tabletop mode blur progress should be > 0.20, was $progress", progress > 0.20f)
     }
@@ -43,7 +42,6 @@ class HingeMathTest {
 
         // Step 1
         currentSmoothed = HingeSensorObserver.smoothAngle(currentSmoothed, targetRaw, factor)
-        // 180 * 0.65 + 90 * 0.35 = 117 + 31.5 = 148.5
         assertEquals(148.5f, currentSmoothed, 0.01f)
 
         // Multiple steps converge towards 90
@@ -51,5 +49,18 @@ class HingeMathTest {
             currentSmoothed = HingeSensorObserver.smoothAngle(currentSmoothed, targetRaw, factor)
         }
         assertEquals("Smoothed value must converge toward target", 90f, currentSmoothed, 0.1f)
+    }
+
+    @Test
+    fun testTwoPhaseProgressHandoff() {
+        // Phase 1: Cover screen (0° to 90°)
+        assertEquals(0.0f, HingeSensorObserver.calculateTwoPhaseProgress(0f, isInnerScreen = false), 0.001f)
+        assertEquals(0.5f, HingeSensorObserver.calculateTwoPhaseProgress(45f, isInnerScreen = false), 0.001f)
+        assertEquals(1.0f, HingeSensorObserver.calculateTwoPhaseProgress(90f, isInnerScreen = false), 0.001f)
+
+        // Phase 3: Inner screen defrosting (90° to 180°)
+        assertEquals(1.0f, HingeSensorObserver.calculateTwoPhaseProgress(90f, isInnerScreen = true), 0.001f)
+        assertEquals(0.5f, HingeSensorObserver.calculateTwoPhaseProgress(135f, isInnerScreen = true), 0.001f)
+        assertEquals(0.0f, HingeSensorObserver.calculateTwoPhaseProgress(180f, isInnerScreen = true), 0.001f)
     }
 }

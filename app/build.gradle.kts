@@ -11,8 +11,8 @@ android {
         applicationId = "com.ambientfold.wallpaper"
         minSdk = 31 // Android 12 (S) required for RenderEffect and AGSL
         targetSdk = 35
-        versionCode = 3
-        versionName = "0.3.0"
+        versionCode = 4
+        versionName = "0.4.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

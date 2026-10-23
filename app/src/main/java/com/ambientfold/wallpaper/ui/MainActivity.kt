@@ -3,8 +3,13 @@ package com.ambientfold.wallpaper.ui
 import android.app.WallpaperManager
 import android.content.ComponentName
 import android.content.Intent
+import android.graphics.Color
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.ambientfold.wallpaper.R
 import com.ambientfold.wallpaper.databinding.ActivityMainBinding
@@ -17,22 +22,37 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private var selectedWallpaper: WallpaperItem? = null
-    private var currentCategory: WallpaperCategory = WallpaperCategory.LANDSCAPES
+    private var currentCategory: WallpaperCategory = WallpaperCategory.ABSTRACT_DYNAMIC
     private lateinit var wallpaperAdapter: WallpaperAdapter
+    private var isUpdatingSliderFromMockup = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Enable edge-to-edge layout while safely handling insets
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Apply system bar insets so the brand header never collides with status bar/clock
+        ViewCompat.setOnApplyWindowInsetsListener(binding.mainContentContainer) { view, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(
+                top = systemBars.top + 16,
+                bottom = systemBars.bottom + 32
+            )
+            insets
+        }
+
         selectedWallpaper = WallpaperRepository.getActiveWallpaper(this)
-        currentCategory = selectedWallpaper?.category ?: WallpaperCategory.LANDSCAPES
+        currentCategory = selectedWallpaper?.category ?: WallpaperCategory.ABSTRACT_DYNAMIC
 
         setupMockup()
-        setupCategoryChips()
+        setupMockupControls()
+        setupCategorySegmentedTabs()
         setupWallpaperCarousel()
         setupEffectChips()
-        setupMotionChips()
+        setupMotionSegmentedTabs()
         setupApplyButton()
     }
 
@@ -43,26 +63,92 @@ class MainActivity : AppCompatActivity() {
         }
         binding.mockupFoldable.setOpeningEffect(WallpaperRepository.getOpeningEffect(this))
         binding.mockupFoldable.setMotionEnabled(isDynamic)
+
+        // Sync slider when the mockup is auto-looping
+        binding.mockupFoldable.onAngleChangedListener = { angle, _ ->
+            if (!binding.sliderHingeAngle.isFocused && !isUpdatingSliderFromMockup) {
+                isUpdatingSliderFromMockup = true
+                binding.sliderHingeAngle.value = angle
+                isUpdatingSliderFromMockup = false
+            }
+        }
     }
 
-    private fun setupCategoryChips() {
-        when (currentCategory) {
-            WallpaperCategory.LANDSCAPES -> binding.chipCatLandscapes.isChecked = true
-            WallpaperCategory.ABSTRACT_DYNAMIC -> binding.chipCatAbstract.isChecked = true
-            WallpaperCategory.TEXTURES -> binding.chipCatTextures.isChecked = true
-            else -> binding.chipCatLandscapes.isChecked = true
+    private fun setupMockupControls() {
+        binding.sliderHingeAngle.addOnChangeListener { _, value, fromUser ->
+            if (fromUser) {
+                binding.mockupFoldable.setAngle(value)
+            }
         }
 
-        binding.chipGroupCategories.setOnCheckedStateChangeListener { _, checkedIds ->
-            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
-            currentCategory = when (checkedIds.first()) {
-                R.id.chipCatLandscapes -> WallpaperCategory.LANDSCAPES
-                R.id.chipCatAbstract -> WallpaperCategory.ABSTRACT_DYNAMIC
-                R.id.chipCatTextures -> WallpaperCategory.TEXTURES
-                else -> WallpaperCategory.LANDSCAPES
-            }
+        binding.btnAngleClosed.setOnClickListener {
+            binding.sliderHingeAngle.value = 0f
+            binding.mockupFoldable.setAngle(0f)
+        }
+
+        binding.btnAngleHandoff.setOnClickListener {
+            binding.sliderHingeAngle.value = 90f
+            binding.mockupFoldable.setAngle(90f)
+        }
+
+        binding.btnAngleOpen.setOnClickListener {
+            binding.sliderHingeAngle.value = 180f
+            binding.mockupFoldable.setAngle(180f)
+        }
+
+        binding.btnAngleAuto.setOnClickListener {
+            binding.mockupFoldable.startCinematicLoop()
+        }
+    }
+
+    private fun setupCategorySegmentedTabs() {
+        updateCategoryTabStyles()
+
+        binding.tabCatAbstract.setOnClickListener {
+            currentCategory = WallpaperCategory.ABSTRACT_DYNAMIC
+            updateCategoryTabStyles()
             updateWallpaperListForCategory()
         }
+
+        binding.tabCatLandscapes.setOnClickListener {
+            currentCategory = WallpaperCategory.LANDSCAPES
+            updateCategoryTabStyles()
+            updateWallpaperListForCategory()
+        }
+
+        binding.tabCatTextures.setOnClickListener {
+            currentCategory = WallpaperCategory.TEXTURES
+            updateCategoryTabStyles()
+            updateWallpaperListForCategory()
+        }
+    }
+
+    private fun updateCategoryTabStyles() {
+        val activeBg = R.drawable.bg_tab_active
+        val inactiveBg = R.drawable.bg_tab_inactive
+        val activeColor = Color.WHITE
+        val inactiveColor = Color.parseColor("#94A3B8")
+
+        binding.tabCatAbstract.setBackgroundResource(
+            if (currentCategory == WallpaperCategory.ABSTRACT_DYNAMIC) activeBg else inactiveBg
+        )
+        binding.tabCatAbstract.setTextColor(
+            if (currentCategory == WallpaperCategory.ABSTRACT_DYNAMIC) activeColor else inactiveColor
+        )
+
+        binding.tabCatLandscapes.setBackgroundResource(
+            if (currentCategory == WallpaperCategory.LANDSCAPES) activeBg else inactiveBg
+        )
+        binding.tabCatLandscapes.setTextColor(
+            if (currentCategory == WallpaperCategory.LANDSCAPES) activeColor else inactiveColor
+        )
+
+        binding.tabCatTextures.setBackgroundResource(
+            if (currentCategory == WallpaperCategory.TEXTURES) activeBg else inactiveBg
+        )
+        binding.tabCatTextures.setTextColor(
+            if (currentCategory == WallpaperCategory.TEXTURES) activeColor else inactiveColor
+        )
     }
 
     private fun setupWallpaperCarousel() {
@@ -116,20 +202,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupMotionChips() {
+    private fun setupMotionSegmentedTabs() {
         val isDynamic = WallpaperRepository.isDynamicMotionEnabled(this)
-        if (isDynamic) {
-            binding.chipMotionDynamic.isChecked = true
-        } else {
-            binding.chipMotionStatic.isChecked = true
+        updateMotionTabStyles(isDynamic)
+
+        binding.tabMotionDynamic.setOnClickListener {
+            WallpaperRepository.setDynamicMotionEnabled(this, true)
+            binding.mockupFoldable.setMotionEnabled(true)
+            updateMotionTabStyles(true)
         }
 
-        binding.chipGroupMotion.setOnCheckedStateChangeListener { _, checkedIds ->
-            if (checkedIds.isEmpty()) return@setOnCheckedStateChangeListener
-            val dynamic = checkedIds.first() == R.id.chipMotionDynamic
-            WallpaperRepository.setDynamicMotionEnabled(this, dynamic)
-            binding.mockupFoldable.setMotionEnabled(dynamic)
+        binding.tabMotionStatic.setOnClickListener {
+            WallpaperRepository.setDynamicMotionEnabled(this, false)
+            binding.mockupFoldable.setMotionEnabled(false)
+            updateMotionTabStyles(false)
         }
+    }
+
+    private fun updateMotionTabStyles(isDynamic: Boolean) {
+        val activeBg = R.drawable.bg_tab_active
+        val inactiveBg = R.drawable.bg_tab_inactive
+        val activeColor = Color.WHITE
+        val inactiveColor = Color.parseColor("#94A3B8")
+
+        binding.tabMotionDynamic.setBackgroundResource(if (isDynamic) activeBg else inactiveBg)
+        binding.tabMotionDynamic.setTextColor(if (isDynamic) activeColor else inactiveColor)
+
+        binding.tabMotionStatic.setBackgroundResource(if (!isDynamic) activeBg else inactiveBg)
+        binding.tabMotionStatic.setTextColor(if (!isDynamic) activeColor else inactiveColor)
     }
 
     private fun setupApplyButton() {

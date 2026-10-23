@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Ambient Fold</string>
-    <string name="wallpaper_service_label">Ambient Fold Motion</string>
-    <string name="wallpaper_service_description">Dynamic wallpaper that responds to folding and unfolding with hardware-accelerated blur transitions.</string>
+    <string name="app_name">DuoBlur</string>
+    <string name="wallpaper_service_label">DuoBlur Live Wallpaper</string>
+    <string name="wallpaper_service_description">Optical iPhone Duo progressive blur unfolding transition and dynamic wallpapers for Google Pixel foldables.</string>
 
     <string name="title_catalog">Wallpaper Collection</string>
     <string name="subtitle_catalog">Choose a theme for both cover and unfolded screens</string>

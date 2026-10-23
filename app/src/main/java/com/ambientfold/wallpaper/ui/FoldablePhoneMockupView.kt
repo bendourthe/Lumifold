@@ -14,22 +14,29 @@ import android.graphics.Path
 import android.graphics.RadialGradient
 import android.graphics.RectF
 import android.graphics.Shader
-import android.os.SystemClock
 import android.util.AttributeSet
+import android.view.MotionEvent
 import android.view.View
-import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.LinearInterpolator
 import com.ambientfold.wallpaper.model.WallpaperItem
 import com.ambientfold.wallpaper.model.WallpaperRepository
 import com.ambientfold.wallpaper.render.DynamicMotionEngine
 import kotlin.math.abs
+import kotlin.math.cos
+import kotlin.math.max
+import kotlin.math.sin
 
 /**
- * Continuous cinematic 3D foldable phone mockup view.
- * Loops smoothly through:
- * 1. Folded state (outer screen viewing shared wallpaper base)
- * 2. 3D perspective unfolding (0° to 180°) showcasing the selected opening effect (iPhone Duo progressive blur, crease bloom, etc.)
- * 3. Opened state showing the full inner display with dynamic ambient motion or static mode
- * 4. Smooth folding transition back to closed state
+ * Authentic 3D Foldable Phone Mockup View.
+ * Accurately models a book/passport-style foldable (Google Pixel Fold):
+ * 1. Closed state (0°): A standard tall phone with front cover screen.
+ * 2. Phase 1 Cover Frosting (0° to 85°): Opens like a passport; directional blur sweeps from hinge,
+ *    perspective vertical compression, and luminance darkening.
+ * 3. Phase 2 Concurrent Handoff (85° to 95°): Hands off to the dual inner display in a 3D V-shape
+ *    (matching the Gemini hero design).
+ * 4. Phase 3 Inner Defrosting (95° to 180°): Book panels unbend into the square tablet; frost recedes
+ *    toward the illuminated crease and snaps crystal-sharp at 180°.
+ * 5. Full 60fps dynamic ambient motion rendering in all phases.
  */
 class FoldablePhoneMockupView @JvmOverloads constructor(
     context: Context,
@@ -37,12 +44,13 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : View(context, attrs, defStyleAttr) {
 
-    // Current angle: 0f (closed) to 180f (fully open)
-    var currentAngle: Float = 180f
+    // 0° (fully closed) to 180° (fully open square display)
+    var currentAngle: Float = 140f
         private set
 
-    // 0.0f = fully open, 1.0f = fully closed
-    private var blurProgress: Float = 0.0f
+    // Normalized blur/frost: 0.0 (sharp) to 1.0 (peak frost)
+    private var foldProgress: Float = 0.0f
+    private var isInnerPhase: Boolean = true
 
     private var activeWallpaper: WallpaperItem? = null
     private var wallpaperBitmap: Bitmap? = null
@@ -54,19 +62,26 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
     private val camera = Camera()
     private val matrix3D = Matrix()
 
-    private val framePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#0F172A")
+    // Chassis styling matching premium dark titanium foldable
+    private val chassisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#0B0F19")
     }
-    private val bezelStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#334155")
+    private val rimStrokePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#38445A")
         style = Paint.Style.STROKE
-        strokeWidth = 2.5f
+        strokeWidth = 2.2f
     }
     private val hingeSpinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.parseColor("#1E293B")
+        color = Color.parseColor("#151D2A")
     }
     private val effectPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val shadowPaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val badgePaint = Paint(Paint.ANTI_ALIAS_FLAG)
+    private val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#E2E8F0")
+        textSize = 28f
+        isFakeBoldText = true
+    }
 
     private val leftPanelPath = Path()
     private val rightPanelPath = Path()
@@ -74,54 +89,84 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
     private val rightPanelRect = RectF()
 
     private var loopAnimator: ValueAnimator? = null
+    private var isUserScrubbing = false
+
+    var onAngleChangedListener: ((angle: Float, phaseText: String) -> Unit)? = null
 
     init {
         startCinematicLoop()
     }
 
     /**
-     * Continuous 4-phase cinematic loop:
-     * 0.0 -> 0.2: Resting in folded state (outer cover screen)
-     * 0.2 -> 0.5: Unfolding in 3D perspective to 180°
-     * 0.5 -> 0.8: Resting in wide unfolded state (full inner display)
-     * 0.8 -> 1.0: Folding back to closed state
+     * Continuous 8-second realistic unfolding loop:
+     * 0.0 -> 0.18: Closed cover display (0° to 10°)
+     * 0.18 -> 0.38: Phase 1 & 2 Cover Frosting & Handoff (10° to 95°)
+     * 0.38 -> 0.58: Phase 3 Inner Defrosting to Flat Square (95° to 180°)
+     * 0.58 -> 0.78: Resting in fully open 180° tablet state with dynamic motion
+     * 0.78 -> 1.00: Smoothly folding back to closed state
      */
-    private fun startCinematicLoop() {
+    fun startCinematicLoop() {
         loopAnimator?.cancel()
         loopAnimator = ValueAnimator.ofFloat(0f, 1f).apply {
-            duration = 7200L // 7.2 second continuous loop
+            duration = 8400L
             repeatCount = ValueAnimator.INFINITE
-            interpolator = AccelerateDecelerateInterpolator()
+            interpolator = LinearInterpolator()
             addUpdateListener { anim ->
-                val progress = anim.animatedValue as Float
+                if (isUserScrubbing) return@addUpdateListener
+                val p = anim.animatedValue as Float
                 when {
-                    // Phase 1: Folded cover screen (0° to 10°)
-                    progress < 0.20f -> {
-                        currentAngle = 10f
-                        blurProgress = 1.0f
+                    // Closed cover state
+                    p < 0.16f -> {
+                        setAngle(0f)
                     }
-                    // Phase 2: Unfolding (10° to 180°)
-                    progress in 0.20f..0.50f -> {
-                        val subProgress = (progress - 0.20f) / 0.30f
-                        currentAngle = 10f + (subProgress * 170f)
-                        blurProgress = 1.0f - subProgress
+                    // Opening from 0° to 180°
+                    p in 0.16f..0.54f -> {
+                        val sub = (p - 0.16f) / 0.38f
+                        // Ease-in-out curve
+                        val curved = (1.0f - cos(sub * Math.PI.toFloat())) * 0.5f
+                        setAngle(curved * 180f)
                     }
-                    // Phase 3: Opened full inner screen (180°)
-                    progress in 0.50f..0.80f -> {
-                        currentAngle = 180f
-                        blurProgress = 0.0f
+                    // Resting in fully unfolded 180° state
+                    p in 0.54f..0.76f -> {
+                        setAngle(180f)
                     }
-                    // Phase 4: Folding back (180° to 10°)
+                    // Folding back to 0°
                     else -> {
-                        val subProgress = (progress - 0.80f) / 0.20f
-                        currentAngle = 180f - (subProgress * 170f)
-                        blurProgress = subProgress
+                        val sub = (p - 0.76f) / 0.24f
+                        val curved = (1.0f - cos(sub * Math.PI.toFloat())) * 0.5f
+                        setAngle(180f - (curved * 180f))
                     }
                 }
                 postInvalidateOnAnimation()
             }
             start()
         }
+    }
+
+    fun setAngle(angleDegrees: Float) {
+        currentAngle = angleDegrees.coerceIn(0f, 180f)
+        isInnerPhase = currentAngle >= 85f
+
+        // Two-phase progress calculation:
+        // 0° to 85°: Cover screen frosting (0.0 -> 1.0)
+        // 85° to 95°: Peak handoff (1.0)
+        // 95° to 180°: Inner screen defrosting (1.0 -> 0.0)
+        foldProgress = if (!isInnerPhase) {
+            (currentAngle / 85f).coerceIn(0f, 1f)
+        } else {
+            val dist = abs(currentAngle - 180f)
+            (dist / 95f).coerceIn(0f, 1f)
+        }
+
+        val phaseText = when {
+            currentAngle < 15f -> "Cover Screen (0° Closed)"
+            currentAngle < 85f -> "Phase 1: Cover Frosting (${currentAngle.toInt()}°)"
+            currentAngle <= 95f -> "Phase 2: Handoff Peak (${currentAngle.toInt()}°)"
+            currentAngle < 175f -> "Phase 3: Inner Defrosting (${currentAngle.toInt()}°)"
+            else -> "Inner Screen (180° Flat Square)"
+        }
+        onAngleChangedListener?.invoke(currentAngle, phaseText)
+        invalidate()
     }
 
     fun setWallpaper(wallpaper: WallpaperItem, isDynamic: Boolean) {
@@ -148,9 +193,7 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
             wallpaperBitmap?.recycle()
             wallpaperBitmap = null
 
-            val options = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
-            }
+            val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeResource(resources, drawableResId, options)
 
             var sampleSize = 1
@@ -191,18 +234,20 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
         if (w <= 0f || h <= 0f) return
 
         val cx = w * 0.5f
-        val cy = h * 0.5f
+        val cy = h * 0.52f
 
-        // Mockup phone dimensions
-        val phoneH = (h * 0.82f).coerceAtLeast(180f)
-        val panelW = (phoneH * 0.52f).coerceAtLeast(90f) // Each foldable panel aspect ratio ~1:1.9
+        // Foldable device proportions:
+        // Height ~ 78% of card height
+        // Each panel width: height * 0.55 (so unfolded 2 panels form ~1.1:1 nearly square screen)
+        val phoneH = (h * 0.74f).coerceAtLeast(180f)
+        val panelW = phoneH * 0.54f
         val cornerRadius = 18f
 
-        // Ambient floor shadow
-        val shadowW = (panelW * 2f) * (0.5f + (currentAngle / 180f) * 0.5f) + 30f
+        // Soft floor ambient shadow
+        val shadowW = (panelW * 2f) * (0.55f + (currentAngle / 180f) * 0.45f) + 40f
         shadowPaint.shader = RadialGradient(
-            cx, cy + (phoneH * 0.5f) + 14f, shadowW * 0.6f,
-            intArrayOf(Color.argb(90, 0, 0, 0), Color.TRANSPARENT),
+            cx, cy + (phoneH * 0.5f) + 12f, shadowW * 0.55f,
+            intArrayOf(Color.argb(120, 0, 0, 0), Color.TRANSPARENT),
             floatArrayOf(0.0f, 1.0f),
             Shader.TileMode.CLAMP
         )
@@ -217,16 +262,19 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
         val bmp = wallpaperBitmap
         val item = activeWallpaper
 
-        if (currentAngle <= 25f) {
-            // --- DRAW CLOSED PHONE (COVER DISPLAY) ---
-            drawClosedCoverDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
+        if (!isInnerPhase) {
+            // --- PHASE 1: COVER SCREEN (Passport Front) ---
+            drawCoverPhaseDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
         } else {
-            // --- DRAW 3D UNFOLDING INNER DISPLAY ---
-            drawUnfoldingInnerDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
+            // --- PHASE 2 & 3: INNER DISPLAY (3D Book V-Fold to Square) ---
+            drawInnerBookDisplay(canvas, cx, cy, panelW, phoneH, cornerRadius, bmp, item)
         }
+
+        // Top Status Badge
+        drawStatusOverlay(canvas, w)
     }
 
-    private fun drawClosedCoverDisplay(
+    private fun drawCoverPhaseDisplay(
         canvas: Canvas,
         cx: Float,
         cy: Float,
@@ -236,19 +284,31 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
         bmp: Bitmap?,
         item: WallpaperItem?
     ) {
+        canvas.save()
+
+        // 3D perspective rotation: as it cracks open (0° to 85°), the cover screen tilts away
+        val tiltAngle = (currentAngle / 85f) * 35f
+        camera.save()
+        camera.rotateY(-tiltAngle)
+        camera.getMatrix(matrix3D)
+        camera.restore()
+        matrix3D.preTranslate(-cx, -cy)
+        matrix3D.postTranslate(cx, cy)
+        canvas.concat(matrix3D)
+
         val left = cx - (panelW * 0.5f)
         val top = cy - (phoneH * 0.5f)
         val right = cx + (panelW * 0.5f)
         val bottom = cy + (phoneH * 0.5f)
-        val rect = RectF(left, top, right, bottom)
+        val outerRect = RectF(left, top, right, bottom)
 
-        // Outer chassis
-        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, framePaint)
-        canvas.drawRoundRect(rect, cornerRadius, cornerRadius, bezelStrokePaint)
+        // Chassis & metallic bezel
+        canvas.drawRoundRect(outerRect, cornerRadius, cornerRadius, chassisPaint)
+        canvas.drawRoundRect(outerRect, cornerRadius, cornerRadius, rimStrokePaint)
 
-        // Cover display screen
-        val screenInset = 8f
-        val screenRect = RectF(left + screenInset, top + screenInset, right - screenInset, bottom - screenInset)
+        // Screen bezel inset
+        val inset = 7f
+        val screenRect = RectF(left + inset, top + inset, right - inset, bottom - inset)
         val screenRadius = cornerRadius - 4f
 
         canvas.save()
@@ -265,20 +325,46 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
                 height = screenRect.height().toInt(),
                 wallpaper = item,
                 isDynamic = isDynamicMotionEnabled,
-                blurProgress = 0f
+                blurProgress = foldProgress
             )
         } else {
-            canvas.drawColor(Color.parseColor("#1E293B"))
+            canvas.drawColor(Color.parseColor("#151D2A"))
+        }
+
+        // DuoBlur Cover Frosting: Sweeps inward from the left hinge edge toward outer edge
+        if (foldProgress > 0.01f) {
+            val frostAlpha = (foldProgress * 210f).toInt().coerceIn(0, 255)
+            val darkeningAlpha = (foldProgress * 140f).toInt().coerceIn(0, 255)
+
+            // Frost gradient starting strong at hinge (left = 0)
+            val frostGradient = LinearGradient(
+                screenRect.left, 0f, screenRect.right, 0f,
+                intArrayOf(
+                    Color.argb(frostAlpha, 230, 238, 252),
+                    Color.argb((frostAlpha * 0.65f).toInt(), 220, 230, 245),
+                    Color.argb((frostAlpha * 0.20f).toInt(), 210, 225, 240)
+                ),
+                floatArrayOf(0.0f, 0.5f, 1.0f),
+                Shader.TileMode.CLAMP
+            )
+            effectPaint.shader = frostGradient
+            canvas.drawRect(screenRect, effectPaint)
+
+            // Luminance darkening attenuation
+            effectPaint.shader = null
+            effectPaint.color = Color.argb(darkeningAlpha, 0, 0, 0)
+            canvas.drawRect(screenRect, effectPaint)
         }
 
         // Camera punch hole
-        val camPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#090D16") }
-        canvas.drawCircle(cx, screenRect.top + 14f, 4.5f, camPaint)
+        val camPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.parseColor("#05080E") }
+        canvas.drawCircle(cx, screenRect.top + 13f, 4.2f, camPaint)
 
+        canvas.restore()
         canvas.restore()
     }
 
-    private fun drawUnfoldingInnerDisplay(
+    private fun drawInnerBookDisplay(
         canvas: Canvas,
         cx: Float,
         cy: Float,
@@ -288,9 +374,11 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
         bmp: Bitmap?,
         item: WallpaperItem?
     ) {
-        // Hinge angle rotation: 0° (flat open) to -85° (half closed)
-        val openFactor = (currentAngle / 180f).coerceIn(0.0f, 1.0f)
-        val rotAngle = (1.0f - openFactor) * 75f
+        // Book V-fold articulation:
+        // At 90°: panels form a 3D book V-shape (angle = 45° each side)
+        // At 180°: panels flatten completely (0° each side)
+        val openFactor = ((currentAngle - 85f) / 95f).coerceIn(0f, 1f)
+        val vAngle = (1.0f - openFactor) * 44f
 
         val top = cy - (phoneH * 0.5f)
         val bottom = cy + (phoneH * 0.5f)
@@ -301,10 +389,10 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
         val totalInnerW = (panelW * 2f).toInt()
         val totalInnerH = phoneH.toInt()
 
-        // 1. Draw Left Panel (Articulated in 3D)
+        // 1. LEFT PANEL (Book Left Page)
         canvas.save()
         camera.save()
-        camera.rotateY(-rotAngle * 0.6f)
+        camera.rotateY(-vAngle)
         camera.getMatrix(matrix3D)
         camera.restore()
         matrix3D.preTranslate(-cx, -cy)
@@ -320,9 +408,8 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
 
         canvas.save()
         canvas.clipPath(leftPanelPath)
-        canvas.drawRect(leftPanelRect, framePaint)
+        canvas.drawRect(leftPanelRect, chassisPaint)
 
-        // Inner wallpaper on left panel
         if (bmp != null && item != null) {
             canvas.save()
             canvas.translate(cx - panelW, top)
@@ -333,22 +420,20 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
                 height = totalInnerH,
                 wallpaper = item,
                 isDynamic = isDynamicMotionEnabled,
-                blurProgress = blurProgress
+                blurProgress = foldProgress
             )
             canvas.restore()
         }
 
-        // Opening effect on left panel
-        drawMockupOpeningEffect(canvas, leftPanelRect, cx, top, panelW, phoneH, true)
-
-        canvas.drawPath(leftPanelPath, bezelStrokePaint)
+        drawInnerDefrostOverlay(canvas, leftPanelRect, true)
+        canvas.drawPath(leftPanelPath, rimStrokePaint)
         canvas.restore()
         canvas.restore()
 
-        // 2. Draw Right Panel (Articulated in 3D Unfold)
+        // 2. RIGHT PANEL (Book Right Page)
         canvas.save()
         camera.save()
-        camera.rotateY(rotAngle)
+        camera.rotateY(vAngle)
         camera.getMatrix(matrix3D)
         camera.restore()
         matrix3D.preTranslate(-cx, -cy)
@@ -364,9 +449,8 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
 
         canvas.save()
         canvas.clipPath(rightPanelPath)
-        canvas.drawRect(rightPanelRect, framePaint)
+        canvas.drawRect(rightPanelRect, chassisPaint)
 
-        // Inner wallpaper on right panel (continuous shared base)
         if (bmp != null && item != null) {
             canvas.save()
             canvas.translate(cx - panelW, top)
@@ -377,119 +461,93 @@ class FoldablePhoneMockupView @JvmOverloads constructor(
                 height = totalInnerH,
                 wallpaper = item,
                 isDynamic = isDynamicMotionEnabled,
-                blurProgress = blurProgress
+                blurProgress = foldProgress
             )
             canvas.restore()
         }
 
-        // Opening effect on right panel
-        drawMockupOpeningEffect(canvas, rightPanelRect, cx, top, panelW, phoneH, false)
-
-        canvas.drawPath(rightPanelPath, bezelStrokePaint)
+        drawInnerDefrostOverlay(canvas, rightPanelRect, false)
+        canvas.drawPath(rightPanelPath, rimStrokePaint)
         canvas.restore()
         canvas.restore()
 
-        // 3. Central Hinge Crease Spine & Luminous Seam
-        val spineW = 4f
+        // 3. CENTRAL HINGE CREASE SPINE & ILLUMINATED LIGHT SEAM (matching Gemini hero image)
+        val spineW = 5f
         val spineRect = RectF(cx - (spineW * 0.5f), top, cx + (spineW * 0.5f), bottom)
         canvas.drawRect(spineRect, hingeSpinePaint)
 
-        if (blurProgress > 0.05f) {
-            val bloomAlpha = (blurProgress * 230f).toInt().coerceIn(0, 255)
-            val bloomPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(bloomAlpha, 255, 255, 255)
-                strokeWidth = 2.5f
-            }
-            canvas.drawLine(cx, top, cx, bottom, bloomPaint)
+        // Illuminated crease seam
+        val creaseAlpha = ((0.35f + foldProgress * 0.65f) * 245f).toInt().coerceIn(70, 255)
+        val creaseWidth = 3f + (foldProgress * 6f)
+        val beamPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb(creaseAlpha, 255, 255, 255)
+            strokeWidth = creaseWidth
         }
+        canvas.drawLine(cx, top + 6f, cx, bottom - 6f, beamPaint)
+
+        // Crease cyan/violet glow bloom
+        val glowPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.argb((creaseAlpha * 0.5f).toInt(), 96, 165, 250)
+            strokeWidth = creaseWidth * 2.8f
+        }
+        canvas.drawLine(cx, top + 6f, cx, bottom - 6f, glowPaint)
     }
 
-    private fun drawMockupOpeningEffect(
-        canvas: Canvas,
-        panelRect: RectF,
-        cx: Float,
-        top: Float,
-        panelW: Float,
-        phoneH: Float,
-        isLeft: Boolean
-    ) {
-        if (blurProgress <= 0.02f) return
+    private fun drawInnerDefrostOverlay(canvas: Canvas, panelRect: RectF, isLeft: Boolean) {
+        if (foldProgress <= 0.01f) return
 
-        when (openingEffect) {
-            WallpaperRepository.EFFECT_DUO_BLUR -> {
-                // iPhone Duo Optical Progressive Blur:
-                // Sharp at center crease, frosted blur softening toward the moving outer edge
-                val edgeAlpha = (blurProgress * 190f).toInt().coerceIn(0, 255)
-                val midAlpha = (blurProgress * 100f).toInt().coerceIn(0, 255)
+        // Phase 3: Frost gradient recedes from the outer edges toward the center crease
+        val frostAlpha = (foldProgress * 205f).toInt().coerceIn(0, 255)
+        val darkAlpha = (foldProgress * 110f).toInt().coerceIn(0, 255)
 
-                val gradient = if (isLeft) {
-                    LinearGradient(
-                        panelRect.left, 0f, panelRect.right, 0f,
-                        intArrayOf(Color.argb(edgeAlpha, 240, 245, 255), Color.argb(midAlpha, 230, 240, 250), Color.TRANSPARENT),
-                        floatArrayOf(0.0f, 0.6f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                } else {
-                    LinearGradient(
-                        panelRect.left, 0f, panelRect.right, 0f,
-                        intArrayOf(Color.TRANSPARENT, Color.argb(midAlpha, 230, 240, 250), Color.argb(edgeAlpha, 240, 245, 255)),
-                        floatArrayOf(0.0f, 0.4f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                }
-                effectPaint.shader = gradient
-                canvas.drawRect(panelRect, effectPaint)
-            }
-
-            WallpaperRepository.EFFECT_CREASE_BLOOM -> {
-                val alpha = (blurProgress * 210f).toInt().coerceIn(0, 255)
-                val beamW = panelW * (0.15f + blurProgress * 0.4f)
-                val gradient = if (isLeft) {
-                    LinearGradient(
-                        panelRect.right - beamW, 0f, panelRect.right, 0f,
-                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 250, 220)),
-                        floatArrayOf(0.0f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                } else {
-                    LinearGradient(
-                        panelRect.left, 0f, panelRect.left + beamW, 0f,
-                        intArrayOf(Color.argb(alpha, 255, 250, 220), Color.TRANSPARENT),
-                        floatArrayOf(0.0f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                }
-                effectPaint.shader = gradient
-                canvas.drawRect(panelRect, effectPaint)
-            }
-
-            WallpaperRepository.EFFECT_LIQUID_GLASS -> {
-                val alpha = (blurProgress * 170f).toInt().coerceIn(0, 255)
-                val gradient = if (isLeft) {
-                    LinearGradient(
-                        panelRect.left, 0f, panelRect.right, 0f,
-                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 99, 102, 241), Color.argb(alpha, 236, 72, 153)),
-                        floatArrayOf(0.0f, 0.7f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                } else {
-                    LinearGradient(
-                        panelRect.left, 0f, panelRect.right, 0f,
-                        intArrayOf(Color.argb(alpha, 236, 72, 153), Color.argb(alpha, 56, 189, 248), Color.TRANSPARENT),
-                        floatArrayOf(0.0f, 0.3f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                }
-                effectPaint.shader = gradient
-                canvas.drawRect(panelRect, effectPaint)
-            }
-
-            WallpaperRepository.EFFECT_APERTURE_HORIZON -> {
-                val alpha = (blurProgress * 150f).toInt().coerceIn(0, 255)
-                effectPaint.shader = null
-                effectPaint.color = Color.argb(alpha, 15, 23, 42)
-                canvas.drawRect(panelRect, effectPaint)
-            }
+        val gradient = if (isLeft) {
+            LinearGradient(
+                panelRect.left, 0f, panelRect.right, 0f,
+                intArrayOf(Color.argb(frostAlpha, 235, 242, 255), Color.argb((frostAlpha * 0.5f).toInt(), 225, 235, 250), Color.TRANSPARENT),
+                floatArrayOf(0.0f, 0.65f, 1.0f),
+                Shader.TileMode.CLAMP
+            )
+        } else {
+            LinearGradient(
+                panelRect.left, 0f, panelRect.right, 0f,
+                intArrayOf(Color.TRANSPARENT, Color.argb((frostAlpha * 0.5f).toInt(), 225, 235, 250), Color.argb(frostAlpha, 235, 242, 255)),
+                floatArrayOf(0.0f, 0.35f, 1.0f),
+                Shader.TileMode.CLAMP
+            )
         }
+        effectPaint.shader = gradient
+        canvas.drawRect(panelRect, effectPaint)
+
+        // Darkening attenuation as angle deviates from flat
+        effectPaint.shader = null
+        effectPaint.color = Color.argb(darkAlpha, 0, 0, 0)
+        canvas.drawRect(panelRect, effectPaint)
+    }
+
+    private fun drawStatusOverlay(canvas: Canvas, w: Float) {
+        val label = when {
+            currentAngle < 15f -> "Cover Screen (0° Closed)"
+            currentAngle < 85f -> "Phase 1: Cover Frosting (${currentAngle.toInt()}°)"
+            currentAngle <= 95f -> "Phase 2: Handoff (${currentAngle.toInt()}°)"
+            currentAngle < 175f -> "Phase 3: Inner Defrosting (${currentAngle.toInt()}°)"
+            else -> "Inner Screen (180° Flat Square)"
+        }
+
+        val textW = textPaint.measureText(label)
+        val padH = 24f
+        val padV = 14f
+        val badgeW = textW + (padH * 2f)
+        val badgeH = 50f
+        val badgeLeft = (w - badgeW) * 0.5f
+        val badgeTop = 16f
+        val badgeRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeW, badgeTop + badgeH)
+
+        badgePaint.color = Color.argb(200, 15, 23, 42)
+        canvas.drawRoundRect(badgeRect, 25f, 25f, badgePaint)
+
+        rimStrokePaint.color = Color.argb(120, 99, 102, 241)
+        canvas.drawRoundRect(badgeRect, 25f, 25f, rimStrokePaint)
+
+        canvas.drawText(label, badgeLeft + padH, badgeTop + 33f, textPaint)
     }
 }

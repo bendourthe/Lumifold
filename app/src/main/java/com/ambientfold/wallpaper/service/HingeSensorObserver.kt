@@ -65,5 +65,13 @@ class HingeSensorObserver(
             // 1.8 power curve: stays crisp across 180° to 90°, elevates progressively below 90°
             return (1.0f - normalized).toDouble().pow(1.8).toFloat().coerceIn(0f, 1f)
         }
+
+        fun calculateTwoPhaseProgress(angleDegrees: Float, isInnerScreen: Boolean): Float {
+            return if (!isInnerScreen) {
+                (angleDegrees / 90.0f).coerceIn(0f, 1f)
+            } else {
+                ((180.0f - angleDegrees) / 90.0f).coerceIn(0f, 1f)
+            }
+        }
     }
 }

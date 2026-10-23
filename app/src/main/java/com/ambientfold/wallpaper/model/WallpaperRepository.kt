@@ -6,7 +6,7 @@ import com.ambientfold.wallpaper.R
 
 object WallpaperRepository {
 
-    const val PREFS_NAME = "ambient_fold_wallpaper_prefs"
+    const val PREFS_NAME = "duoblur_wallpaper_prefs"
     const val KEY_ACTIVE_WALLPAPER_ID = "pref_active_wallpaper_id"
     const val KEY_MAX_BLUR_RADIUS = "pref_max_blur_radius"
     const val KEY_OPENING_EFFECT = "pref_opening_effect"
@@ -21,10 +21,79 @@ object WallpaperRepository {
     const val EFFECT_APERTURE_HORIZON = "aperture_zoom"
 
     const val DEFAULT_MAX_BLUR = 65.0f
-    const val DEFAULT_ANIMATION_DURATION = 600L
+    const val DEFAULT_ANIMATION_DURATION = 650L
     const val DEFAULT_OPENING_EFFECT = EFFECT_DUO_BLUR
+    const val DEFAULT_WALLPAPER_ID = "duo_blur_hero"
 
     val wallpapers: List<WallpaperItem> = listOf(
+        // --- FEATURED HERO & ABSTRACT FLOW ---
+        WallpaperItem(
+            id = "duo_blur_hero",
+            title = "DuoBlur Iris Hero",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_duo_blur_hero,
+            description = "The official DuoBlur hero wallpaper. Luminous fluid light ribbons flowing across the foldable crease with chromatic glass refraction.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFFF97316.toInt()
+        ),
+        WallpaperItem(
+            id = "liquid_glass",
+            title = "Liquid Glass Iridescence",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_liquid_glass,
+            description = "Dynamic continuous liquid glass flowing wave with chromatic light refraction and smooth fluid motion.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFF818CF8.toInt()
+        ),
+        WallpaperItem(
+            id = "dark_prism",
+            title = "Obsidian Prism",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_dark_prism,
+            description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons flowing smoothly.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFFE040FB.toInt()
+        ),
+        WallpaperItem(
+            id = "fluid_chrome",
+            title = "Fluid Mercury Chrome",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_fluid_chrome,
+            description = "Continuous metallic fluid motion with liquid chrome reflections and specular glass curvature.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFFE2E8F0.toInt()
+        ),
+        WallpaperItem(
+            id = "prismatic_silk",
+            title = "Prismatic Silk Wave",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_prismatic_silk,
+            description = "Fluid iridescent silk waves undulating like molten crystal in constant smooth harmonic motion.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFFF472B6.toInt()
+        ),
+        WallpaperItem(
+            id = "neon_nebula",
+            title = "Cyberpunk Aurora Nebula",
+            category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
+            drawableResId = R.drawable.wp_neon_nebula,
+            description = "High-energy electric cyan and magenta cosmic plasma flowing in slow undulating streams.",
+            isDynamic = true,
+            motionType = MotionType.LIQUID_GLASS,
+            particleColor = 0xFF22D3EE.toInt()
+        ),
+
         // --- LANDSCAPES ---
         WallpaperItem(
             id = "mountain_sunset",
@@ -32,7 +101,7 @@ object WallpaperRepository {
             category = WallpaperCategory.LANDSCAPES,
             isDark = true,
             drawableResId = R.drawable.wp_mountain_sunset,
-            description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with subtle organic daylight breathing.",
+            description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with drifting atmospheric cloud mist and golden god rays.",
             isDynamic = true,
             motionType = MotionType.LANDSCAPE_BREATHING,
             particleColor = 0xFFFFE082.toInt()
@@ -115,63 +184,6 @@ object WallpaperRepository {
             particleColor = 0xFF4DD0E1.toInt()
         ),
 
-        // --- ABSTRACT FLOW ---
-        WallpaperItem(
-            id = "liquid_glass",
-            title = "Liquid Glass Iridescence",
-            category = WallpaperCategory.ABSTRACT_DYNAMIC,
-            isDark = true,
-            drawableResId = R.drawable.wp_liquid_glass,
-            description = "Dynamic continuous liquid glass flowing wave with chromatic light refraction and smooth fluid motion.",
-            isDynamic = true,
-            motionType = MotionType.LIQUID_GLASS,
-            particleColor = 0xFF818CF8.toInt()
-        ),
-        WallpaperItem(
-            id = "dark_prism",
-            title = "Obsidian Prism",
-            category = WallpaperCategory.ABSTRACT_DYNAMIC,
-            isDark = true,
-            drawableResId = R.drawable.wp_dark_prism,
-            description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons flowing smoothly.",
-            isDynamic = true,
-            motionType = MotionType.LIQUID_GLASS,
-            particleColor = 0xFFE040FB.toInt()
-        ),
-        WallpaperItem(
-            id = "fluid_chrome",
-            title = "Fluid Mercury Chrome",
-            category = WallpaperCategory.ABSTRACT_DYNAMIC,
-            isDark = true,
-            drawableResId = R.drawable.wp_fluid_chrome,
-            description = "Continuous metallic fluid motion with liquid chrome reflections and specular glass curvature.",
-            isDynamic = true,
-            motionType = MotionType.LIQUID_GLASS,
-            particleColor = 0xFFE2E8F0.toInt()
-        ),
-        WallpaperItem(
-            id = "prismatic_silk",
-            title = "Prismatic Silk Wave",
-            category = WallpaperCategory.ABSTRACT_DYNAMIC,
-            isDark = true,
-            drawableResId = R.drawable.wp_prismatic_silk,
-            description = "Fluid iridescent silk waves undulating like molten crystal in constant smooth harmonic motion.",
-            isDynamic = true,
-            motionType = MotionType.LIQUID_GLASS,
-            particleColor = 0xFFF472B6.toInt()
-        ),
-        WallpaperItem(
-            id = "neon_nebula",
-            title = "Cyberpunk Aurora Nebula",
-            category = WallpaperCategory.ABSTRACT_DYNAMIC,
-            isDark = true,
-            drawableResId = R.drawable.wp_neon_nebula,
-            description = "High-energy electric cyan and magenta cosmic plasma flowing in slow undulating streams.",
-            isDynamic = true,
-            motionType = MotionType.LIQUID_GLASS,
-            particleColor = 0xFF22D3EE.toInt()
-        ),
-
         // --- TEXTURES ---
         WallpaperItem(
             id = "carbon_fiber",
@@ -235,7 +247,7 @@ object WallpaperRepository {
     }
 
     fun getActiveWallpaper(context: Context): WallpaperItem {
-        val savedId = getPrefs(context).getString(KEY_ACTIVE_WALLPAPER_ID, null)
+        val savedId = getPrefs(context).getString(KEY_ACTIVE_WALLPAPER_ID, DEFAULT_WALLPAPER_ID)
         return resolveWallpaper(savedId)
     }
 

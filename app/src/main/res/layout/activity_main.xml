@@ -2,158 +2,291 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/rootCoordinator"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#0A0D14"
+    android:background="#070A10"
     tools:context=".ui.MainActivity">
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nestedScroll"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
+        android:clipToPadding="false"
         android:fillViewport="true">
 
         <LinearLayout
+            android:id="@+id/mainContentContainer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:paddingHorizontal="20dp"
-            android:paddingTop="24dp"
-            android:paddingBottom="48dp">
+            android:paddingHorizontal="18dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="56dp">
 
-            <!-- App Title & Tagline -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:fontFamily="sans-serif-medium"
-                android:text="Ambient Fold"
-                android:textColor="#FFFFFF"
-                android:textSize="28sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="3dp"
-                android:text="Dynamic 4K Photoreal &amp; Optical Unfolding Wallpaper"
-                android:textColor="#94A3B8"
-                android:textSize="13sp" />
-
-            <!-- Foldable Phone 3D Continuous Preview Mockup Card -->
-            <com.google.android.material.card.MaterialCardView
+            <!-- APP BRAND HEADER (Padded safely below phone clock & status bar) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="18dp"
-                app:cardBackgroundColor="#111827"
-                app:cardCornerRadius="24dp"
-                app:cardElevation="6dp"
-                app:strokeColor="#1E293B"
-                app:strokeWidth="1.2dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
-                <FrameLayout
-                    android:layout_width="match_parent"
-                    android:layout_height="270dp"
-                    android:padding="8dp">
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:contentDescription="DuoBlur App Icon"
+                    android:scaleType="centerCrop"
+                    android:src="@drawable/ic_launcher_fg"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Medium"
+                    app:strokeColor="#38445A"
+                    app:strokeWidth="1.2dp" />
 
-                    <!-- Continuous Cinematic 3D Mockup View -->
-                    <com.ambientfold.wallpaper.ui.FoldablePhoneMockupView
-                        android:id="@+id/mockupFoldable"
-                        android:layout_width="match_parent"
-                        android:layout_height="match_parent" />
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="14dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
 
-                    <!-- Live Status Badge -->
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_gravity="top|end"
-                        android:layout_margin="10dp"
-                        android:background="#99090D16"
-                        android:paddingHorizontal="12dp"
-                        android:paddingVertical="5dp"
-                        android:text="3D Live Preview"
-                        android:textColor="#E2E8F0"
-                        android:textSize="11sp"
-                        android:textStyle="bold" />
+                        android:fontFamily="sans-serif-black"
+                        android:text="DuoBlur"
+                        android:textColor="#FFFFFF"
+                        android:textSize="26sp" />
 
-                </FrameLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:fontFamily="sans-serif-medium"
+                        android:text="Optical Foldable Transition &amp; 4K Living Wallpapers"
+                        android:textColor="#94A3B8"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- 3D FOLDABLE PHONE PREVIEW CARD -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardBackgroundColor="#0D1322"
+                app:cardCornerRadius="22dp"
+                app:cardElevation="8dp"
+                app:strokeColor="#1E293B"
+                app:strokeWidth="1.2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <!-- Foldable Phone Mockup Canvas -->
+                    <com.ambientfold.wallpaper.ui.FoldablePhoneMockupView
+                        android:id="@+id/mockupFoldable"
+                        android:layout_width="match_parent"
+                        android:layout_height="270dp" />
+
+                    <!-- Interactive Hinge Angle Slider -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="0° (Folded)"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+
+                        <com.google.android.material.slider.Slider
+                            android:id="@+id/sliderHingeAngle"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:value="140"
+                            android:valueFrom="0"
+                            android:valueTo="180"
+                            app:thumbColor="#818CF8"
+                            app:trackColorActive="#6366F1"
+                            app:trackColorInactive="#1E293B" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:fontFamily="sans-serif-medium"
+                            android:text="180° (Flat)"
+                            android:textColor="#64748B"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <!-- Quick Angle Presets -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleClosed"
+                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="0° Cover"
+                            android:textColor="#CBD5E1"
+                            android:textSize="10.5sp"
+                            app:strokeColor="#2A374F" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleHandoff"
+                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="90° V-Fold"
+                            android:textColor="#CBD5E1"
+                            android:textSize="10.5sp"
+                            app:strokeColor="#2A374F" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleOpen"
+                            style="@style/Widget.Material3.Button.OutlinedButton.Dense"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_marginEnd="4dp"
+                            android:layout_weight="1"
+                            android:text="180° Flat"
+                            android:textColor="#CBD5E1"
+                            android:textSize="10.5sp"
+                            app:strokeColor="#2A374F" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnAngleAuto"
+                            style="@style/Widget.Material3.Button.TonalButton.Dense"
+                            android:layout_width="0dp"
+                            android:layout_height="36dp"
+                            android:layout_weight="1"
+                            android:text="▶ Auto"
+                            android:textColor="#E0E7FF"
+                            android:textSize="10.5sp"
+                            app:backgroundTint="#312E81" />
+                    </LinearLayout>
+
+                </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- SECTION 1: Wallpapers by Category -->
+            <!-- SECTION 1: Wallpaper Collection Header -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-bold"
                 android:text="Wallpaper Collection"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Curated 4K photoreal landscapes, flowing liquid glass, and textures"
+                android:fontFamily="sans-serif"
+                android:text="High-resolution 4K living motion with 1:1 foldable aspect ratio"
                 android:textColor="#94A3B8"
                 android:textSize="12sp" />
 
-            <!-- Category Selector Chips -->
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupCategories"
+            <!-- LUXURY SEGMENTED CATEGORY SELECTOR -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="10dp"
-                app:singleSelection="true">
+                android:layout_height="48dp"
+                android:layout_marginTop="12dp"
+                android:background="@drawable/bg_segmented_container"
+                android:orientation="horizontal"
+                android:padding="4dp">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatLandscapes"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="🏔️ Landscapes" />
+                <TextView
+                    android:id="@+id/tabCatAbstract"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_active"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="🔮 Abstract"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatAbstract"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔮 Abstract Flow" />
+                <TextView
+                    android:id="@+id/tabCatLandscapes"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="🏔️ Landscapes"
+                    android:textColor="#94A3B8"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipCatTextures"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="💎 Textures" />
+                <TextView
+                    android:id="@+id/tabCatTextures"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="💎 Textures"
+                    android:textColor="#94A3B8"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
-            </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
 
             <!-- Wallpaper Horizontal Carousel -->
             <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/rvWallpapers"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_marginTop="14dp"
                 android:clipToPadding="false"
                 android:orientation="horizontal" />
 
-            <!-- SECTION 2: Opening Entrance Effect -->
+            <!-- SECTION 2: Optical Opening Effect Header -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-bold"
                 android:text="Opening Entrance Effect"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Cinematic optical transition executed as you open your foldable"
+                android:fontFamily="sans-serif"
+                android:text="Optical blur executed as you open your foldable chassis"
                 android:textColor="#94A3B8"
                 android:textSize="12sp" />
 
+            <!-- Opening Effect Modern Chips -->
             <com.google.android.material.chip.ChipGroup
                 android:id="@+id/chipGroupEffects"
                 android:layout_width="match_parent"
@@ -167,7 +300,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:checked="true"
-                    android:text="🪟 iPhone Duo Blur" />
+                    android:text="🪟 DuoBlur Optical Frost" />
 
                 <com.google.android.material.chip.Chip
                     android:id="@+id/chipEffectBloom"
@@ -192,60 +325,77 @@
 
             </com.google.android.material.chip.ChipGroup>
 
-            <!-- SECTION 3: Motion Mode -->
+            <!-- SECTION 3: Motion Mode Header -->
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="26dp"
+                android:layout_marginTop="24dp"
+                android:fontFamily="sans-serif-bold"
                 android:text="Wallpaper Motion"
                 android:textColor="#FFFFFF"
-                android:textSize="18sp"
-                android:textStyle="bold" />
+                android:textSize="18sp" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="2dp"
-                android:text="Subtle living motion or battery-saving crystal static mode"
+                android:fontFamily="sans-serif"
+                android:text="60fps ambient living motion or battery-saving static mode"
                 android:textColor="#94A3B8"
                 android:textSize="12sp" />
 
-            <com.google.android.material.chip.ChipGroup
-                android:id="@+id/chipGroupMotion"
+            <!-- Motion Mode Segmented Bar -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
+                android:layout_height="46dp"
                 android:layout_marginTop="10dp"
-                app:singleSelection="true">
+                android:background="@drawable/bg_segmented_container"
+                android:orientation="horizontal"
+                android:padding="4dp">
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipMotionDynamic"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:checked="true"
-                    android:text="✨ Dynamic (Ambient Motion)" />
+                <TextView
+                    android:id="@+id/tabMotionDynamic"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_active"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="✨ 60fps Living Motion"
+                    android:textColor="#FFFFFF"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
-                <com.google.android.material.chip.Chip
-                    android:id="@+id/chipMotionStatic"
-                    style="@style/Widget.Material3.Chip.Filter"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="🔋 Static (Battery Saver)" />
+                <TextView
+                    android:id="@+id/tabMotionStatic"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_tab_inactive"
+                    android:clickable="true"
+                    android:focusable="true"
+                    android:gravity="center"
+                    android:text="🔋 Static Mode"
+                    android:textColor="#94A3B8"
+                    android:textSize="12.5sp"
+                    android:textStyle="bold" />
 
-            </com.google.android.material.chip.ChipGroup>
+            </LinearLayout>
 
-            <!-- Action Button: Set Wallpaper -->
+            <!-- Apply Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnApplyWallpaper"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
                 android:layout_marginTop="32dp"
-                android:text="Set as Live Wallpaper"
+                android:fontFamily="sans-serif-bold"
+                android:text="Set DuoBlur Live Wallpaper"
                 android:textColor="#FFFFFF"
                 android:textSize="16sp"
-                android:textStyle="bold"
                 app:backgroundTint="#6366F1"
-                app:cornerRadius="16dp" />
+                app:cornerRadius="16dp"
+                app:elevation="4dp" />
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>

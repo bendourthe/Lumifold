@@ -20,9 +20,10 @@ import kotlin.math.sin
 
 /**
  * High-performance ambient dynamic wallpaper rendering engine.
- * Delivers continuous, organic, subtle motion without artificial particle dots:
- * 1. Landscapes: Slow cinematic breathing zoom, horizon micro-pan, atmospheric cloud-light sweep, and gentle water/grass caustics.
- * 2. Abstract Flow: Real-time GPU AGSL liquid glass flow with chromatic domain warping and specular highlights.
+ * Delivers continuous, organic, distinctly visible 60fps motion:
+ * 1. Landscapes: Visible cinematic breathing zoom, horizon drifting pan, sweeping atmospheric cloud mist,
+ *    warm golden sunlight/god-ray beams, and wind/water caustics.
+ * 2. Abstract Flow: Real-time GPU AGSL liquid glass flow with chromatic dispersion and specular highlights.
  * 3. Textures: Continuous rolling anisotropic light sheen across architectural materials.
  */
 class DynamicMotionEngine {
@@ -39,8 +40,6 @@ class DynamicMotionEngine {
 
     // AGSL RuntimeShader for API 33+
     private var agslLiquidShader: Any? = null
-    private var lastShaderWidth = 0
-    private var lastShaderHeight = 0
     private var lastBitmapShader: BitmapShader? = null
     private var lastCachedBmp: Bitmap? = null
 
@@ -52,21 +51,30 @@ class DynamicMotionEngine {
 
             half4 main(float2 fragCoord) {
                 float2 uv = fragCoord / iResolution;
-                float t = iTime * 0.35;
+                float t = iTime * 0.75;
                 
-                // Multi-octave domain warping for perpetual fluid glass motion
-                float2 p = uv * 3.5;
-                float2 offset = float2(
-                    sin(p.y * 1.6 + t * 0.9) * 0.025 + cos(p.x * 2.1 - t * 0.6) * 0.015,
-                    cos(p.x * 1.8 + t * 0.8) * 0.025 + sin(p.y * 2.4 + t * 0.7) * 0.015
-                );
+                // Multi-octave domain warping for continuous dynamic liquid glass flow
+                float2 p = uv * 3.2;
+                float wave1 = sin(p.y * 2.2 + t * 1.4) * 0.045 + cos(p.x * 2.5 - t * 0.9) * 0.035;
+                float wave2 = cos(p.x * 2.0 + t * 1.2) * 0.045 + sin(p.y * 3.1 + t * 1.1) * 0.035;
+                float2 offset = float2(wave1, wave2);
                 
-                float2 warpedCoord = (uv + offset) * iResolution;
-                half4 col = iImage.eval(warpedCoord);
+                // Chromatic dispersion: sample R, G, B channels with slight refraction offsets
+                float2 coordR = (uv + offset * 1.06) * iResolution;
+                float2 coordG = (uv + offset) * iResolution;
+                float2 coordB = (uv + offset * 0.94) * iResolution;
                 
-                // Specular refraction highlight
-                float spec = pow(clamp(sin((uv.x + offset.x) * 4.0 + (uv.y + offset.y) * 4.0 + t * 1.2), 0.0, 1.0), 6.0) * 0.30;
-                col.rgb += half3(spec * 1.1, spec * 0.95, spec * 1.25);
+                half r = iImage.eval(coordR).r;
+                half g = iImage.eval(coordG).g;
+                half b = iImage.eval(coordB).b;
+                half a = iImage.eval(coordG).a;
+                
+                half4 col = half4(r, g, b, a);
+                
+                // Shimmering specular glass refraction highlights
+                float specPattern = sin((uv.x + offset.x) * 5.0 + (uv.y + offset.y) * 4.0 + t * 1.6);
+                float spec = pow(clamp(specPattern, 0.0, 1.0), 5.0) * 0.40;
+                col.rgb += half3(spec * 1.15, spec * 1.0, spec * 1.3);
                 
                 return col;
             }
@@ -94,7 +102,7 @@ class DynamicMotionEngine {
     }
 
     /**
-     * Renders wallpaper to the canvas with proper Center-Crop and dynamic ambient motion.
+     * Renders wallpaper to the canvas with Center-Crop and dynamic ambient motion.
      */
     fun render(
         canvas: Canvas,
@@ -110,7 +118,7 @@ class DynamicMotionEngine {
         val nowMs = SystemClock.uptimeMillis()
         val elapsedSec = (nowMs - startTimeMs) / 1000.0f
 
-        // 1. Compute pristine uniform CENTER_CROP scaling (Zero distortion)
+        // Center-Crop scaling
         val scaleBase = max(width.toFloat() / bitmap.width.toFloat(), height.toFloat() / bitmap.height.toFloat())
 
         if (!isDynamic) {
@@ -127,7 +135,7 @@ class DynamicMotionEngine {
             return
         }
 
-        // 2. Dynamic Motion Mode based on category / motionType
+        // Dynamic Motion Mode based on category / motionType
         when (wallpaper.motionType) {
             MotionType.LIQUID_GLASS -> {
                 renderLiquidGlass(canvas, bitmap, width, height, scaleBase, elapsedSec, blurProgress)
@@ -140,7 +148,7 @@ class DynamicMotionEngine {
             }
         }
 
-        // 3. Render interactive touch ripple if active
+        // Interactive touch ripple
         val touchElapsed = (nowMs - touchTimeMs) / 1000.0f
         if (touchElapsed in 0.0f..1.2f && touchX >= 0f && touchY >= 0f) {
             val rippleRadius = touchElapsed * (width.coerceAtLeast(height) * 0.65f)
@@ -165,14 +173,14 @@ class DynamicMotionEngine {
         timeSec: Float,
         blurProgress: Float
     ) {
-        // Subtle harmonic slow breathing: 20-second sine wave between 1.000 and 1.026
-        val breathCycle = sin(timeSec * 0.314f) // ~20 second period
-        val breathScale = 1.0f + (breathCycle * 0.013f)
+        // Living cinematic zoom: 12-second gentle oscillation between 1.000 and 1.035
+        val breathCycle = sin(timeSec * 0.52f)
+        val breathScale = 1.0f + (breathCycle * 0.025f)
         val finalScale = scaleBase * breathScale
 
-        // Micro-pan horizontal and vertical (+/- 14px and +/- 8px)
-        val panX = sin(timeSec * 0.21f) * 14.0f
-        val panY = cos(timeSec * 0.28f) * 8.0f
+        // Micro-pan horizontal and vertical
+        val panX = sin(timeSec * 0.38f) * 22.0f
+        val panY = cos(timeSec * 0.45f) * 12.0f
 
         val scaledW = bitmap.width * finalScale
         val scaledH = bitmap.height * finalScale
@@ -184,19 +192,50 @@ class DynamicMotionEngine {
         matrix.postTranslate(dx, dy)
         canvas.drawBitmap(bitmap, matrix, basePaint)
 
-        // Subtle drifting sunlight sweep across upper horizon
-        val lightPhase = (sin(timeSec * 0.18f) * 0.5f + 0.5f)
-        val sweepX = width * (0.2f + lightPhase * 0.6f)
-        val sweepAlpha = (24 + (sin(timeSec * 0.4f) * 12).toInt()).coerceIn(10, 45)
+        // 1. Drifting Atmospheric Cloud Mist across the sky (moving horizontally)
+        val mistPhase1 = (timeSec * 0.07f) % 2.0f
+        val mistX1 = (mistPhase1 - 0.5f) * width * 1.8f
+        val mistGradient1 = LinearGradient(
+            mistX1 - width * 0.6f, height * 0.15f, mistX1 + width * 0.6f, height * 0.35f,
+            intArrayOf(Color.TRANSPARENT, Color.argb(45, 255, 255, 255), Color.argb(30, 240, 248, 255), Color.TRANSPARENT),
+            floatArrayOf(0.0f, 0.45f, 0.60f, 1.0f),
+            Shader.TileMode.CLAMP
+        )
+        lightPaint.shader = mistGradient1
+        canvas.drawRect(0f, 0f, width.toFloat(), height * 0.55f, lightPaint)
 
-        val skyGlow = RadialGradient(
-            sweepX, height * 0.25f, width * 0.75f,
-            intArrayOf(Color.argb(sweepAlpha, 255, 240, 200), Color.argb((sweepAlpha * 0.4f).toInt(), 255, 220, 180), Color.TRANSPARENT),
+        // 2. Sweeping Sunlight Beam / God Rays across the horizon
+        val sunPhase = sin(timeSec * 0.32f) * 0.5f + 0.5f
+        val sunX = width * (0.15f + sunPhase * 0.70f)
+        val sunY = height * 0.20f
+        val sunRadius = width * 0.85f
+        val sunAlpha = (48 + (sin(timeSec * 0.6f) * 18).toInt()).coerceIn(20, 75)
+
+        val sunBeam = RadialGradient(
+            sunX, sunY, sunRadius,
+            intArrayOf(
+                Color.argb(sunAlpha, 255, 245, 210),
+                Color.argb((sunAlpha * 0.5f).toInt(), 255, 225, 175),
+                Color.TRANSPARENT
+            ),
+            floatArrayOf(0.0f, 0.55f, 1.0f),
+            Shader.TileMode.CLAMP
+        )
+        lightPaint.shader = sunBeam
+        canvas.drawRect(0f, 0f, width.toFloat(), height * 0.70f, lightPaint)
+
+        // 3. Gentle Wind / Water Caustic Ripples over the lower landscape area
+        val waterPhase = (timeSec * 0.25f) % 1.0f
+        val waterY = height * (0.65f + waterPhase * 0.30f)
+        val waterAlpha = (28 + (sin(timeSec * 1.2f) * 14).toInt()).coerceIn(12, 48)
+        val waterShimmer = LinearGradient(
+            0f, waterY - 35f, 0f, waterY + 35f,
+            intArrayOf(Color.TRANSPARENT, Color.argb(waterAlpha, 255, 255, 255), Color.TRANSPARENT),
             floatArrayOf(0.0f, 0.5f, 1.0f),
             Shader.TileMode.CLAMP
         )
-        lightPaint.shader = skyGlow
-        canvas.drawRect(0f, 0f, width.toFloat(), height * 0.65f, lightPaint)
+        lightPaint.shader = waterShimmer
+        canvas.drawRect(0f, height * 0.60f, width.toFloat(), height.toFloat(), lightPaint)
     }
 
     private fun renderLiquidGlass(
@@ -241,27 +280,34 @@ class DynamicMotionEngine {
             }
         }
 
-        // Fallback for API 31-32: Dual-matrix organic wave displacement
+        // High-fidelity fallback for API 31-32 or preview canvas
         canvas.drawBitmap(bitmap, matrix, basePaint)
 
-        val waveX = sin(timeSec * 0.6f) * 18f
-        val waveY = cos(timeSec * 0.5f) * 14f
-        val waveScale = 1.0f + (sin(timeSec * 0.8f) * 0.02f)
+        // Dual undulating fluid glass distortion layers
+        val wave1X = sin(timeSec * 0.9f) * 26f
+        val wave1Y = cos(timeSec * 0.75f) * 20f
+        val wave1Scale = 1.0f + (sin(timeSec * 1.1f) * 0.035f)
 
-        val waveMatrix = Matrix(matrix)
-        waveMatrix.postScale(waveScale, waveScale, width * 0.5f, height * 0.5f)
-        waveMatrix.postTranslate(waveX, waveY)
+        val wave1Matrix = Matrix(matrix)
+        wave1Matrix.postScale(wave1Scale, wave1Scale, width * 0.5f, height * 0.5f)
+        wave1Matrix.postTranslate(wave1X, wave1Y)
 
         motionPaint.shader = null
-        motionPaint.alpha = 55
-        canvas.drawBitmap(bitmap, waveMatrix, motionPaint)
+        motionPaint.alpha = 75
+        canvas.drawBitmap(bitmap, wave1Matrix, motionPaint)
 
-        // Rolling specular glass highlight band
-        val specCenter = ((timeSec * 0.15f) % 1.6f - 0.3f) * (width + height)
+        // Rolling chromatic specular glass highlight band
+        val specCenter = ((timeSec * 0.28f) % 1.8f - 0.4f) * (width + height)
         val specGradient = LinearGradient(
-            specCenter - 140f, specCenter - 140f, specCenter + 140f, specCenter + 140f,
-            intArrayOf(Color.TRANSPARENT, Color.argb(45, 255, 255, 255), Color.TRANSPARENT),
-            floatArrayOf(0.0f, 0.5f, 1.0f),
+            specCenter - 180f, specCenter - 180f, specCenter + 180f, specCenter + 180f,
+            intArrayOf(
+                Color.TRANSPARENT,
+                Color.argb(35, 99, 102, 241),
+                Color.argb(85, 255, 255, 255),
+                Color.argb(35, 236, 72, 153),
+                Color.TRANSPARENT
+            ),
+            floatArrayOf(0.0f, 0.35f, 0.50f, 0.65f, 1.0f),
             Shader.TileMode.CLAMP
         )
         lightPaint.shader = specGradient
@@ -287,13 +333,18 @@ class DynamicMotionEngine {
         matrix.postTranslate(dx, dy)
         canvas.drawBitmap(bitmap, matrix, basePaint)
 
-        // Slow anisotropic specular sheen sweeping diagonally across the material
-        val cycle = (timeSec * 0.12f) % 2.0f // sweeps across every ~16 seconds
+        // Continuous anisotropic specular sheen sweeping diagonally across the material
+        val cycle = (timeSec * 0.22f) % 2.0f
         val pos = (cycle - 0.5f) * (width + height)
 
         val sheenGradient = LinearGradient(
-            pos - 180f, 0f, pos + 180f, height.toFloat(),
-            intArrayOf(Color.TRANSPARENT, Color.argb(35, 255, 255, 255), Color.argb(55, 240, 245, 255), Color.TRANSPARENT),
+            pos - 220f, 0f, pos + 220f, height.toFloat(),
+            intArrayOf(
+                Color.TRANSPARENT,
+                Color.argb(40, 255, 255, 255),
+                Color.argb(80, 240, 245, 255),
+                Color.TRANSPARENT
+            ),
             floatArrayOf(0.0f, 0.45f, 0.55f, 1.0f),
             Shader.TileMode.CLAMP
         )
