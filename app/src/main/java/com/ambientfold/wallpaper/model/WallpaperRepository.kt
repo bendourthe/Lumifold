@@ -6,9 +6,10 @@ import com.ambientfold.wallpaper.R
 
 object WallpaperRepository {
 
-    private const val PREFS_NAME = "ambient_fold_prefs"
-    private const val KEY_ACTIVE_WALLPAPER = "active_wallpaper_id"
-    private const val KEY_MAX_BLUR_RADIUS = "max_blur_radius"
+    const val PREFS_NAME = "ambient_fold_prefs"
+    const val KEY_ACTIVE_WALLPAPER = "active_wallpaper_id"
+    const val KEY_MAX_BLUR_RADIUS = "max_blur_radius"
+    const val DEFAULT_MAX_BLUR = 42.0f
 
     val wallpapers: List<WallpaperItem> = listOf(
         // Landscapes
@@ -66,10 +67,23 @@ object WallpaperRepository {
         )
     )
 
+    fun resolveWallpaper(candidateId: String?): WallpaperItem {
+        if (candidateId.isNullOrBlank()) return wallpapers.first()
+        return wallpapers.firstOrNull { it.id == candidateId } ?: wallpapers.first()
+    }
+
+    fun getWallpaperById(id: String): WallpaperItem? {
+        return wallpapers.firstOrNull { it.id == id }
+    }
+
+    fun getWallpapersByCategory(category: WallpaperCategory): List<WallpaperItem> {
+        return wallpapers.filter { it.category == category }
+    }
+
     fun getActiveWallpaper(context: Context): WallpaperItem {
         val prefs = getPrefs(context)
         val activeId = prefs.getString(KEY_ACTIVE_WALLPAPER, wallpapers.first().id)
-        return wallpapers.firstOrNull { it.id == activeId } ?: wallpapers.first()
+        return resolveWallpaper(activeId)
     }
 
     fun setActiveWallpaper(context: Context, wallpaperId: String) {
@@ -77,7 +91,7 @@ object WallpaperRepository {
     }
 
     fun getMaxBlurRadius(context: Context): Float {
-        return getPrefs(context).getFloat(KEY_MAX_BLUR_RADIUS, 42.0f)
+        return getPrefs(context).getFloat(KEY_MAX_BLUR_RADIUS, DEFAULT_MAX_BLUR)
     }
 
     fun setMaxBlurRadius(context: Context, radius: Float) {

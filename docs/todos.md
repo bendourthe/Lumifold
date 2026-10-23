@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 3 | 20 | +17 |
+| Tasks Completed | 6 | 20 | +14 |
 | Supported Wallpaper Themes | 6 | 6 | 0 |
 | Min SDK Target | 31 (Android 12) | 31 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
@@ -21,11 +21,11 @@
 - [x] T002 [US1] Implement RenderNode hardware blur and center zoom pipeline in FoldWallpaperService app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
 - [x] T003 [US1] Add unit tests for sensor smoothing and ease-in math app/src/test/java/com/ambientfold/wallpaper/service/HingeMathTest.kt
 
-## Phase 2 -- Theme Collection & Preference Management
+## Phase 2 -- Theme Collection & Preference Management [DONE]
 
-- [ ] T004 [US2] Implement WallpaperRepository and persistent preferences app/src/main/java/com/ambientfold/wallpaper/model/WallpaperRepository.kt
-- [ ] T005 [P] [US2] Validate and bundle vector drawables for all six wallpaper themes app/src/main/res/drawable/
-- [ ] T006 [US2] Add unit tests for WallpaperRepository fallback behavior app/src/test/java/com/ambientfold/wallpaper/model/WallpaperRepositoryTest.kt
+- [x] T004 [US2] Implement WallpaperRepository and persistent preferences app/src/main/java/com/ambientfold/wallpaper/model/WallpaperRepository.kt
+- [x] T005 [P] [US2] Validate and bundle vector drawables for all six wallpaper themes app/src/main/res/drawable/
+- [x] T006 [US2] Add unit tests for WallpaperRepository fallback behavior app/src/test/java/com/ambientfold/wallpaper/model/WallpaperRepositoryTest.kt
 
 ## Phase 3 -- Multi-Display Handoff & Battery Cutoff
 
