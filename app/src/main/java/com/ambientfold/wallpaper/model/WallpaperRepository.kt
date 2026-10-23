@@ -3,24 +3,7 @@ package com.ambientfold.wallpaper.model
 import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
-import androidx.annotation.DrawableRes
 import com.ambientfold.wallpaper.R
-
-enum class WallpaperCategory(val displayName: String) {
-    LANDSCAPES("4K Landscapes"),
-    ABSTRACT_DYNAMIC("Dynamic Abstract"),
-    MINIMAL("Minimal & Dark")
-}
-
-data class WallpaperItem(
-    val id: String,
-    val title: String,
-    val description: String,
-    val category: WallpaperCategory,
-    @DrawableRes val drawableResId: Int,
-    val isDynamic: Boolean = true,
-    val particleColor: Int = Color.parseColor("#FFE082")
-)
 
 object WallpaperRepository {
 
@@ -44,54 +27,60 @@ object WallpaperRepository {
         WallpaperItem(
             id = "mountain_sunset",
             title = "Alpine Glacier Dusk",
-            description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with floating starlight.",
             category = WallpaperCategory.LANDSCAPES,
+            isDark = true,
             drawableResId = R.drawable.wp_mountain_sunset,
+            description = "High-resolution 4K mountain lake reflecting dramatic sunset peaks with floating starlight.",
             isDynamic = true,
             particleColor = Color.parseColor("#FFE082")
         ),
         WallpaperItem(
             id = "starry_galaxy",
             title = "Cosmic Milky Way",
-            description = "High-resolution 4K night sky over snowy alpine peaks with shimmering celestial dust.",
             category = WallpaperCategory.LANDSCAPES,
+            isDark = true,
             drawableResId = R.drawable.wp_starry_galaxy,
+            description = "High-resolution 4K night sky over snowy alpine peaks with shimmering celestial dust.",
             isDynamic = true,
             particleColor = Color.parseColor("#80D8FF")
         ),
         WallpaperItem(
             id = "misty_forest",
             title = "Misty Emerald Pines",
-            description = "High-resolution 4K Pacific Northwest forest with drifting morning fog and atmospheric motes.",
             category = WallpaperCategory.LANDSCAPES,
+            isDark = true,
             drawableResId = R.drawable.wp_misty_forest,
+            description = "High-resolution 4K Pacific Northwest forest with drifting morning fog and atmospheric motes.",
             isDynamic = true,
             particleColor = Color.parseColor("#E0F2F1")
         ),
         WallpaperItem(
             id = "ocean_golden",
             title = "Golden Horizon Ocean",
-            description = "High-resolution 4K coastal wave at golden hour with shimmering ambient light rays.",
             category = WallpaperCategory.LANDSCAPES,
+            isDark = false,
             drawableResId = R.drawable.wp_ocean_golden,
+            description = "High-resolution 4K coastal wave at golden hour with shimmering ambient light rays.",
             isDynamic = true,
             particleColor = Color.parseColor("#FFD54F")
         ),
         WallpaperItem(
             id = "aurora_borealis",
             title = "Northern Lights",
-            description = "High-resolution 4K emerald and violet aurora borealis flowing over snowy peaks.",
             category = WallpaperCategory.LANDSCAPES,
+            isDark = true,
             drawableResId = R.drawable.wp_aurora_borealis,
+            description = "High-resolution 4K emerald and violet aurora borealis flowing over snowy peaks.",
             isDynamic = true,
             particleColor = Color.parseColor("#69F0AE")
         ),
         WallpaperItem(
             id = "dark_prism",
             title = "Obsidian Prism",
-            description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons.",
             category = WallpaperCategory.ABSTRACT_DYNAMIC,
+            isDark = true,
             drawableResId = R.drawable.wp_dark_prism,
+            description = "Ultra-sleek dark geometric glassmorphism with refractive chromatic light ribbons.",
             isDynamic = true,
             particleColor = Color.parseColor("#E040FB")
         )
