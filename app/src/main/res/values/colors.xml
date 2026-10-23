@@ -1,0 +1,29 @@
+<resources>
+    <!-- Pixel Material You inspired palette -->
+    <color name="md_theme_dark_primary">#D0BCFF</color>
+    <color name="md_theme_dark_onPrimary">#381E72</color>
+    <color name="md_theme_dark_primaryContainer">#4F378B</color>
+    <color name="md_theme_dark_background">#141218</color>
+    <color name="md_theme_dark_onBackground">#E6E0E9</color>
+    <color name="md_theme_dark_surface">#1D1B20</color>
+    <color name="md_theme_dark_onSurface">#E6E0E9</color>
+    <color name="md_theme_dark_surfaceVariant">#49454F</color>
+    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>
+    <color name="md_theme_dark_outline">#938F99</color>
+
+    <!-- Theme Accents -->
+    <color name="accent_aurora_start">#0B192C</color>
+    <color name="accent_aurora_mid">#1E3E62</color>
+    <color name="accent_aurora_end">#00FFA3</color>
+
+    <color name="accent_dunes_start">#2C1810</color>
+    <color name="accent_dunes_mid">#D47A37</color>
+    <color name="accent_dunes_end">#F4E0A5</color>
+
+    <color name="accent_geom_dark">#121214</color>
+    <color name="accent_geom_cyan">#29B6F6</color>
+    <color name="accent_geom_magenta">#AB47BC</color>
+
+    <color name="accent_light_bg">#F8F9FA</color>
+    <color name="accent_light_accent">#4285F4</color>
+</resources>

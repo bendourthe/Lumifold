@@ -1,0 +1,26 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="256dp"
+    android:height="256dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <path
+        android:fillColor="#141218"
+        android:pathData="M0,0h256v256h-256z" />
+    <path
+        android:fillColor="#381E72"
+        android:pathData="M32,48h192c8.8,0 16,7.2 16,16v128c0,8.8 -7.2,16 -16,16H32c-8.8,0 -16,-7.2 -16,-16V64c0,-8.8 7.2,-16 16,-16z" />
+    <!-- Fold spine line -->
+    <path
+        android:strokeColor="#D0BCFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:pathData="M128,48v160" />
+    <!-- Left panel decorative glow -->
+    <path
+        android:fillColor="#4F378B"
+        android:pathData="M36,68h76v120H36z" />
+    <!-- Right panel decorative wave -->
+    <path
+        android:fillColor="#00FFA3"
+        android:pathData="M144,140c20,-20 50,10 76,-10v58h-76z" />
+</vector>

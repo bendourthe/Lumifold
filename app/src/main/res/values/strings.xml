@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">Ambient Fold</string>
+    <string name="wallpaper_service_label">Ambient Fold Motion</string>
+    <string name="wallpaper_service_description">Dynamic wallpaper that responds to folding and unfolding with hardware-accelerated blur transitions.</string>
+
+    <string name="title_catalog">Wallpaper Collection</string>
+    <string name="subtitle_catalog">Choose a theme for both cover and unfolded screens</string>
+    <string name="btn_set_wallpaper">Set as Wallpaper</string>
+    <string name="btn_preview_mode">Interactive Fold Test</string>
+
+    <string name="sensor_status_active">Hinge Sensor: Connected (%1$d°)</string>
+    <string name="sensor_status_simulated">Hinge Sensor: Emulated / Standby</string>
+
+    <string name="tab_landscapes">Landscapes</string>
+    <string name="tab_geometric">Geometric</string>
+    <string name="tab_minimal">Minimal</string>
+
+    <string name="slider_hinge_label">Simulate Fold Angle: %1$d°</string>
+    <string name="hint_fold_action">Open or close your Pixel Fold to see the real-time blur transition.</string>
+</resources>
