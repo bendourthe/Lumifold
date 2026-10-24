@@ -18,6 +18,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -737,6 +739,8 @@ private fun TuningCard(
                 checked = coverAwake,
                 onChange = onCoverAwake
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
+            FoldSettingRow()
             Spacer(Modifier.height(10.dp))
             Surface(shape = RoundedCornerShape(14.dp), color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(12.dp)) {
@@ -748,6 +752,25 @@ private fun TuningCard(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FoldSettingRow() {
+    val context = LocalContext.current
+    Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text("Closing on the cover", style = MaterialTheme.typography.titleSmall)
+        Text(
+            "Android decides whether the cover lights up as you fold. For the closing effect to finish on the cover, open Display settings and set \u201CContinue using apps on fold\u201D to Always. Apps cannot change this setting themselves.",
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        TextButton(
+            onClick = {
+                runCatching { context.startActivity(Intent(Settings.ACTION_DISPLAY_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            },
+            contentPadding = PaddingValues(horizontal = 0.dp)
+        ) { Text("Open Display settings") }
     }
 }
 

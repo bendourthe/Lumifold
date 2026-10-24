@@ -90,3 +90,13 @@
 - [x] T057 [US5] Frame planets per display (centered open, left limb on the cover) and add Saturn with rings and Earth at Night app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
 - [x] T058 [US5] Split nebula photos into gas and star layers for parallax and twinkle instead of warping tools/nebula_layers.py
 - [ ] T059 [US5] Check the Sun and planet cover framing on the phone's real cover display (verified in the in-app cover preview only)
+- [x] T060 [US5] Stop picker previews from overwriting panel sizes and rebuild photos when the plane changes app/src/main/java/com/lumifold/wallpaper/service/FoldWallpaperService.kt
+- [ ] T061 [US5] Confirm the composition fix on the phone with the new surface log line (adb logcat -s Lumifold)
+- [x] T062 [US5] Hand off between displays from the effect midpoint and stretch each display's range to the measured switch angles app/src/main/java/com/lumifold/wallpaper/service/FoldWallpaperService.kt
+- [x] T063 [US5] Point users to Android's Continue using apps on fold setting app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
+- [x] T064 [US5] Rebuild nebulae and selected photos in depth from estimated depth maps tools/depth_maps.py
+- [x] T065 [US5] Add a ray-traced black hole and a spiral galaxy simulation app/src/main/java/com/lumifold/wallpaper/render/BlackHoleLens.kt
+- [x] T066 [US5] Cap categories at about 16 and order Space and Landscapes by theme app/src/main/java/com/lumifold/wallpaper/model/WallpaperRepository.kt
+- [ ] T067 [US5] Replace Illustrated with public-domain artworks in depth
+- [ ] T068 [US5] Grow City to about 16 public-domain clips
+- [ ] T069 [US5] Host full-resolution Sun clips as release assets and point the catalog at them tools/sun_encode.py

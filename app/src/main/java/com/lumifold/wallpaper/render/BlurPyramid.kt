@@ -23,9 +23,19 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
     val width: Int get() = levels[0].width
     val height: Int get() = levels[0].height
 
+    /** A half-resolution depth map cropped like level 0. */
+    var depth: Bitmap? = null
+        private set
+
     fun recycle() {
         levels.forEach { if (!it.isRecycled) it.recycle() }
         aux?.let { if (!it.isRecycled) it.recycle() }
+        depth?.let { if (!it.isRecycled) it.recycle() }
+    }
+
+    /** Decodes [resId] with the same crop as level 0, at half size, into [depth]. Off the main thread. */
+    fun attachDepth(resources: Resources, resId: Int, focusX: Float, focusY: Float) {
+        depth = decodeCropped(resources, resId, max(1, width / 2), max(1, height / 2), focusX, focusY)
     }
 
     /** Decodes [resId] with the same crop as level 0 into [aux]. Call off the main thread. */

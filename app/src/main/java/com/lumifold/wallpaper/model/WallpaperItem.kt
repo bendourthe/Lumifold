@@ -24,7 +24,9 @@ enum class Scene {
     CONTOURS,
     NEBULA,
     HORIZON,
-    IRIS
+    IRIS,
+    BLACK_HOLE,
+    GALAXY
 }
 
 /** Five sRGB colors (0xRRGGBB) whose meaning is defined by each [Scene]. */
@@ -49,8 +51,11 @@ enum class MotionStyle(val shaderIndex: Int) {
     /** The photo is an equirectangular surface map wrapped on a slowly rotating, lit sphere. */
     GLOBE(4),
 
-    /** Nebula gas drifting on a slow flow while the stars stay fixed and twinkle. */
-    NEBULA(5)
+    /** Nebula rebuilt in depth: gas and star layers move with a slow camera, stars twinkle. */
+    NEBULA(5),
+
+    /** A photo or painting rebuilt in depth from its depth map, seen by a slowly moving camera. */
+    DEPTH(6)
 }
 
 /**
@@ -84,7 +89,9 @@ sealed interface WallpaperSource {
         /** Grid thumbnail, when the photo itself is not what the wallpaper looks like. */
         @DrawableRes val thumbResId: Int = 0,
         /** For [MotionStyle.NEBULA]: the star layer split from the photo; [resId] is the starless gas. */
-        @DrawableRes val starsResId: Int = 0
+        @DrawableRes val starsResId: Int = 0,
+        /** For [MotionStyle.NEBULA] and [MotionStyle.DEPTH]: grayscale depth, white is near. */
+        @DrawableRes val depthResId: Int = 0
     ) : WallpaperSource
 
     data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource

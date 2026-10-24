@@ -14,6 +14,7 @@ import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
+import android.util.Log
 import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.SurfaceHolder
@@ -72,7 +73,12 @@ class FoldWallpaperService : WallpaperService() {
         private var video: VideoFrames? = null
         private var videoItemId: String? = null
         private var spec: SurfaceSpec? = null
+        private var reloadPhoto = false
         private var lastSurfaceInner: Boolean? = null
+
+        // When the system moves the wallpaper to the other display, that display starts from the
+        // shared midpoint of the effect and eases to the hinge, wherever the switch happened.
+        private var handoffStartMs = 0L
         private var visible = false
         private var lastVisibleMs = 0L
 
@@ -195,7 +201,9 @@ class FoldWallpaperService : WallpaperService() {
             val rotation = displayContext?.display?.rotation ?: 0
             val (nw, nh) = FoldOptics.naturalSize(width, height, rotation)
             val inner = FoldOptics.isInnerDisplay(nw, nh)
-            rememberNaturalSize(inner, nw, nh)
+            // Picker previews are scaled or cropped surfaces: they must not redefine the panels.
+            if (!isPreview) rememberNaturalSize(inner, nw, nh)
+            if (!isPreview && lastSurfaceInner != null && lastSurfaceInner != inner) startHandoff()
             recordSwitchAngle(inner)
 
             val innerW = prefs.getInt(Repo.KEY_INNER_W, Repo.DEFAULT_INNER_W)
@@ -203,11 +211,16 @@ class FoldWallpaperService : WallpaperService() {
             val coverW = prefs.getInt(Repo.KEY_COVER_W, Repo.DEFAULT_COVER_W)
             val coverH = prefs.getInt(Repo.KEY_COVER_H, Repo.DEFAULT_COVER_H)
             val surfaceHeight = if (inner) nh / (nw * 0.5f) else nh.toFloat() / nw
-            spec = SurfaceSpec(
+            val next = SurfaceSpec(
                 width, height, rotation, inner, surfaceHeight,
                 FoldOptics.planeHeight(innerW, innerH, coverW, coverH)
             )
+            Log.d(TAG, "surface ${width}x$height rot=$rotation inner=$inner preview=$isPreview plane=${next.planeHeight}")
+            val texChanged = spec?.let { it.planeHeight != next.planeHeight } ?: false
+            spec = next
             spring.clear()
+            // A photo is cropped to the plane when loaded; rebuild it if the plane changed since.
+            if (texChanged && (item.source as? WallpaperSource.Photo)?.globe == null) reloadPhoto = true
             ensureShader()
             updateAwake()
             drawFrame()
@@ -270,6 +283,38 @@ class FoldWallpaperService : WallpaperService() {
             requestFrame()
         }
 
+        private fun startHandoff() {
+            val now = SystemClock.uptimeMillis()
+            handoffStartMs = now
+            lastMoveMs = now
+            settle = 1f
+            mainHandler.removeCallbacks(settleCheck)
+            mainHandler.postDelayed(settleCheck, SETTLE_DELAY_MS + 20L)
+        }
+
+        /** 1 right after a display switch, easing to 0 over [HANDOFF_MS]. */
+        private fun handoffWeight(): Float {
+            if (handoffStartMs == 0L) return 0f
+            val t = (SystemClock.uptimeMillis() - handoffStartMs) / HANDOFF_MS.toFloat()
+            if (t >= 1f) return 0f
+            val k = 1f - t
+            return k * k * (3f - 2f * k)
+        }
+
+        /**
+         * Stretches the hinge range a display actually sees so its effect reaches the shared
+         * midpoint (90 degrees in shader terms) where this phone switches displays.
+         */
+        private fun remapForSwitch(angle: Float, inner: Boolean): Float {
+            return if (inner) {
+                val c = prefs.getFloat(Repo.KEY_MEASURED_CLOSE_SWITCH, 90f).takeUnless { it.isNaN() }?.coerceIn(30f, 150f) ?: 90f
+                (180f - (180f - angle) * 90f / (180f - c)).coerceIn(90f, 180f)
+            } else {
+                val o = prefs.getFloat(Repo.KEY_MEASURED_OPEN_SWITCH, 90f).takeUnless { it.isNaN() }?.coerceIn(30f, 150f) ?: 90f
+                (angle * 90f / o).coerceIn(0f, 90f)
+            }
+        }
+
         private fun settleTarget(): Float =
             if (SystemClock.uptimeMillis() - lastMoveMs < SETTLE_DELAY_MS) 1f else 0f
 
@@ -308,7 +353,9 @@ class FoldWallpaperService : WallpaperService() {
 
         private fun ensureShader() {
             val current = shader
-            if (current != null && current.item.id == item.id) {
+            val reload = reloadPhoto && item.source is WallpaperSource.Photo
+            reloadPhoto = false
+            if (current != null && current.item.id == item.id && !reload) {
                 if (current.isReady && video == null && loadingId == null) startVideo(item)
                 if (current.isReady || loadingId == item.id) return
             }
@@ -385,16 +432,18 @@ class FoldWallpaperService : WallpaperService() {
             val settling = abs(goal - settle) > 0.002f
             if (!settling) settle = goal
 
+            val handingOff = handoffWeight() > 0f
             oddFrame = !oddFrame
-            if (hingeMoving || settling || !motion || oddFrame) drawFrame()
-            if (hingeMoving || settling || motion) requestFrame()
+            if (hingeMoving || settling || handingOff || !motion || oddFrame) drawFrame()
+            if (hingeMoving || settling || handingOff || motion) requestFrame()
         }
 
         /** Hinge angle fed to the shader, eased toward the display's resting angle by [settle]. */
         private fun effectAngle(s: SurfaceSpec): Float {
-            val angle = spring.position.takeUnless { it.isNaN() } ?: targetAngle()
+            val angle = remapForSwitch(spring.position.takeUnless { it.isNaN() } ?: targetAngle(), s.isInner)
             val rest = if (s.isInner) 180f else 0f
-            return rest + (angle - rest) * settle
+            val eased = rest + (angle - rest) * settle
+            return eased + (90f - eased) * handoffWeight()
         }
 
         private fun targetAngle(): Float {
@@ -435,5 +484,10 @@ class FoldWallpaperService : WallpaperService() {
 
         /** Stillness after which a half-open posture counts as settled. */
         const val SETTLE_DELAY_MS = 4_000L
+
+        /** Ease from the effect midpoint to the hinge state after a display switch. */
+        const val HANDOFF_MS = 700L
+
+        private const val TAG = "Lumifold"
     }
 }

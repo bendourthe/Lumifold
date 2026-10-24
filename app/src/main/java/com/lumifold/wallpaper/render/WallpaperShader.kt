@@ -9,6 +9,7 @@ import android.graphics.RuntimeShader
 import android.graphics.Shader
 import com.lumifold.wallpaper.model.Globe
 import com.lumifold.wallpaper.model.OpeningEffect
+import com.lumifold.wallpaper.model.Scene
 import kotlin.math.PI
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperSource
@@ -81,6 +82,14 @@ class WallpaperShader private constructor(
             filterMode = BitmapShader.FILTER_MODE_LINEAR
             if (p.aux == null) setLocalMatrix(Matrix().apply { setScale(base.width.toFloat(), base.height.toFloat()) })
         })
+        val depth = p.depth
+        shader.setInputShader("uDepth", BitmapShader(depth ?: NO_STARS, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+            filterMode = BitmapShader.FILTER_MODE_LINEAR
+            setLocalMatrix(Matrix().apply {
+                if (depth == null) setScale(base.width.toFloat(), base.height.toFloat())
+                else setScale(base.width.toFloat() / depth.width, base.height.toFloat() / depth.height)
+            })
+        })
         shader.setFloatUniform("uStyle", photo.motion.shaderIndex.toFloat())
         val g = photo.globe ?: Globe()
         shader.setFloatUniform(
@@ -137,6 +146,14 @@ class WallpaperShader private constructor(
 
     private fun applyPalette() {
         val source = item.source as? WallpaperSource.Generative ?: return
+        if (source.scene == Scene.BLACK_HOLE) {
+            shader.setInputShader("uLens", BitmapShader(BlackHoleLens.orbit, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                filterMode = BitmapShader.FILTER_MODE_LINEAR
+            })
+            shader.setInputShader("uLensEnd", BitmapShader(BlackHoleLens.escape, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                filterMode = BitmapShader.FILTER_MODE_LINEAR
+            })
+        }
         source.palette.colors.forEachIndexed { i, rgb ->
             shader.setFloatUniform(
                 "uC$i",
@@ -158,6 +175,7 @@ class WallpaperShader private constructor(
             if (photo.globe == null) {
                 return BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY).also {
                     if (photo.starsResId != 0) it.attachAux(resources, photo.starsResId, photo.focusX, photo.focusY)
+                    if (photo.depthResId != 0) it.attachDepth(resources, photo.depthResId, photo.focusX, photo.focusY)
                 }
             }
             // Globe maps keep their own size and aspect: the shader samples them by longitude and latitude.

@@ -52,8 +52,9 @@ object WallpaperRepository {
         description: String,
         motion: MotionStyle = MotionStyle.LIQUID,
         focusX: Float = 0.5f,
-        focusY: Float = 0.5f
-    ) = WallpaperItem(id, title, category, WallpaperSource.Photo(resId, motion, focusX, focusY), description)
+        focusY: Float = 0.5f,
+        depthResId: Int = 0
+    ) = WallpaperItem(id, title, category, WallpaperSource.Photo(resId, motion, focusX, focusY, depthResId = depthResId), description)
 
     private fun video(
         id: String,
@@ -70,10 +71,10 @@ object WallpaperRepository {
     // folded, its left limb sits on the right of the cover with eruptions and space to the left.
     private val SUN_FRAMING = VideoFraming(innerHeight = 1.55f, coverHeight = 2.4f, coverCenterX = 1.45f)
 
-    private fun nebula(id: String, title: String, gasResId: Int, starsResId: Int, thumbResId: Int, description: String) =
+    private fun nebula(id: String, title: String, gasResId: Int, starsResId: Int, thumbResId: Int, depthResId: Int, description: String) =
         WallpaperItem(
             id, title, WallpaperCategory.SPACE,
-            WallpaperSource.Photo(gasResId, MotionStyle.NEBULA, thumbResId = thumbResId, starsResId = starsResId),
+            WallpaperSource.Photo(gasResId, MotionStyle.NEBULA, thumbResId = thumbResId, starsResId = starsResId, depthResId = depthResId),
             description
         )
 
@@ -158,7 +159,6 @@ object WallpaperRepository {
             "frozen_bubble", "Frozen Bubble", WallpaperCategory.ABSTRACT, R.drawable.wp_frozen_bubble,
             "A soap bubble freezing into ice crystals.", MotionStyle.NONE
         ),
-
         // Gradients
         gen(
             "sorbet", "Sorbet", WallpaperCategory.GRADIENTS, Scene.MESH,
@@ -220,25 +220,12 @@ object WallpaperRepository {
             Palette(0x2D0B3A, 0xFF4D6D, 0xFF9E00, 0x9D4EDD, 0xFFD60A),
             "Neon pink, orange and purple of a city sunset."
         ),
-
-        // Video loops: public-domain and CC0 footage, credited in docs/reference/photo-credits.md
-        video(
-            "canyon_clouds", "Canyon Clouds", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ed/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_canyon_clouds, 15.6f,
-            "Clouds pouring over the rim of the Grand Canyon. National Park Service time-lapse."
-        ),
+        // Landscapes
         video(
             "swiftcurrent_sunrise", "Swiftcurrent Sunrise", WallpaperCategory.LANDSCAPES,
             "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/50/Sunrise_at_Swiftcurrent_Lake_%2826145798446%29.webm/Sunrise_at_Swiftcurrent_Lake_%2826145798446%29.webm.1080p.vp9.webm",
             R.drawable.wpv_swiftcurrent_sunrise, 17.7f,
             "Red peaks reflected in Swiftcurrent Lake at sunrise, Glacier National Park."
-        ),
-        video(
-            "alaska_aurora", "Alaska Aurora", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_alaska_aurora, 7.1f,
-            "Green aurora rippling over Alaska. NASA time-lapse."
         ),
         video(
             "lake_mcdonald_clouds", "Lake McDonald", WallpaperCategory.LANDSCAPES,
@@ -247,22 +234,14 @@ object WallpaperRepository {
             "Clouds sailing over Lake McDonald, Glacier National Park."
         ),
         video(
-            "golden_sunset", "Golden Sunset", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/27/Golden_sunset_filmed_in_January.webm/Golden_sunset_filmed_in_January.webm.1080p.vp9.webm",
-            R.drawable.wpv_golden_sunset, 11.8f,
-            "A fiery gold sunset sky."
+            "misty_lake", "Misty Lake", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_misty_lake, 10.9f,
+            "Morning mist moving over Lake McDonald."
         ),
-        video(
-            "virginia_falls", "Virginia Falls", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/51/Virginia_Falls_%2826105159061%29.webm/Virginia_Falls_%2826105159061%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_virginia_falls, 10.3f,
-            "Virginia Falls tumbling through the forest, Glacier National Park."
-        ),
-        video(
-            "turquoise_waves", "Turquoise Waves", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/14/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm.1080p.vp9.webm",
-            R.drawable.wpv_turquoise_waves, 10.4f,
-            "Turquoise waves rolling onto the beach at Isola Rossa, Corsica."
+        photo(
+            "teton_mirror", "Teton Mirror", WallpaperCategory.LANDSCAPES, R.drawable.wp_teton_mirror,
+            "The Teton Range reflected in a still lake, Grand Teton National Park.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_teton_mirror
         ),
         video(
             "misty_river", "Misty River", WallpaperCategory.LANDSCAPES,
@@ -271,34 +250,10 @@ object WallpaperRepository {
             "Fog drifting over a calm river."
         ),
         video(
-            "snowfall", "Snowfall", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/56/Snow_falling_in_Charlton_MA_2025-12-14.webm/Snow_falling_in_Charlton_MA_2025-12-14.webm.1080p.vp9.webm",
-            R.drawable.wpv_snowfall, 11.3f,
-            "Snow falling quietly in a winter forest."
-        ),
-        video(
-            "meadow_breeze", "Meadow Breeze", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/15/Calmly_waving_grass_and_flowers.ogv/Calmly_waving_grass_and_flowers.ogv.1080p.vp9.webm",
-            R.drawable.wpv_meadow_breeze, 6.1f,
-            "Daisies and grass swaying in the wind."
-        ),
-        video(
-            "desert_night", "Desert Night", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/12/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_desert_night, 4.6f,
-            "Stars and clouds wheeling over Headstone Rock, Joshua Tree. National Park Service time-lapse."
-        ),
-        video(
-            "lightning_storm", "Lightning Storm", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/6/66/Lightning_storm_over_Colorado%2C_USA.ogg/Lightning_storm_over_Colorado%2C_USA.ogg.1080p.vp9.webm",
-            R.drawable.wpv_lightning_storm, 7.4f,
-            "Lightning flashing through a storm over Colorado."
-        ),
-        video(
-            "lenticular_cloud", "Lenticular Cloud", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/aa/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv.1080p.vp9.webm",
-            R.drawable.wpv_lenticular_cloud, 6.9f,
-            "A lenticular cloud swirling over Longs Peak, Colorado."
+            "virginia_falls", "Virginia Falls", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/51/Virginia_Falls_%2826105159061%29.webm/Virginia_Falls_%2826105159061%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_virginia_falls, 10.3f,
+            "Virginia Falls tumbling through the forest, Glacier National Park."
         ),
         video(
             "yellowstone_falls", "Yellowstone Falls", WallpaperCategory.LANDSCAPES,
@@ -307,11 +262,64 @@ object WallpaperRepository {
             "The Upper Falls of the Yellowstone River in snow."
         ),
         video(
-            "misty_lake", "Misty Lake", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_misty_lake, 10.9f,
-            "Morning mist moving over Lake McDonald."
+            "turquoise_waves", "Turquoise Waves", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/14/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm.1080p.vp9.webm",
+            R.drawable.wpv_turquoise_waves, 10.4f,
+            "Turquoise waves rolling onto the beach at Isola Rossa, Corsica."
         ),
+        video(
+            "golden_sunset", "Golden Sunset", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/27/Golden_sunset_filmed_in_January.webm/Golden_sunset_filmed_in_January.webm.1080p.vp9.webm",
+            R.drawable.wpv_golden_sunset, 11.8f,
+            "A fiery gold sunset sky."
+        ),
+        video(
+            "canyon_clouds", "Canyon Clouds", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ed/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_canyon_clouds, 15.6f,
+            "Clouds pouring over the rim of the Grand Canyon. National Park Service time-lapse."
+        ),
+        video(
+            "desert_night", "Desert Night", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/12/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_desert_night, 4.6f,
+            "Stars and clouds wheeling over Headstone Rock, Joshua Tree. National Park Service time-lapse."
+        ),
+        video(
+            "meadow_breeze", "Meadow Breeze", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/15/Calmly_waving_grass_and_flowers.ogv/Calmly_waving_grass_and_flowers.ogv.1080p.vp9.webm",
+            R.drawable.wpv_meadow_breeze, 6.1f,
+            "Daisies and grass swaying in the wind."
+        ),
+        video(
+            "snowfall", "Snowfall", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/56/Snow_falling_in_Charlton_MA_2025-12-14.webm/Snow_falling_in_Charlton_MA_2025-12-14.webm.1080p.vp9.webm",
+            R.drawable.wpv_snowfall, 11.3f,
+            "Snow falling quietly in a winter forest."
+        ),
+        video(
+            "lenticular_cloud", "Lenticular Cloud", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/aa/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv.1080p.vp9.webm",
+            R.drawable.wpv_lenticular_cloud, 6.9f,
+            "A lenticular cloud swirling over Longs Peak, Colorado."
+        ),
+        video(
+            "lightning_storm", "Lightning Storm", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/6/66/Lightning_storm_over_Colorado%2C_USA.ogg/Lightning_storm_over_Colorado%2C_USA.ogg.1080p.vp9.webm",
+            R.drawable.wpv_lightning_storm, 7.4f,
+            "Lightning flashing through a storm over Colorado."
+        ),
+        video(
+            "alaska_aurora", "Alaska Aurora", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_alaska_aurora, 7.1f,
+            "Green aurora rippling over Alaska. NASA time-lapse."
+        ),
+        photo(
+            "lofoten_aurora", "Lofoten Aurora", WallpaperCategory.LANDSCAPES, R.drawable.wp_lofoten_aurora,
+            "Green northern lights over the mountains of Lofoten, Norway.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_lofoten_aurora
+        ),
+        // City
         video(
             "shanghai_bund", "Shanghai Bund", WallpaperCategory.CITY,
             "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/91/Shanghai_Bund%2C_Lujiazui_Skyline_Timelapse.webm/Shanghai_Bund%2C_Lujiazui_Skyline_Timelapse.webm.1080p.vp9.webm",
@@ -360,6 +368,7 @@ object WallpaperRepository {
             R.drawable.wpv_la_night, 30.5f,
             "Downtown Los Angeles glowing at night."
         ),
+        // Scenes
         video(
             "deep_sea_jellyfish", "Deep-Sea Jellyfish", WallpaperCategory.SCENES,
             "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm.1080p.vp9.webm",
@@ -414,85 +423,6 @@ object WallpaperRepository {
             R.drawable.wpv_campfire, 4.7f,
             "Campfire flames up close."
         ),
-
-        // Landscapes: public-domain and CC0 photographs, credited in docs/reference/photo-credits.md
-        photo(
-            "teton_mirror", "Teton Mirror", WallpaperCategory.LANDSCAPES, R.drawable.wp_teton_mirror,
-            "The Teton Range reflected in a still lake, Grand Teton National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "zion_afterglow", "Zion Afterglow", WallpaperCategory.LANDSCAPES, R.drawable.wp_zion_afterglow,
-            "Sandstone cliffs under a burning evening sky, Zion National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "rainier_alpenglow", "Mount Rainier", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_alpenglow,
-            "Mount Rainier rising over dark evergreen forest.", MotionStyle.NONE
-        ),
-        photo(
-            "rainier_falls", "Rainier Falls", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_falls,
-            "A waterfall below the snowfields of Mount Rainier.", MotionStyle.NONE
-        ),
-        photo(
-            "rainier_meadow", "Autumn Meadow", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_meadow,
-            "Golden autumn meadows on the Mazama Ridge Trail, Mount Rainier.", MotionStyle.NONE
-        ),
-        photo(
-            "arches_window", "Arches Window", WallpaperCategory.LANDSCAPES, R.drawable.wp_arches_window,
-            "A red rock arch framing blue sky, Arches National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "death_valley_dunes", "Death Valley Dunes", WallpaperCategory.LANDSCAPES, R.drawable.wp_death_valley_dunes,
-            "Sand dunes at sunset in Death Valley.", MotionStyle.NONE
-        ),
-        photo(
-            "olympic_sunset", "Olympic Sunset", WallpaperCategory.LANDSCAPES, R.drawable.wp_olympic_sunset,
-            "Layered ridges fading into an orange sunset, Olympic National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "olympic_blue_hour", "Blue Ridges", WallpaperCategory.LANDSCAPES, R.drawable.wp_olympic_blue_hour,
-            "Blue mountain ridges over a quiet lake, Olympic National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "sea_of_clouds", "Sea of Clouds", WallpaperCategory.LANDSCAPES, R.drawable.wp_sea_of_clouds,
-            "Snowy peaks above a valley filled with cloud, Olympic National Park.", MotionStyle.NONE
-        ),
-        photo(
-            "forest_light", "Forest Light", WallpaperCategory.LANDSCAPES, R.drawable.wp_forest_light,
-            "Sunbeams through mist in an old-growth forest.", MotionStyle.NONE
-        ),
-        photo(
-            "lake_crescent", "Lake Crescent", WallpaperCategory.LANDSCAPES, R.drawable.wp_lake_crescent,
-            "Wild blossoms over the blue water of Lake Crescent.", MotionStyle.NONE
-        ),
-        photo(
-            "glacier_river", "Glacier River", WallpaperCategory.LANDSCAPES, R.drawable.wp_glacier_river,
-            "A turquoise river winding through autumn forest.", MotionStyle.NONE
-        ),
-        photo(
-            "crater_lake", "Crater Lake", WallpaperCategory.LANDSCAPES, R.drawable.wp_crater_lake,
-            "Deep blue Crater Lake and Wizard Island.", MotionStyle.NONE
-        ),
-        photo(
-            "crater_lake_dawn", "Crater Lake Dawn", WallpaperCategory.LANDSCAPES, R.drawable.wp_crater_lake_dawn,
-            "First light over the rim of Crater Lake.", MotionStyle.NONE
-        ),
-        photo(
-            "grand_canyon_sunset", "Grand Canyon", WallpaperCategory.LANDSCAPES, R.drawable.wp_grand_canyon_sunset,
-            "The South Rim of the Grand Canyon at sunset.", MotionStyle.NONE
-        ),
-        photo(
-            "emerald_bay", "Emerald Bay", WallpaperCategory.LANDSCAPES, R.drawable.wp_emerald_bay,
-            "Sunset over Emerald Bay, Lake Tahoe.", MotionStyle.NONE
-        ),
-        photo(
-            "mountain_lake", "Mountain Lake", WallpaperCategory.LANDSCAPES, R.drawable.wp_mountain_lake,
-            "Peaks mirrored in a rippled mountain lake.", MotionStyle.NONE
-        ),
-        photo(
-            "lofoten_aurora", "Lofoten Aurora", WallpaperCategory.LANDSCAPES, R.drawable.wp_lofoten_aurora,
-            "Green northern lights over the mountains of Lofoten, Norway.", MotionStyle.NONE
-        ),
-
         // Illustrated
         gen(
             "aurora_veil", "Aurora Veil", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
@@ -554,8 +484,7 @@ object WallpaperRepository {
             Palette(0x01080A, 0x14B8A6, 0x2563EB, 0x86EFAC, 0xECFEFF),
             "Teal and blue clouds lit by young stars."
         ),
-
-        // Space: NASA, ESA and CC0 images, credited in docs/reference/photo-credits.md
+        // Space
         video(
             "sun_flare_304", "Solar Flare", WallpaperCategory.SPACE,
             "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm.1080p.vp9.webm",
@@ -587,20 +516,14 @@ object WallpaperRepository {
             "Plasma arcing off the limb of the Sun. NASA Solar Dynamics Observatory."
         ),
         globe(
-            "saturn_globe", "Saturn", R.drawable.wpg_saturn, R.drawable.wpt_saturn,
-            Globe(spinSeconds = 120f, tiltDeg = -8f, inclinationDeg = 22f, atmosphere = 0x2A251C, rings = true,
-                innerRadius = 0.4f, coverRadius = 0.85f, coverEdgeX = 0.45f),
-            "Saturn turning inside its rings, colored from Cassini's natural-color view."
+            "earth_globe", "Earth", R.drawable.wpg_earth, R.drawable.wpt_earth,
+            Globe(spinSeconds = 160f, tiltDeg = 23f, atmosphere = 0x5A9BFF, night = true),
+            "Earth turning slowly, city lights glowing on the night side. NASA Blue Marble and city lights maps."
         ),
         globe(
             "earth_night_globe", "Earth at Night", R.drawable.wpg_earth, R.drawable.wpt_earth_night,
             Globe(spinSeconds = 160f, tiltDeg = 23f, atmosphere = 0x5A9BFF, night = true, lightX = 0.35f, lightY = 0.1f, lightZ = -0.93f),
             "The night side of Earth turning slowly, its cities glowing. NASA city lights map."
-        ),
-        globe(
-            "earth_globe", "Earth", R.drawable.wpg_earth, R.drawable.wpt_earth,
-            Globe(spinSeconds = 160f, tiltDeg = 23f, atmosphere = 0x5A9BFF, night = true),
-            "Earth turning slowly, city lights glowing on the night side. NASA Blue Marble and city lights maps."
         ),
         globe(
             "moon_globe", "The Moon", R.drawable.wpg_moon, R.drawable.wpt_moon,
@@ -618,83 +541,41 @@ object WallpaperRepository {
             "Jupiter's cloud bands and Great Red Spot rotating. NASA Cassini map."
         ),
         globe(
-            "mercury_globe", "Mercury", R.drawable.wpg_mercury, R.drawable.wpt_mercury,
-            Globe(spinSeconds = 260f, tiltDeg = 2f),
-            "Cratered Mercury turning close to the Sun. NASA MESSENGER mosaic."
+            "saturn_globe", "Saturn", R.drawable.wpg_saturn, R.drawable.wpt_saturn,
+            Globe(spinSeconds = 120f, tiltDeg = -8f, inclinationDeg = 22f, atmosphere = 0x2A251C, rings = true,
+                innerRadius = 0.4f, coverRadius = 0.85f, coverEdgeX = 0.45f),
+            "Saturn turning inside its rings, colored from Cassini's natural-color view."
+        ),
+        gen(
+            "black_hole", "Black Hole", WallpaperCategory.SPACE, Scene.BLACK_HOLE,
+            Palette(0x02030A, 0xFFF4E0, 0xFFB44D, 0xB8360F, 0xDDE6FF),
+            "A simulated black hole: its disk lensed over the shadow, starlight bent around it."
+        ),
+        gen(
+            "spiral_galaxy", "Spiral Galaxy", WallpaperCategory.SPACE, Scene.GALAXY,
+            Palette(0x020308, 0xFFE2B0, 0x8FB4FF, 0xFF6FA8, 0x6B4A2E),
+            "A simulated spiral galaxy turning slowly, its arms full of young stars and dust."
         ),
         nebula(
-            "pillars_webb", "Pillars of Creation", R.drawable.wp_pillars_webb, R.drawable.wpn_pillars_webb, R.drawable.wpt_pillars_webb,
+            "pillars_webb", "Pillars of Creation", R.drawable.wp_pillars_webb, R.drawable.wpn_pillars_webb, R.drawable.wpt_pillars_webb, R.drawable.wpd_pillars_webb,
             "The Pillars of Creation in near-infrared, James Webb Space Telescope."
         ),
         nebula(
-            "pillars_hubble", "Pillars, Hubble", R.drawable.wp_pillars_hubble, R.drawable.wpn_pillars_hubble, R.drawable.wpt_pillars_hubble,
-            "The Eagle Nebula pillars in visible light, Hubble Space Telescope."
-        ),
-        nebula(
-            "cosmic_cliffs", "Cosmic Cliffs", R.drawable.wp_cosmic_cliffs, R.drawable.wpn_cosmic_cliffs, R.drawable.wpt_cosmic_cliffs,
+            "cosmic_cliffs", "Cosmic Cliffs", R.drawable.wp_cosmic_cliffs, R.drawable.wpn_cosmic_cliffs, R.drawable.wpt_cosmic_cliffs, R.drawable.wpd_cosmic_cliffs,
             "The star-forming edge of the Carina Nebula, James Webb Space Telescope."
         ),
         nebula(
-            "tarantula", "Tarantula Nebula", R.drawable.wp_tarantula, R.drawable.wpn_tarantula, R.drawable.wpt_tarantula,
-            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope."
-        ),
-        nebula(
-            "orion_nebula", "Orion Nebula", R.drawable.wp_orion_nebula, R.drawable.wpn_orion_nebula, R.drawable.wpt_orion_nebula,
+            "orion_nebula", "Orion Nebula", R.drawable.wp_orion_nebula, R.drawable.wpn_orion_nebula, R.drawable.wpt_orion_nebula, R.drawable.wpd_orion_nebula,
             "The heart of the Orion Nebula, Hubble Space Telescope."
         ),
         nebula(
-            "helix", "Helix Nebula", R.drawable.wp_helix, R.drawable.wpn_helix, R.drawable.wpt_helix,
+            "tarantula", "Tarantula Nebula", R.drawable.wp_tarantula, R.drawable.wpn_tarantula, R.drawable.wpt_tarantula, R.drawable.wpd_tarantula,
+            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope."
+        ),
+        nebula(
+            "helix", "Helix Nebula", R.drawable.wp_helix, R.drawable.wpn_helix, R.drawable.wpt_helix, R.drawable.wpd_helix,
             "The Helix Nebula in infrared, Spitzer Space Telescope."
         ),
-        nebula(
-            "ring_nebula", "Ring Nebula", R.drawable.wp_ring_nebula, R.drawable.wpn_ring_nebula, R.drawable.wpt_ring_nebula,
-            "The Ring Nebula, Messier 57, Hubble Space Telescope."
-        ),
-        nebula(
-            "crab_nebula", "Crab Nebula", R.drawable.wp_crab_nebula, R.drawable.wpn_crab_nebula, R.drawable.wpt_crab_nebula,
-            "The remains of a supernova seen in 1054, Hubble Space Telescope."
-        ),
-        nebula(
-            "cygnus_loop", "Cygnus Loop", R.drawable.wp_cygnus_loop, R.drawable.wpn_cygnus_loop, R.drawable.wpt_cygnus_loop,
-            "Blue filaments of a supernova remnant in ultraviolet light."
-        ),
-        photo(
-            "whirlpool", "Whirlpool Galaxy", WallpaperCategory.SPACE, R.drawable.wp_whirlpool,
-            "The spiral arms of Messier 51, Hubble Space Telescope.", MotionStyle.COSMOS
-        ),
-        photo(
-            "andromeda", "Andromeda", WallpaperCategory.SPACE, R.drawable.wp_andromeda,
-            "The Andromeda Galaxy in a dense field of stars.", MotionStyle.COSMOS
-        ),
-        photo(
-            "backlit_saturn", "Backlit Saturn", WallpaperCategory.SPACE, R.drawable.wp_backlit_saturn,
-            "Saturn eclipsing the Sun, its rings glowing, from Cassini.", MotionStyle.COSMOS
-        ),
-        photo(
-            "saturn_rings", "Saturn", WallpaperCategory.SPACE, R.drawable.wp_saturn_rings,
-            "Saturn and its rings in natural color, from Cassini.", MotionStyle.COSMOS
-        ),
-        photo(
-            "full_moon", "Full Moon", WallpaperCategory.SPACE, R.drawable.wp_full_moon,
-            "The full Moon in sharp detail.", MotionStyle.COSMOS
-        ),
-        photo(
-            "earthrise", "Earthrise", WallpaperCategory.SPACE, R.drawable.wp_earthrise,
-            "Earth rising over the lunar horizon, Apollo 8.", MotionStyle.COSMOS, focusY = 0.3f
-        ),
-        photo(
-            "nile_at_night", "Nile at Night", WallpaperCategory.SPACE, R.drawable.wp_nile_at_night,
-            "Cairo and the Nile Delta at night, from the International Space Station.", MotionStyle.COSMOS
-        ),
-        photo(
-            "aurora_from_orbit", "Aurora from Orbit", WallpaperCategory.SPACE, R.drawable.wp_aurora_from_orbit,
-            "The aurora australis seen from the International Space Station.", MotionStyle.COSMOS
-        ),
-        photo(
-            "joshua_tree_night", "Joshua Tree Night", WallpaperCategory.SPACE, R.drawable.wp_joshua_tree_night,
-            "The Milky Way over Joshua Tree National Park.", MotionStyle.COSMOS
-        ),
-
         // Textures
         gen(
             "contour_gold", "Contour Gold", WallpaperCategory.TEXTURES, Scene.CONTOURS,
@@ -749,7 +630,6 @@ object WallpaperRepository {
             "granite", "Granite", WallpaperCategory.TEXTURES, R.drawable.wp_granite,
             "Black and white granite blocks in a quarry.", MotionStyle.NONE
         ),
-
         // Minimal
         gen(
             "pale_fog", "Pale Fog", WallpaperCategory.MINIMAL, Scene.MESH,

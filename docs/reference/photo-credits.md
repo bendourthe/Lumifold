@@ -7,23 +7,6 @@ Every photograph bundled in `app/src/main/res/drawable-nodpi/wp_*.jpg` comes fro
 | Wallpaper | Source file | Author | License |
 | --- | --- | --- | --- |
 | `teton_mirror` | [Grand Teton National Park - HCP - October 31, 2022 - 250.jpg](https://commons.wikimedia.org/wiki/File%3AGrand_Teton_National_Park_-_HCP_-_October_31%2C_2022_-_250.jpg) | Vulturesong | CC0 |
-| `zion_afterglow` | [Zion National Park - HCP - October 03, 2022 - 161 - Zion Canyon Scenic Drive.jpg](https://commons.wikimedia.org/wiki/File%3AZion_National_Park_-_HCP_-_October_03%2C_2022_-_161_-_Zion_Canyon_Scenic_Drive.jpg) | Vulturesong | CC0 |
-| `rainier_alpenglow` | [Mount Rainier on 21 June 2024.jpg](https://commons.wikimedia.org/wiki/File%3AMount_Rainier_on_21_June_2024.jpg) | Library of Congress Life | CC0 |
-| `rainier_falls` | [Mount Rainier with waterfall.jpg](https://commons.wikimedia.org/wiki/File%3AMount_Rainier_with_waterfall.jpg) | Zmackerel | CC0 |
-| `rainier_meadow` | [Mount Rainier - HCP - October 17, 2022 - 179 - Mazama Ridge Trail.jpg](https://commons.wikimedia.org/wiki/File%3AMount_Rainier_-_HCP_-_October_17%2C_2022_-_179_-_Mazama_Ridge_Trail.jpg) | Vulturesong | CC0 |
-| `arches_window` | [Arches National Park - HCP - November 10, 2022 - 113.jpg](https://commons.wikimedia.org/wiki/File%3AArches_National_Park_-_HCP_-_November_10%2C_2022_-_113.jpg) | Vulturesong | CC0 |
-| `death_valley_dunes` | [Sunset in Death Valley (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3ASunset_in_Death_Valley_%28Unsplash%29.jpg) | Denys Nevozhai dnevozhai | CC0 |
-| `olympic_sunset` | [Olympic National Park (22476446344).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2822476446344%29.jpg) | Olympic National Park | Public domain |
-| `olympic_blue_hour` | [Olympic National Park (22476957334).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2822476957334%29.jpg) | Olympic National Park | Public domain |
-| `sea_of_clouds` | [Olympic National Park (22477985263).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2822477985263%29.jpg) | Olympic National Park | Public domain |
-| `forest_light` | [Olympic National Park (22451246554).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2822451246554%29.jpg) | Olympic National Park | Public domain |
-| `lake_crescent` | [Olympic National Park (23073661386).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2823073661386%29.jpg) | Olympic National Park | Public domain |
-| `glacier_river` | [Olympic National Park (23130534325).jpg](https://commons.wikimedia.org/wiki/File%3AOlympic_National_Park_%2823130534325%29.jpg) | Olympic National Park | Public domain |
-| `crater_lake` | [Crater Lake National Park - HCP - October 13, 2022 - 034.jpg](https://commons.wikimedia.org/wiki/File%3ACrater_Lake_National_Park_-_HCP_-_October_13%2C_2022_-_034.jpg) | Vulturesong | CC0 |
-| `crater_lake_dawn` | [Crater Lake National Park - HCP - October 13, 2022 - 153.jpg](https://commons.wikimedia.org/wiki/File%3ACrater_Lake_National_Park_-_HCP_-_October_13%2C_2022_-_153.jpg) | Vulturesong | CC0 |
-| `grand_canyon_sunset` | [Grand Canyon South Rim at Sunset.jpg](https://commons.wikimedia.org/wiki/File%3AGrand_Canyon_South_Rim_at_Sunset.jpg) | Mgimelfarb | CC0 |
-| `emerald_bay` | [Emerald Bay, Lake Tahoe, California. 2015.jpg](https://commons.wikimedia.org/wiki/File%3AEmerald_Bay%2C_Lake_Tahoe%2C_California._2015.jpg) | Eric Philbin | CC0 |
-| `mountain_lake` | [Ripples on a mountain lake (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3ARipples_on_a_mountain_lake_%28Unsplash%29.jpg) | Braxton Stuntz braxton | CC0 |
 | `lofoten_aurora` | [Lofoten, Norway (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3ALofoten%2C_Norway_%28Unsplash%29.jpg) | Johannes Groll followhansi | CC0 |
 
 ## Space
@@ -32,22 +15,9 @@ Every photograph bundled in `app/src/main/res/drawable-nodpi/wp_*.jpg` comes fro
 | --- | --- | --- | --- |
 | `tarantula` | [30 Doradus, Tarantula Nebula.jpg](https://commons.wikimedia.org/wiki/File%3A30_Doradus%2C_Tarantula_Nebula.jpg) | NASA, ESA, ESO, D. Lennon and E. Sabbi (ESA/STScI), J. Anderson, S. E. de Mink, R. van der Marel, T. | Public domain |
 | `helix` | [Comets Kick up Dust in Helix Nebula (PIA09178).jpg](https://commons.wikimedia.org/wiki/File%3AComets_Kick_up_Dust_in_Helix_Nebula_%28PIA09178%29.jpg) | NASA/JPL-Caltech/Univ. of Ariz. | Public domain |
-| `crab_nebula` | [Crab Nebula.jpg](https://commons.wikimedia.org/wiki/File%3ACrab_Nebula.jpg) | NASA, ESA, J. Hester and A. Loll (Arizona State University) | Public domain |
-| `ring_nebula` | [Hubble image of the Ring Nebula (Messier 57).jpg](https://commons.wikimedia.org/wiki/File%3AHubble_image_of_the_Ring_Nebula_%28Messier_57%29.jpg) | NASA, ESA, and C. Robert O’Dell (Vanderbilt University) | Public domain |
 | `orion_nebula` | [Orion Nebula - Hubble 2006 mosaic 18000.jpg](https://commons.wikimedia.org/wiki/File%3AOrion_Nebula_-_Hubble_2006_mosaic_18000.jpg) | NASA, ESA, M. Robberto (Space Telescope Science Institute/ESA) and the Hubble Space Telescope Orion | Public domain |
-| `pillars_hubble` | [Pillars of creation 2014 HST WFC3-UVIS full-res denoised.jpg](https://commons.wikimedia.org/wiki/File%3APillars_of_creation_2014_HST_WFC3-UVIS_full-res_denoised.jpg) | NASA, ESA, and the Hubble Heritage Team (STScI/AURA) | Public domain |
 | `cosmic_cliffs` | [“Cosmic Cliffs” in the Carina Nebula (NIRCam and MIRI Composite Image).png](https://commons.wikimedia.org/wiki/File%3A%E2%80%9CCosmic_Cliffs%E2%80%9D_in_the_Carina_Nebula_%28NIRCam_and_MIRI_Composite_Image%29.png) | Image: National Aeronautics and Space Administration (a U.S. federal government agency; https://w | Public domain |
 | `pillars_webb` | [Pillars of Creation (NIRCam Image).tif](https://commons.wikimedia.org/wiki/File%3APillars_of_Creation_%28NIRCam_Image%29.tif) | SCIENCE: NASA, ESA, CSA, STScI IMAGE PROCESSING: Joseph DePasquale (STScI), Anton M. Koekemoer (STS | Public domain |
-| `cygnus_loop` | [Ultraviolet image of the Cygnus Loop Nebula crop.jpg](https://commons.wikimedia.org/wiki/File%3AUltraviolet_image_of_the_Cygnus_Loop_Nebula_crop.jpg) | NASA/JPL-Caltech | Public domain |
-| `andromeda` | [Andromeda Galaxy 2025.jpg](https://commons.wikimedia.org/wiki/File%3AAndromeda_Galaxy_2025.jpg) | Brody Wesner | CC0 |
-| `nile_at_night` | [Cairo and Alexandria, Egypt at Night (NASA, International Space Station Science, 10 28 10) (12868402644).jpg](https://commons.wikimedia.org/wiki/File%3ACairo_and_Alexandria%2C_Egypt_at_Night_%28NASA%2C_International_Space_Station_Science%2C_10_28_10%29_%2812868402644%29.jpg) | NASA Goddard Space Flight Center from Greenbelt, MD, USA | Public domain |
-| `earthrise` | [Earth-moon.jpg](https://commons.wikimedia.org/wiki/File%3AEarth-moon.jpg) | Apollo 8 crewmember Bill Anders | Public domain |
-| `backlit_saturn` | [Backlit Saturn from Cassini Orbiter 2007 May 9.jpg](https://commons.wikimedia.org/wiki/File%3ABacklit_Saturn_from_Cassini_Orbiter_2007_May_9.jpg) | NASA/JPL/Space Science Institute | Public domain |
-| `saturn_rings` | [Saturn from Cassini Orbiter (2004-10-06).jpg](https://commons.wikimedia.org/wiki/File%3ASaturn_from_Cassini_Orbiter_%282004-10-06%29.jpg) | NASA/JPL/Space Science Institute | Public domain |
-| `full_moon` | [Full moon. 010226.jpg](https://commons.wikimedia.org/wiki/File%3AFull_moon._010226.jpg) | Tumeiyo1 | CC0 |
-| `joshua_tree_night` | [Joshua Tree National Park Night Sky.jpg](https://commons.wikimedia.org/wiki/File%3AJoshua_Tree_National_Park_Night_Sky.jpg) | Henrique Pinto | CC0 |
-| `whirlpool` | [Messier51 sRGB.jpg](https://commons.wikimedia.org/wiki/File%3AMessier51_sRGB.jpg) | NASA and European Space Agency | Public domain |
-| `aurora_from_orbit` | [Aurora Australis From ISS.JPG](https://commons.wikimedia.org/wiki/File%3AAurora_Australis_From_ISS.JPG) | ISS Expedition 23 crew | Public domain |
 
 ## Textures
 
@@ -103,7 +73,6 @@ Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 
 | `moon_globe` | [CGI Moon Kit - Lroc color poles.tif](https://commons.wikimedia.org/wiki/File%3ACGI_Moon_Kit_-_Lroc_color_poles.tif) | NASA's Scientific Visualization Studio (Ernie Wright, Noah Petro) | Public domain |
 | `mars_globe` | [Mars Viking MDIM21 ClrMosaic 1km.jpg](https://commons.wikimedia.org/wiki/File%3AMars_Viking_MDIM21_ClrMosaic_1km.jpg) | NASA / Jet Propulsion Lab / USGS | Public domain |
 | `jupiter_globe` | [Jupiter Cylindrical Map - Dec 2000 PIA07782.jpg](https://commons.wikimedia.org/wiki/File%3AJupiter_Cylindrical_Map_-_Dec_2000_PIA07782.jpg) | NASA/JPL/Space Science Institute | Public domain |
-| `mercury_globe` | [Mercury MESSENGER MDIS Basemap BDR Mosaic Global 32ppd.jpg](https://commons.wikimedia.org/wiki/File%3AMercury_MESSENGER_MDIS_Basemap_BDR_Mosaic_Global_32ppd.jpg) | Planetary Data System, Applied Coherent Technology Corporation | Public domain |
 | `saturn_globe` | Built by `tools/globe_assets.py` from the band colors of [Saturn from Cassini Orbiter (2004-10-06).jpg](https://commons.wikimedia.org/wiki/File:Saturn_from_Cassini_Orbiter_(2004-10-06).jpg); rings drawn in the shader from published ring radii | NASA/JPL/Space Science Institute | Public domain |
 
 ## Video Loops
@@ -149,3 +118,7 @@ Clips are downloaded from Wikimedia Commons when a video wallpaper is first appl
 | `sun_teal_131` | Space | [Solar X-Flare - April 20, 2022 (X2 2 class) (SVS4999 - 20220420 AR12992X22 AIA131 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3ASolar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
 | `prominence_eruption` | Space | [SDO Video Toolkit (SVS14126 - 171-304-June 21 PE).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm) | NASA/Goddard/SDO | Public domain |
 | `solar_eruption` | Space | [SDO Video Toolkit (SVS14126 - Oct2 Eruption 2).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm) | NASA/Goddard/SDO | Public domain |
+
+## Depth Maps
+
+Depth maps (`wpd_<id>.jpg`) for the depth-motion wallpapers are estimated offline by `tools/depth_maps.py` with [Depth Anything V2 Small](https://huggingface.co/depth-anything/Depth-Anything-V2-Small) (Apache-2.0). The model is not shipped in the app.

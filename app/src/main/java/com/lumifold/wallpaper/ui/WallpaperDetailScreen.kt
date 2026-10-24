@@ -197,7 +197,8 @@ private fun motionCaption(item: WallpaperItem): String = when (val s = item.sour
         MotionStyle.LIQUID -> "Slow, flowing liquid glass."
         MotionStyle.PULSE -> "Pulses of light travel through the bright details."
         MotionStyle.GLOBE -> "Rotates slowly in sunlight, built from real NASA surface maps."
-        MotionStyle.NEBULA -> "The gas drifts slowly while the stars stay put and twinkle."
+        MotionStyle.NEBULA -> "Rebuilt in depth: the clouds and stars shift with a slow camera, and stars twinkle."
+        MotionStyle.DEPTH -> "Rebuilt in depth from the image: a slow camera drifts through the scene."
         MotionStyle.COSMOS -> "A slow drift through space with twinkling stars."
     }
 }

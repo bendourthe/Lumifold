@@ -101,6 +101,7 @@ uniform shader L6;
 uniform shader L7;
 uniform shader L8;
 uniform shader uStars;
+uniform shader uDepth;
 uniform float2 uTexSize;
 uniform float uMotion;
 uniform float uStyle;
@@ -236,26 +237,50 @@ half4 globe(float2 st, float sigma, float t) {
     return half4(half3(col), 1.0);
 }
 
-// Nebula, rebuilt as layers: the photo is split offline into starless gas (the pyramid) and stars
-// (uStars). The gas is the far layer and only drifts very slightly; the stars are nearer, so a slow
-// camera move separates the two in depth. Stars twinkle. At rest, gas plus stars is the photo.
+// Depth parallax: the image is rebuilt in depth from uDepth (white is near) and seen by a camera
+// that sways and slowly pushes in, so near parts move more than far ones. A few fixed-point steps
+// keep foreground edges in place instead of smearing them. At rest (amt = 0) it is the image.
+float2 camSway(float t, float amt) {
+    return amt * 0.012 * float2(sin(t * 0.23), 0.6 * sin(t * 0.17 + 1.1));
+}
+
+float camPush(float t, float amt) {
+    return amt * 0.035 * (0.5 - 0.5 * cos(t * 0.11));
+}
+
+float2 parallaxUv(float2 st, float t, float amt) {
+    float2 base = (st - 0.5) / 1.05 + 0.5;
+    float2 cam = camSway(t, amt);
+    float push = camPush(t, amt);
+    float2 uv = base;
+    for (int i = 0; i < 3; i++) {
+        float d = float(uDepth.eval(uv * uTexSize).r);
+        uv = (base - 0.5) / (1.0 + push * d) + 0.5 - cam * (d - 0.4);
+    }
+    return uv;
+}
+
+half4 depthView(float2 st, float sigma, float t, float amt) {
+    return levels(parallaxUv(st, t, amt), sigma);
+}
+
+// Nebula: the photo is split offline into starless gas (the pyramid) and stars (uStars), and the
+// gas has a depth map. The gas moves in depth with the camera; the stars sit at a middle depth
+// and twinkle. At rest, gas plus stars is the photo.
 half4 nebula(float2 st, float sigma, float t, float amt) {
-    float2 cam = 0.006 * float2(sin(t * 0.021), sin(t * 0.016 + 1.3));
-    float z = 1.0 + 0.012 * (0.5 - 0.5 * cos(t * 0.03));
-    float2 base = (st - 0.5) / 1.02 + 0.5;
-    float2 gst = (base - 0.5) / z + 0.5 + cam * 0.45;
-    float2 o = 0.0025 * amt * float2(vnoise(gst * 2.0 + float2(t * 0.02, 0.0)) - 0.5,
-                                     vnoise(gst * 2.0 + float2(5.0, t * 0.017)) - 0.5);
-    half4 gas = levels(gst + o, sigma);
-    float2 sst = (base - 0.5) / (z * z) + 0.5 + cam;
+    half4 gas = levels(parallaxUv(st, t, amt), sigma);
+    float2 base = (st - 0.5) / 1.05 + 0.5;
+    float sd = 0.7;
+    float2 sst = (base - 0.5) / (1.0 + camPush(t, amt) * sd) + 0.5 - camSway(t, amt) * (sd - 0.4);
     float3 star = float3(uStars.eval(sst * uTexSize).rgb);
     float h = hash12(floor(sst * uTexSize / 4.0));
-    float tw = 1.0 + 0.45 * amt * sin(t * (0.9 + 2.6 * h) + h * 40.0);
+    float tw = 1.0 + 0.5 * amt * sin(t * (0.9 + 2.6 * h) + h * 40.0);
     float fade = 1.0 - smoothstep(0.002, 0.02, sigma);
     return half4(half3(float3(gas.rgb) + star * tw * fade), 1.0);
 }
 
 half4 content(float2 st, float sigma) {
+    if (uStyle > 5.5) { return depthView(st, sigma, uMotion > 0.5 ? uTime : 0.0, uMotion); }
     if (uStyle > 4.5) { return nebula(st, sigma, uMotion > 0.5 ? uTime : 0.0, uMotion); }
     if (uStyle > 3.5) { return globe(st, sigma, uMotion > 0.5 ? uTime : 0.0); }
     if (uMotion < 0.5 || uStyle < 0.5) { return levels(st, sigma); }
@@ -590,6 +615,183 @@ half4 scene(float2 st, float b, float t) {
 }
 """
 
+    // Black hole: light paths come from BlackHoleLens (Schwarzschild, units of the horizon radius).
+    // For each pixel the ray plane is known, so the thin disk is hit where that plane crosses it:
+    // the first crossing is the disk in front, the next ones are the lensed images over and under
+    // the shadow and the photon ring. Escaped rays sample a star sphere in their bent direction.
+    // The disk turns faster inside, is Doppler-brightened on the approaching side, and its texture
+    // is advected on two staggered phases so it never winds up.
+    // Open, the hole is centered; folded, its left side and the disk sweep across the cover.
+    // Palette: c0 sky tint, c1 hot inner disk, c2 middle, c3 outer, c4 star tint.
+    private const val SCENE_BLACK_HOLE = """
+uniform shader uLens;
+uniform shader uLensEnd;
+
+// 16-bit value split over red and green; constants stay small because GPUs may evaluate in half.
+float lensDecode(half4 c) { return float(c.r) * 0.99610895 + float(c.g) * 0.00389105; }
+
+float lensU(float bb, float ph) {
+    float2 px = float2(clamp(ph / 9.42477796, 0.0, 1.0) * 767.0 + 0.5, clamp(bb / 16.0, 0.0, 1.0) * 511.0 + 0.5);
+    return lensDecode(uLens.eval(px));
+}
+
+float lensEnd(float bb) {
+    return lensDecode(uLensEnd.eval(float2(clamp(bb / 16.0, 0.0, 1.0) * 511.0 + 0.5, 0.5))) * 9.42477796;
+}
+
+float diskNoise(float r, float th, float t, float br, float seed) {
+    float om = 0.5 * pow(3.0 / r, 1.5);
+    float per = 30.0;
+    float ph0 = fract(t / per);
+    float ph1 = fract(t / per + 0.5);
+    float w = abs(1.0 - 2.0 * ph0);
+    float a0 = th - om * ph0 * per;
+    float a1 = th - om * ph1 * per;
+    float n0 = fbm4(float2(r * 3.2 + seed, 0.0) + 1.6 * float2(cos(a0), sin(a0)), br);
+    float n1 = fbm4(float2(r * 3.2 + seed + 41.0, 0.0) + 1.6 * float2(cos(a1), sin(a1)), br);
+    return mix(n0, n1, w);
+}
+
+half4 scene(float2 st, float bl, float t) {
+    bool iv = uInner > 0.5;
+    float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
+    float scale = iv ? 0.082 : 0.12;
+    float2 c = float2(iv ? 0.0 : 1.12, uPlaneH * 0.5);
+    float2 q = (p - c) / scale;
+    q.y = -q.y;
+    float bb = length(q);
+    float3 e = float3(q / max(bb, 0.0001), 0.0);
+    float3 Z = float3(0.0, 0.0, 1.0);
+    float elev = 0.13;
+    float roll = -0.1;
+    float3 n = normalize(float3(-sin(roll) * cos(elev), cos(roll) * cos(elev), sin(elev)));
+    float3 d1 = normalize(Z - n * n.z);
+    float3 d2 = cross(n, d1);
+    float br = bl * uPlaneH / scale * 0.08;
+
+    float phiEnd = bb < 15.9 ? lensEnd(bb) : PI + 2.0 / bb;
+    float3 col = float3(0.0);
+    if (phiEnd > 0.01) {
+        float tilt = bb * 0.07 - (phiEnd - PI);
+        float3 dir = -cos(tilt) * Z + sin(tilt) * e;
+        float lon = atan(dir.x, -dir.z);
+        float lat = asin(clamp(dir.y, -1.0, 1.0));
+        float2 sp = float2(lon, lat) * 0.55;
+        float s = stars(sp, bl * 0.5, t, 0.86) + 0.6 * stars(sp * 1.7 + 3.0, bl * 0.5, t, 0.9);
+        float band = exp(-pow((lat - 0.25 * lon) * 3.0, 2.0)) * fbm4(float2(lon, lat) * 3.0, bl);
+        col = uC4 * s * 1.3 + uC0 * (0.6 + 0.8 * band * band);
+    }
+
+    float phi0 = atan(-n.z, dot(n, e));
+    if (phi0 < 0.0) { phi0 += PI; }
+    for (int i = 0; i < 3; i++) {
+        float k = float(2 - i);
+        float ph = phi0 + k * PI;
+        bool alive = bb < 15.9 && (phiEnd < 0.01 || ph < phiEnd);
+        float u = alive ? lensU(bb, ph) : 0.0;
+        if (u > 0.0834 && u < 0.3334) {
+            float r = 1.0 / u;
+            float3 P = r * (cos(ph) * Z + sin(ph) * e);
+            float th = atan(dot(P, d2), dot(P, d1));
+            float3 vdir = normalize(cross(n, P));
+            float v = sqrt(0.5 / (r - 1.0));
+            float3 kdir = sin(ph) * Z - cos(ph) * e;
+            float g = sqrt(1.0 - 1.5 / r) / (1.0 - 0.75 * v * dot(vdir, kdir));
+            float I = pow(3.0 / r, 1.8) * smoothstep(3.0, 3.25, r) * (1.0 - smoothstep(8.0, 12.0, r));
+            float nz = diskNoise(r, th, t, br, k * 13.0);
+            float rings = 0.75 + 0.5 * vnoise(float2(r * 5.0, k));
+            float lum = I * (0.55 + 1.0 * nz * rings) * pow(g, 2.5) * 1.5;
+            float3 tint = mix(uC3, uC2, smoothstep(0.1, 0.6, lum));
+            tint = mix(tint, uC1, smoothstep(0.7, 1.6, lum));
+            float a = clamp(lum * 0.9, 0.0, 0.9);
+            col = col * (1.0 - a) + tint * lum * 1.6;
+        }
+    }
+    col += uC2 * 0.12 * exp(-pow((bb - 2.6) * 2.2, 2.0));
+    col = col / (1.0 + col * 0.35);
+    return half4(half3(col), 1.0);
+}
+"""
+
+    // Spiral galaxy, inclined: a two-armed density wave turns slowly as a whole while the stars,
+    // dust and star-forming knots inside it orbit faster near the core (on two staggered phases,
+    // so the texture never winds up). Dust lanes trail the inner edge of the arms.
+    // Open, the galaxy is centered; folded, its left side sweeps across the cover.
+    // Palette: c0 space, c1 warm core, c2 young blue stars, c3 pink star-forming knots, c4 dust.
+    private const val SCENE_GALAXY = """
+float galaxyField(float r, float ap, float br, float seed) {
+    float2 pos = r * float2(cos(ap), sin(ap));
+    return fbm4(pos * 7.0 + seed, br);
+}
+
+// Resolved stars in the disk, denser where [dens] is high; they orbit with the texture.
+float diskStars(float r, float ap, float br, float dens, float seed) {
+    float2 pos = r * float2(cos(ap), sin(ap)) * 9.0 + seed;
+    float2 cell = floor(pos * 28.0);
+    float h = hash21(cell);
+    if (h > dens) { return 0.0; }
+    float2 sp = cell + 0.5 + 0.6 * float2(hash21(cell + 2.3) - 0.5, hash21(cell + 5.1) - 0.5);
+    float d = length(pos * 28.0 - sp);
+    float s = 0.18 + 0.25 * hash21(cell + 9.7);
+    float e2 = s * s + br * br * 600.0;
+    return exp(-d * d / e2) * (s * s) / e2;
+}
+
+half4 scene(float2 st, float bl, float t) {
+    bool iv = uInner > 0.5;
+    float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
+    float R = iv ? 1.25 : 1.6;
+    float2 c = float2(iv ? 0.0 : 1.1, uPlaneH * 0.5);
+    float2 q = (p - c) / R;
+    float cr = cos(0.45);
+    float sr = sin(0.45);
+    q = float2(cr * q.x + sr * q.y, -sr * q.x + cr * q.y);
+    q.y /= 0.6;
+    float r = length(q);
+    float a = atan(q.y, q.x);
+    float br = bl * uPlaneH / R;
+
+    float pattern = 0.025 * t;
+    float lr = log(max(r, 0.012));
+    float armPh = 2.0 * (a - pattern - lr * 3.4);
+    float arm = pow(0.5 + 0.5 * cos(armPh), 3.0);
+    float spur = pow(0.5 + 0.5 * cos(2.0 * armPh + 1.3), 6.0) * 0.35;
+    float armAll = clamp(arm + spur, 0.0, 1.0);
+    float lane = pow(0.5 + 0.5 * cos(armPh + 0.6), 14.0);
+
+    float per = 40.0;
+    float ph0 = fract(t / per);
+    float ph1 = fract(t / per + 0.5);
+    float w = abs(1.0 - 2.0 * ph0);
+    float om = 0.06 / (r + 0.08);
+    float a0 = a - om * ph0 * per;
+    float a1 = a - om * ph1 * per;
+    float tex = mix(galaxyField(r, a0, br, 0.0), galaxyField(r, a1, br, 19.0), w);
+    float fine = mix(galaxyField(r * 3.0, a0, br * 3.0, 7.0), galaxyField(r * 3.0, a1, br * 3.0, 31.0), w);
+
+    float disk = exp(-r / 0.3) * smoothstep(1.2, 0.55, r);
+    float bulge = exp(-r * r / 0.006) * 2.0 + exp(-r / 0.085) * 0.8;
+    float3 col = uC0 + float3(0.9, 0.95, 1.0) * stars(st * float2(2.0 / uPlaneH, 1.0), bl, t, 0.95) * 0.55;
+    col += uC1 * disk * (0.25 + 0.35 * tex);
+    float armLight = armAll * (0.5 + 0.9 * tex) * disk * 2.2;
+    col += uC2 * armLight * (0.55 + 0.7 * fine);
+
+    float dens = clamp((0.12 + armAll * 1.6) * disk, 0.0, 0.85);
+    float sOld = mix(diskStars(r, a0, br, dens, 0.0), diskStars(r, a1, br, dens, 11.0), w);
+    col += mix(uC2, float3(1.0), 0.5) * sOld * (0.5 + armAll) * 1.4 * smoothstep(0.06, 0.2, r);
+
+    float knotDens = clamp(arm * disk * 0.9 - 0.08, 0.0, 0.5);
+    float knots = mix(diskStars(r * 0.7, a0, br, knotDens, 3.0), diskStars(r * 0.7, a1, br, knotDens, 17.0), w);
+    col += uC3 * knots * 3.5 * smoothstep(0.12, 0.3, r);
+
+    float dust = lane * smoothstep(0.3, 0.7, tex + 0.15 * fine) * smoothstep(0.05, 0.22, r) * smoothstep(1.1, 0.4, r);
+    col = mix(col, col * uC4 * 0.5, clamp(dust * 1.6, 0.0, 0.9));
+    col += uC1 * bulge;
+    col = col / (1.0 + col * 0.3);
+    return half4(half3(col), 1.0);
+}
+"""
+
     private fun sceneBody(scene: Scene): String = when (scene) {
         Scene.RIBBONS -> SCENE_RIBBONS
         Scene.AURORA -> SCENE_AURORA
@@ -600,6 +802,8 @@ half4 scene(float2 st, float b, float t) {
         Scene.NEBULA -> SCENE_NEBULA
         Scene.HORIZON -> SCENE_HORIZON
         Scene.IRIS -> SCENE_IRIS
+        Scene.BLACK_HOLE -> SCENE_BLACK_HOLE
+        Scene.GALAXY -> SCENE_GALAXY
     }
 
     /**

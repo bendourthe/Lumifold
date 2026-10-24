@@ -13,8 +13,13 @@ object VideoCache {
     // Wikimedia asks clients to identify themselves.
     private const val USER_AGENT = "Lumifold/1.0 (Android live wallpaper; benjamin.dourthe@gmail.com)"
 
-    fun file(context: Context, item: WallpaperItem): File =
-        File(File(context.filesDir, "videos"), "${item.id}.webm")
+    // Clips moved off Wikimedia (re-encoded at higher quality) get a URL-based name, so a copy
+    // cached from the old source is replaced instead of reused.
+    fun file(context: Context, item: WallpaperItem): File {
+        val url = (item.source as? WallpaperSource.Video)?.url.orEmpty()
+        val suffix = if (url.contains("upload.wikimedia.org")) "" else "-" + url.hashCode().toUInt().toString(16)
+        return File(File(context.filesDir, "videos"), "${item.id}$suffix.webm")
+    }
 
     fun isCached(context: Context, item: WallpaperItem): Boolean =
         item.source !is WallpaperSource.Video || file(context, item).length() > 0
@@ -57,7 +62,11 @@ object VideoCache {
                         }
                     }
                 }
-                read > 0 && part.renameTo(target)
+                (read > 0 && part.renameTo(target)).also { ok ->
+                    if (ok) target.parentFile?.listFiles()?.forEach { f ->
+                        if (f != target && (f.name == "${item.id}.webm" || f.name.startsWith("${item.id}-"))) f.delete()
+                    }
+                }
             } finally {
                 conn.disconnect()
             }
