@@ -55,6 +55,13 @@ object WallpaperRepository {
         focusY: Float = 0.5f
     ) = WallpaperItem(id, title, category, WallpaperSource.Photo(resId, motion, focusX, focusY), description)
 
+    private fun globe(id: String, title: String, mapResId: Int, thumbResId: Int, globe: Globe, description: String) =
+        WallpaperItem(
+            id, title, WallpaperCategory.SPACE,
+            WallpaperSource.Photo(mapResId, MotionStyle.GLOBE, globe = globe, thumbResId = thumbResId),
+            description
+        )
+
     val wallpapers: List<WallpaperItem> = listOf(
         // Abstract
         gen(
@@ -333,41 +340,81 @@ object WallpaperRepository {
         ),
 
         // Space: NASA, ESA and CC0 images, credited in docs/reference/photo-credits.md
+        gen(
+            "the_sun", "The Sun", WallpaperCategory.SPACE, Scene.SUN,
+            Palette(0x020104, 0x8A1C02, 0xF26B0F, 0xFFE9A8, 0xFF5A1F),
+            "Our star up close: churning granules, sunspots and prominences erupting from the limb."
+        ),
+        gen(
+            "red_dwarf", "Red Dwarf", WallpaperCategory.SPACE, Scene.SUN,
+            Palette(0x030101, 0x5A0A02, 0xC2300A, 0xFF9A5A, 0xFF3B2F),
+            "A small, cool red star flaring in the dark."
+        ),
+        gen(
+            "blue_giant", "Blue Giant", WallpaperCategory.SPACE, Scene.SUN,
+            Palette(0x010208, 0x1B2F8A, 0x5A8CFF, 0xE8F1FF, 0x9AC2FF),
+            "A blazing blue-white giant with bright plasma loops."
+        ),
+        globe(
+            "earth_globe", "Earth", R.drawable.wpg_earth, R.drawable.wpt_earth,
+            Globe(spinSeconds = 160f, tiltDeg = 23f, atmosphere = 0x5A9BFF, night = true),
+            "Earth turning slowly, city lights glowing on the night side. NASA Blue Marble and city lights maps."
+        ),
+        globe(
+            "moon_globe", "The Moon", R.drawable.wpg_moon, R.drawable.wpt_moon,
+            Globe(spinSeconds = 240f, tiltDeg = 6f),
+            "The Moon rotating in sunlight. NASA Lunar Reconnaissance Orbiter color map."
+        ),
+        globe(
+            "mars_globe", "Mars", R.drawable.wpg_mars, R.drawable.wpt_mars,
+            Globe(spinSeconds = 170f, tiltDeg = 25f, atmosphere = 0xE08A5A),
+            "Mars turning under a thin dusty atmosphere. NASA Viking color mosaic."
+        ),
+        globe(
+            "jupiter_globe", "Jupiter", R.drawable.wpg_jupiter, R.drawable.wpt_jupiter,
+            Globe(spinSeconds = 110f, tiltDeg = 3f, atmosphere = 0xCCB38C),
+            "Jupiter's cloud bands and Great Red Spot rotating. NASA Cassini map."
+        ),
+        globe(
+            "mercury_globe", "Mercury", R.drawable.wpg_mercury, R.drawable.wpt_mercury,
+            Globe(spinSeconds = 260f, tiltDeg = 2f),
+            "Cratered Mercury turning close to the Sun. NASA MESSENGER mosaic."
+        ),
         photo(
             "pillars_webb", "Pillars of Creation", WallpaperCategory.SPACE, R.drawable.wp_pillars_webb,
-            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.COSMOS
+            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "pillars_hubble", "Pillars, Hubble", WallpaperCategory.SPACE, R.drawable.wp_pillars_hubble,
-            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.COSMOS
+            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "cosmic_cliffs", "Cosmic Cliffs", WallpaperCategory.SPACE, R.drawable.wp_cosmic_cliffs,
-            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.COSMOS
+            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "tarantula", "Tarantula Nebula", WallpaperCategory.SPACE, R.drawable.wp_tarantula,
-            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.COSMOS
+            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "orion_nebula", "Orion Nebula", WallpaperCategory.SPACE, R.drawable.wp_orion_nebula,
-            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.COSMOS
+            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "helix", "Helix Nebula", WallpaperCategory.SPACE, R.drawable.wp_helix,
-            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.COSMOS
+            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "ring_nebula", "Ring Nebula", WallpaperCategory.SPACE, R.drawable.wp_ring_nebula,
-            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.COSMOS
+            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "crab_nebula", "Crab Nebula", WallpaperCategory.SPACE, R.drawable.wp_crab_nebula,
-            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.COSMOS
+            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.NEBULA
         ),
         photo(
             "cygnus_loop", "Cygnus Loop", WallpaperCategory.SPACE, R.drawable.wp_cygnus_loop,
-            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.COSMOS
+            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.NEBULA
         ),
         photo(
             "whirlpool", "Whirlpool Galaxy", WallpaperCategory.SPACE, R.drawable.wp_whirlpool,

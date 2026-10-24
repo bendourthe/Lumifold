@@ -849,7 +849,7 @@ private fun CheckBadge(modifier: Modifier) {
 internal fun WallpaperThumbnail(item: WallpaperItem, modifier: Modifier) {
     when (val source = item.source) {
         is WallpaperSource.Generative -> GenerativeThumbnail(item, modifier)
-        is WallpaperSource.Photo -> PhotoThumbnail(source.resId, modifier)
+        is WallpaperSource.Photo -> PhotoThumbnail(if (source.thumbResId != 0) source.thumbResId else source.resId, modifier)
     }
 }
 
@@ -865,7 +865,11 @@ private fun PhotoThumbnail(resId: Int, modifier: Modifier) {
     val context = LocalContext.current
     val bitmap by produceState<ImageBitmap?>(null, resId) {
         value = withContext(Dispatchers.IO) {
-            val opts = BitmapFactory.Options().apply { inSampleSize = 4 }
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeResource(context.resources, resId, bounds)
+            var sample = 1
+            while (bounds.outWidth / (sample * 2) >= 480) sample *= 2
+            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
             BitmapFactory.decodeResource(context.resources, resId, opts)?.asImageBitmap()
         }
     }

@@ -55,6 +55,9 @@ uniform shader L8;
 uniform float2 uTexSize;
 uniform float uMotion;
 uniform float uStyle;
+uniform float4 uGlobe;
+uniform float4 uGlobe2;
+uniform float uNight;
 
 half4 levels(float2 st, float sigma) {
     float2 p = st * uTexSize;
@@ -103,7 +106,63 @@ half4 cosmos(float2 st, float sigma, float t) {
     return c;
 }
 
+// Globe: the texture is an equirectangular map (day above night when uNight is set) wrapped on a
+// sphere lit from the upper right, spinning at uGlobe.w rad/s, with an atmosphere rim and halo.
+half4 globe(float2 st, float sigma, float t) {
+    float b = sigma / uPlaneH;
+    float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
+    float2 d = (p - float2(uGlobe.x, uGlobe.y * uPlaneH)) / uGlobe.z;
+    float rd = length(d);
+    float3 atm = uGlobe2.yzw;
+    float3 light = normalize(float3(0.8, 0.25, 0.45));
+    float3 col = float3(0.9, 0.95, 1.0) * stars(float2(st.x * 2.0 / uPlaneH, st.y), b, t, 0.93) * 0.8;
+    float side = 0.5 + 0.5 * dot(normalize(d + 0.0001), normalize(float2(light.x, -light.y)));
+    col += atm * exp(-max(rd - 1.0, 0.0) * 18.0) * 0.6 * (0.3 + 0.7 * side);
+    if (rd < 1.02) {
+        float3 n = float3(d.x, -d.y, sqrt(max(1.0 - rd * rd, 0.0)));
+        float ct = cos(uGlobe2.x);
+        float sn = sin(uGlobe2.x);
+        float3 m = float3(ct * n.x - sn * n.y, sn * n.x + ct * n.y, n.z);
+        float lon = atan(m.x, m.z) + t * uGlobe.w;
+        float lat = asin(clamp(m.y, -1.0, 1.0));
+        float2 uv = float2(fract(lon / (2.0 * PI) + 0.5), 0.5 - lat / PI);
+        float sg = sigma + (1.0 - n.z) * 0.002;
+        float vScale = uNight > 0.5 ? 0.5 : 1.0;
+        float3 surf = float3(levels(float2(uv.x, uv.y * vScale), sg).rgb);
+        float lam = dot(n, light);
+        float lit = smoothstep(-0.08, 0.25, lam);
+        surf *= (0.03 + 0.97 * lit) * (0.75 + 0.25 * n.z);
+        if (uNight > 0.5) {
+            float3 city = float3(levels(float2(uv.x, 0.5 + uv.y * 0.5), sg).rgb);
+            surf += city * float3(1.0, 0.85, 0.6) * (1.0 - smoothstep(-0.12, 0.06, lam)) * 1.3;
+        }
+        surf += atm * pow(1.0 - n.z, 3.0) * (0.3 + 0.9 * lit);
+        float e = 0.004 / uGlobe.z + b * 4.0;
+        col = mix(col, surf, 1.0 - smoothstep(1.0 - e, 1.0 + e, rd));
+    }
+    return half4(half3(col), 1.0);
+}
+
+// Nebula: the soft, large-scale gas sways slowly while all fine detail (stars, thin filaments)
+// stays where it is, so at rest the photo is unchanged. Stars twinkle.
+half4 nebula(float2 st, float sigma, float t) {
+    float2 s2 = (st - 0.5) / 1.02 + 0.5;
+    float soft = max(sigma, 0.005);
+    float2 o = 0.006 * float2(vnoise(s2 * 2.2 + float2(t * 0.025, 0.0)) - 0.5,
+                              vnoise(s2 * 2.2 + float2(5.0, t * 0.02)) - 0.5);
+    half4 gas = levels(s2 + o, soft);
+    half4 still = levels(s2, sigma);
+    half4 around = levels(s2, soft);
+    float3 detail = float3(still.rgb - around.rgb);
+    float2 cell = floor(s2 * uTexSize / 5.0);
+    float h = hash12(cell);
+    float tw = 0.5 * sin(t * (1.0 + 3.0 * h) + h * 40.0);
+    return half4(half3(float3(gas.rgb) + detail + max(detail, float3(0.0)) * tw), 1.0);
+}
+
 half4 content(float2 st, float sigma) {
+    if (uStyle > 4.5) { return uMotion > 0.5 ? nebula(st, sigma, uTime) : levels(st, sigma); }
+    if (uStyle > 3.5) { return globe(st, sigma, uMotion > 0.5 ? uTime : 0.0); }
     if (uMotion < 0.5 || uStyle < 0.5) { return levels(st, sigma); }
     float t = uTime;
     if (uStyle > 2.5) { return cosmos(st, sigma, t); }
@@ -436,7 +495,139 @@ half4 scene(float2 st, float b, float t) {
 }
 """
 
+    // Palette: c0 space, c1 cool limb, c2 photosphere, c3 hot granule core, c4 prominence.
+    private const val SCENE_SUN = """
+float hash31(float3 p) {
+    p = fract(p * 0.1031);
+    p += dot(p, p.zyx + 31.32);
+    return fract((p.x + p.y) * p.z);
+}
+
+float vnoise3(float3 p) {
+    float3 i = floor(p);
+    float3 f = fract(p);
+    float3 u = f * f * (3.0 - 2.0 * f);
+    float a = mix(hash31(i), hash31(i + float3(1.0, 0.0, 0.0)), u.x);
+    float b2 = mix(hash31(i + float3(0.0, 1.0, 0.0)), hash31(i + float3(1.0, 1.0, 0.0)), u.x);
+    float c = mix(hash31(i + float3(0.0, 0.0, 1.0)), hash31(i + float3(1.0, 0.0, 1.0)), u.x);
+    float d = mix(hash31(i + float3(0.0, 1.0, 1.0)), hash31(i + float3(1.0, 1.0, 1.0)), u.x);
+    return mix(mix(a, b2, u.y), mix(c, d, u.y), u.z);
+}
+
+float fbm3(float3 p, float b) {
+    float sum = 0.0;
+    float amp = 0.5;
+    float f = 1.0;
+    for (int i = 0; i < 4; i++) {
+        float keep = clamp(1.0 - b * f * 12.0, 0.0, 1.0);
+        sum += amp * mix(0.5, vnoise3(p * f), keep);
+        f *= 2.0;
+        amp *= 0.5;
+    }
+    return sum / 0.9375;
+}
+
+// Distances to the nearest and second-nearest animated cell centers: bright granules, dark lanes.
+float2 worley3(float3 p, float t) {
+    float3 i = floor(p);
+    float3 f = fract(p);
+    float f1 = 9.0;
+    float f2 = 9.0;
+    for (int z = -1; z <= 1; z++) {
+        for (int y = -1; y <= 1; y++) {
+            for (int x = -1; x <= 1; x++) {
+                float3 g = float3(float(x), float(y), float(z));
+                float3 o = float3(hash31(i + g), hash31(i + g + 17.1), hash31(i + g + 31.7));
+                o = 0.5 + 0.42 * sin(t * 0.25 + 6.283 * o);
+                float3 rv = g + o - f;
+                float dd = dot(rv, rv);
+                if (dd < f1) { f2 = f1; f1 = dd; } else if (dd < f2) { f2 = dd; }
+            }
+        }
+    }
+    return sqrt(float2(f1, f2));
+}
+
+half4 scene(float2 st, float b, float t) {
+    float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
+    float R = 0.66;
+    float2 d = (p - float2(0.45, uPlaneH * 0.52)) / R;
+    float r = length(d);
+    float e = 0.004 / R + b * 3.0;
+    float3 col = uC0 + float3(0.9, 0.95, 1.0) * stars(float2(st.x * 2.0 / uPlaneH, st.y), b, t, 0.95) * 0.5;
+    float h = max(r - 1.0, 0.0);
+    col += uC2 * 0.45 * exp(-h * 7.0) + uC1 * 0.3 * exp(-h * 1.8);
+
+    if (r > 0.97 && r < 1.7) {
+        float2 dir = d / r;
+        float ang = atan(dir.y, dir.x);
+        // A fringe of small flames (spicules) all around the limb.
+        float spic = smoothstep(0.55, 0.85, vnoise3(float3(dir * 45.0, h * 5.0 - t * 0.35))) * exp(-h * 45.0);
+        // Plasma arches anchored on the limb, drifting slowly with the rotation.
+        float arcs = 0.0;
+        for (int i = 0; i < 4; i++) {
+            float fi = float(i);
+            float a0 = hash11(fi * 4.3 + 0.7) * 6.283 + t * 0.004;
+            float da = atan(sin(ang - a0), cos(ang - a0));
+            float span = 0.1 + 0.12 * hash11(fi * 2.9 + 5.0);
+            float ht = (0.1 + 0.16 * hash11(fi * 1.7 + 9.0)) * (0.9 + 0.1 * sin(t * 0.11 + fi * 2.0));
+            float ring = length(float2(da / span, h / ht)) - 1.0;
+            float thick = 0.22 + 0.14 * vnoise3(float3(dir * 9.0, t * 0.04 + fi));
+            float strand = smoothstep(0.25, 0.85, fbm3(float3(dir * 26.0, h * 14.0 - t * 0.2 + fi * 7.0), b));
+            float feet = 0.55 + 0.45 * (1.0 - clamp(h / ht, 0.0, 1.0));
+            arcs += exp(-ring * ring / (thick * thick)) * strand * feet;
+        }
+        // An eruption: a plume rises from one region, fades, and returns somewhere else.
+        float cycle = t / 45.0;
+        float ph = fract(cycle);
+        float a1 = hash11(floor(cycle) * 3.7 + 1.0) * 6.283;
+        float da1 = atan(sin(ang - a1), cos(ang - a1));
+        float reach = 0.15 + 0.55 * ph;
+        float cone = 1.0 - smoothstep(0.03 + h * 0.35, 0.06 + h * 0.5, abs(da1));
+        float plume = cone * (1.0 - smoothstep(reach * 0.7, reach, h))
+            * smoothstep(0.35, 0.75, fbm3(float3(dir * 16.0, h * 6.0 - t * 0.5), b))
+            * smoothstep(0.0, 0.1, ph) * (1.0 - smoothstep(0.65, 1.0, ph));
+        col += uC4 * (arcs * 1.3 + spic * 0.9 + plume * 1.6) * smoothstep(0.97, 1.0, r);
+    }
+
+    if (r < 1.0 + e) {
+        float3 n = float3(d.x, -d.y, sqrt(max(1.0 - r * r, 0.0)));
+        float spin = t * 0.012;
+        float3 m = float3(n.x * cos(spin) + n.z * sin(spin), n.y, n.z * cos(spin) - n.x * sin(spin));
+        float keep = clamp(1.0 - b * 140.0, 0.0, 1.0);
+        float2 w = worley3(m * 42.0, t);
+        float cells = smoothstep(0.02, 0.32, w.y - w.x) * (1.1 - 0.4 * w.x);
+        float sup = fbm3(m * 5.0 + float3(t * 0.01), b);
+        float spots = 0.0;
+        float pen = 0.0;
+        for (int i = 0; i < 5; i++) {
+            float fi = float(i);
+            float lat = (hash11(fi * 3.1 + 1.0) - 0.5) * 0.9;
+            float lon = hash11(fi * 7.3 + 2.0) * 6.283;
+            float3 c = float3(cos(lat) * sin(lon), sin(lat), cos(lat) * cos(lon));
+            float sz = 0.025 + 0.035 * hash11(fi * 5.7 + 3.0);
+            float dd = length(m - c);
+            spots = max(spots, 1.0 - smoothstep(sz * 0.4, sz * 0.55, dd));
+            pen = max(pen, 1.0 - smoothstep(sz * 0.8, sz * 1.1, dd));
+        }
+        float mu = n.z;
+        float limb = 0.3 + 0.7 * pow(mu, 0.5);
+        float heat = clamp(limb * (0.62 + 0.3 * mix(0.6, cells, keep)) + 0.18 * (sup - 0.5), 0.0, 1.0);
+        float3 s = mix(uC1, uC2, smoothstep(0.1, 0.5, heat));
+        s = mix(s, uC3, smoothstep(0.5, 0.95, heat));
+        s *= 1.0 - 0.5 * pen - 0.4 * spots;
+        s += uC3 * 0.08 * smoothstep(0.6, 0.8, sup) * (1.0 - mu) * (1.0 - mu);
+        float flare = pow(max(0.0, sin(t * 0.17 + 1.0)), 24.0) * smoothstep(0.82, 0.95, vnoise3(m * 7.0 + 5.0));
+        s += uC3 * flare * 0.7;
+        col = mix(col, s * 1.2, 1.0 - smoothstep(1.0 - e, 1.0 + e, r));
+    }
+    col = 1.0 - exp(-col * 1.5);
+    return half4(half3(col), 1.0);
+}
+"""
+
     private fun sceneBody(scene: Scene): String = when (scene) {
+        Scene.SUN -> SCENE_SUN
         Scene.RIBBONS -> SCENE_RIBBONS
         Scene.AURORA -> SCENE_AURORA
         Scene.MESH -> SCENE_MESH

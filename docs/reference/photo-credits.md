@@ -91,3 +91,16 @@ Every photograph bundled in `app/src/main/res/drawable-nodpi/wp_*.jpg` comes fro
 | `spectrum_smoke` | [Colorful smoke (abstraction) 3.jpg](https://commons.wikimedia.org/wiki/File%3AColorful_smoke_%28abstraction%29_3.jpg) | Pierre Blaché | CC0 |
 | `violet_smoke` | [Colorful smoke (abstraction) 4.jpg](https://commons.wikimedia.org/wiki/File%3AColorful_smoke_%28abstraction%29_4.jpg) | Pierre Blaché | CC0 |
 | `night_bokeh` | [Lights-dark-abstract-bokeh (24326849395).jpg](https://commons.wikimedia.org/wiki/File%3ALights-dark-abstract-bokeh_%2824326849395%29.jpg) | www.Pixel.la Free Stock Photos | CC0 |
+
+## Globe Maps
+
+Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 x 1024 (Earth stacks the day map over the night lights map).
+
+| Wallpaper | Source file | Author | License |
+| --- | --- | --- | --- |
+| `earth_globe (day)` | [Blue Marble 2002.jpg](https://commons.wikimedia.org/wiki/File%3ABlue_Marble_2002.jpg) | NASA’s Terra satellite for the MODIS imageries, combined by Meow. Credit: NASA Goddard Space Flight  | Public domain |
+| `earth_globe (night lights)` | [Earth's City Lights by DMSP, 1994-1995 (large).jpg](https://commons.wikimedia.org/wiki/File%3AEarth%27s_City_Lights_by_DMSP%2C_1994-1995_%28large%29.jpg) | Data: Marc Imhoff/NASA GSFC, Christopher Elvidge/NOAA NGDC; Image: Craig Mayhew and Robert Simmon/NA | Public domain |
+| `moon_globe` | [CGI Moon Kit - Lroc color poles.tif](https://commons.wikimedia.org/wiki/File%3ACGI_Moon_Kit_-_Lroc_color_poles.tif) | NASA's Scientific Visualization Studio (Ernie Wright, Noah Petro) | Public domain |
+| `mars_globe` | [Mars Viking MDIM21 ClrMosaic 1km.jpg](https://commons.wikimedia.org/wiki/File%3AMars_Viking_MDIM21_ClrMosaic_1km.jpg) | NASA / Jet Propulsion Lab / USGS | Public domain |
+| `jupiter_globe` | [Jupiter Cylindrical Map - Dec 2000 PIA07782.jpg](https://commons.wikimedia.org/wiki/File%3AJupiter_Cylindrical_Map_-_Dec_2000_PIA07782.jpg) | NASA/JPL/Space Science Institute | Public domain |
+| `mercury_globe` | [Mercury MESSENGER MDIS Basemap BDR Mosaic Global 32ppd.jpg](https://commons.wikimedia.org/wiki/File%3AMercury_MESSENGER_MDIS_Basemap_BDR_Mosaic_Global_32ppd.jpg) | Planetary Data System, Applied Coherent Technology Corporation | Public domain |

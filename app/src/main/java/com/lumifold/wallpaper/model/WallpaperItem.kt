@@ -22,7 +22,8 @@ enum class Scene {
     CONTOURS,
     NEBULA,
     HORIZON,
-    IRIS
+    IRIS,
+    SUN
 }
 
 /** Five sRGB colors (0xRRGGBB) whose meaning is defined by each [Scene]. */
@@ -42,15 +43,39 @@ enum class MotionStyle(val shaderIndex: Int) {
     PULSE(2),
 
     /** A slow camera drift with twinkling stars. */
-    COSMOS(3)
+    COSMOS(3),
+
+    /** The photo is an equirectangular surface map wrapped on a slowly rotating, lit sphere. */
+    GLOBE(4),
+
+    /** Nebula gas drifting on a slow flow while the stars stay fixed and twinkle. */
+    NEBULA(5)
 }
+
+/**
+ * A planet or moon for [MotionStyle.GLOBE]. Position and radius are in panel widths from the hinge
+ * ([centerY] is a fraction of the plane height). With [night], the texture holds the day map on top
+ * and the night lights map below.
+ */
+data class Globe(
+    val centerX: Float = 0.5f,
+    val centerY: Float = 0.5f,
+    val radius: Float = 0.46f,
+    val spinSeconds: Float = 180f,
+    val tiltDeg: Float = 10f,
+    val atmosphere: Int = 0x000000,
+    val night: Boolean = false
+)
 
 sealed interface WallpaperSource {
     data class Photo(
         @DrawableRes val resId: Int,
         val motion: MotionStyle,
         val focusX: Float = 0.5f,
-        val focusY: Float = 0.5f
+        val focusY: Float = 0.5f,
+        val globe: Globe? = null,
+        /** Grid thumbnail, when the photo itself is not what the wallpaper looks like. */
+        @DrawableRes val thumbResId: Int = 0
     ) : WallpaperSource
 
     data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource
