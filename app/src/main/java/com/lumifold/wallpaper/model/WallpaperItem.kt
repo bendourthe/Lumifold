@@ -17,13 +17,9 @@ enum class WallpaperCategory(val label: String) {
 /** Procedural scenes rendered by AGSL at the display's native resolution. */
 enum class Scene {
     RIBBONS,
-    AURORA,
     MESH,
-    DUNES,
     BOKEH,
     CONTOURS,
-    NEBULA,
-    HORIZON,
     IRIS,
     BLACK_HOLE,
     GALAXY

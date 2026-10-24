@@ -59,13 +59,17 @@ class WallpaperRepositoryTest {
     fun landscapesHoldNoDrawnScenes() {
         val landscapes = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.LANDSCAPES)
         assertTrue(landscapes.none { it.source is WallpaperSource.Generative })
-        val illustrated = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.ILLUSTRATED).map { it.id }
-        assertTrue(illustrated.containsAll(listOf("aurora_veil", "sahara", "moonlit_dunes", "still_sea")))
+        val illustrated = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.ILLUSTRATED)
+        assertTrue(illustrated.isNotEmpty())
+        assertTrue(illustrated.all {
+            val photo = it.source as? WallpaperSource.Photo
+            photo != null && photo.motion == MotionStyle.DEPTH && photo.depthResId != 0
+        })
     }
 
     @Test
     fun getWallpaperById() {
-        assertNotNull(WallpaperRepository.getWallpaperById("aurora_veil"))
+        assertNotNull(WallpaperRepository.getWallpaperById("great_wave"))
         assertNull(WallpaperRepository.getWallpaperById("invalid_id"))
     }
 

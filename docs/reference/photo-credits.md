@@ -62,6 +62,27 @@ Every photograph bundled in `app/src/main/res/drawable-nodpi/wp_*.jpg` comes fro
 | `violet_smoke` | [Colorful smoke (abstraction) 4.jpg](https://commons.wikimedia.org/wiki/File%3AColorful_smoke_%28abstraction%29_4.jpg) | Pierre Blaché | CC0 |
 | `night_bokeh` | [Lights-dark-abstract-bokeh (24326849395).jpg](https://commons.wikimedia.org/wiki/File%3ALights-dark-abstract-bokeh_%2824326849395%29.jpg) | www.Pixel.la Free Stock Photos | CC0 |
 
+## Artworks
+
+Illustrated wallpapers are public-domain or CC0 scans from Wikimedia Commons, cropped to the image plane and given a depth map by `tools/art_assets.py`.
+
+| Wallpaper | Title | Artist | Source file | License |
+| --- | --- | --- | --- | --- |
+| `great_wave` | The Great Wave | Katsushika Hokusai, c. 1831 | [「富嶽三十六景 神奈川沖浪裏」-Under the Wave off Kanagawa (Kanagawa oki nami ura), or The Grea](https://commons.wikimedia.org/wiki/File:%E3%80%8C%E5%AF%8C%E5%B6%BD%E4%B8%89%E5%8D%81%E5%85%AD%E6%99%AF_%E7%A5%9E%E5%A5%88%E5%B7%9D%E6%B2%96%E6%B5%AA%E8%A3%8F%E3%80%8D-Under_the_Wave_off_Kanagawa_(Kanagawa_oki_nami_ura),_or_The_Great_Wave,_from_the_series_Thirty-six_Views_of_Mount_Fuji_(Fugaku_sanj%C5%ABrokkei)_MET_DP141042.jpg) | CC0 (Metropolitan Museum of Art Open Access) |
+| `red_fuji` | Red Fuji | Katsushika Hokusai, c. 1831 | [Katsushika Hokusai - Fine Wind, Clear Morning (Gaifū kaisei) - Google Art Projec](https://commons.wikimedia.org/wiki/File:Katsushika_Hokusai_-_Fine_Wind,_Clear_Morning_(Gaif%C5%AB_kaisei)_-_Google_Art_Project.jpg) | Public domain (PD-Art, PD-old-100) |
+| `sudden_shower` | Sudden Shower | Utagawa Hiroshige, 1857 | [Utagawa Hiroshige - Evening Shower at Atake and the Great Bridge (cropped).jpg](https://commons.wikimedia.org/wiki/File:Utagawa_Hiroshige_-_Evening_Shower_at_Atake_and_the_Great_Bridge_(cropped).jpg) | Public domain (PD-Art, PD-old-100) |
+| `tennoji_snow` | Snow at Tennoji | Kawase Hasui, 1927 | [NDL-DC 2586549-16 Kawase Hasui S02 crd.jpg](https://commons.wikimedia.org/wiki/File:NDL-DC_2586549-16_Kawase_Hasui_S02_crd.jpg) | Public domain (PD-Japan + PD-US, published 1927) |
+| `starry_night` | The Starry Night | Vincent van Gogh, 1889 | [Van Gogh - Starry Night - Google Art Project.jpg](https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Starry_Night_-_Google_Art_Project.jpg) | Public domain (PD-Art, PD-old-100) |
+| `cafe_terrace` | Café Terrace at Night | Vincent van Gogh, 1888 | [Van Gogh - Terrace of a Café at Night (Place du Forum) 1888.jpg](https://commons.wikimedia.org/wiki/File:Van_Gogh_-_Terrace_of_a_Caf%C3%A9_at_Night_(Place_du_Forum)_1888.jpg) | Public domain (PD-Art, PD-old-100) |
+| `impression_sunrise` | Impression, Sunrise | Claude Monet, 1872 | [Monet - Impression, Sunrise.jpg](https://commons.wikimedia.org/wiki/File:Monet_-_Impression,_Sunrise.jpg) | Public domain (PD-old-auto-1996) |
+| `water_lilies` | Water Lilies | Claude Monet, 1922 | [Claude Monet - Water Lilies - Google Art Project.jpg](https://commons.wikimedia.org/wiki/File:Claude_Monet_-_Water_Lilies_-_Google_Art_Project.jpg) | Public domain (PD-Art, PD-old-auto-1923) |
+| `the_kiss` | The Kiss | Gustav Klimt, 1907-1908 | [The Kiss - Gustav Klimt - Google Cultural Institute.jpg](https://commons.wikimedia.org/wiki/File:The_Kiss_-_Gustav_Klimt_-_Google_Cultural_Institute.jpg) | Public domain (PD-Art, PD-old-100) |
+| `wanderer_fog` | Wanderer above the Fog | Caspar David Friedrich, c. 1818 | [Caspar David Friedrich - Wanderer above the Sea of Fog.jpeg](https://commons.wikimedia.org/wiki/File:Caspar_David_Friedrich_-_Wanderer_above_the_Sea_of_Fog.jpeg) | Public domain (PD-Art, PD-old-100) |
+| `ninth_wave` | The Ninth Wave | Ivan Aivazovsky, 1850 | [Hovhannes Aivazovsky - The Ninth Wave - Google Art Project.jpg](https://commons.wikimedia.org/wiki/File:Hovhannes_Aivazovsky_-_The_Ninth_Wave_-_Google_Art_Project.jpg) | Public domain (PD-Art, PD-old-100) |
+| `sierra_nevada` | Among the Sierra Nevada | Albert Bierstadt, 1868 | [Bierstadt - Among the Sierra Nevada Mountains - 1868.jpg](https://commons.wikimedia.org/wiki/File:Bierstadt_-_Among_the_Sierra_Nevada_Mountains_-_1868.jpg) | Public domain (PD-Art, PD-old-100) |
+| `grand_canyon_poster` | Grand Canyon | WPA Federal Art Project for the National Park Service, 1938 | [Grand Canyon National Park, a free government service LCCN2007676131.jpg](https://commons.wikimedia.org/wiki/File:Grand_Canyon_National_Park,_a_free_government_service_LCCN2007676131.jpg) | Public domain (PD-USGov-WPA) |
+| `zion_poster` | Zion | WPA Federal Art Project for the National Park Service, 1938 | [Zion National Park, Ranger Naturalist Service LCCN2007676134.jpg](https://commons.wikimedia.org/wiki/File:Zion_National_Park,_Ranger_Naturalist_Service_LCCN2007676134.jpg) | Public domain (PD-USGov-WPA) |
+
 ## Globe Maps
 
 Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 x 1024 (Earth stacks the day map over the night lights map).
@@ -118,6 +139,14 @@ Clips are downloaded from Wikimedia Commons when a video wallpaper is first appl
 | `sun_teal_131` | Space | [Solar X-Flare - April 20, 2022 (X2 2 class) (SVS4999 - 20220420 AR12992X22 AIA131 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3ASolar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
 | `prominence_eruption` | Space | [SDO Video Toolkit (SVS14126 - 171-304-June 21 PE).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm) | NASA/Goddard/SDO | Public domain |
 | `solar_eruption` | Space | [SDO Video Toolkit (SVS14126 - Oct2 Eruption 2).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm) | NASA/Goddard/SDO | Public domain |
+| `iss_city_lights` | City | [Ocean Moon Glint and City Night Lights in 4K.webm](https://commons.wikimedia.org/wiki/File:Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm) | NASA | Public domain |
+| `iss_night_pass` | City | [La Tierra de noche desde el espacio.ogv](https://commons.wikimedia.org/wiki/File:La_Tierra_de_noche_desde_el_espacio.ogv) | Crew Earth Observations team | Public domain |
+| `kuala_lumpur_street` | City | [Bukit Bintang in 2024.webm](https://commons.wikimedia.org/wiki/File:Bukit_Bintang_in_2024.webm) | Renek78 | CC0 |
+| `singapore_supertrees` | City | [Supertree Grove, Gardens by the Bay, light show 19 August.webm](https://commons.wikimedia.org/wiki/File:Supertree_Grove,_Gardens_by_the_Bay,_light_show_19_August.webm) | Jeromi Mikhael | CC0 |
+| `la_crosse_lights` | City | [Rotary Lights La Crosse.webm](https://commons.wikimedia.org/wiki/File:Rotary_Lights_La_Crosse.webm) | Wikideas1 | CC0 |
+| `hong_kong_timelapse` | City | [Causeway Bay Time-lapse videos (afternoon).ogv](https://commons.wikimedia.org/wiki/File:Causeway_Bay_Time-lapse_videos_(afternoon).ogv) | 鄒延 | CC0 |
+| `amsterdam_canal` | City | [Channel cruise in Amsterdam 142945.webm](https://commons.wikimedia.org/wiki/File:Channel_cruise_in_Amsterdam_142945.webm) | Quahadi | CC0 |
+| `tartu_dusk_aerial` | City | [Drone video of Annelinn 2021.webm](https://commons.wikimedia.org/wiki/File:Drone_video_of_Annelinn_2021.webm) | Sillerkiil | CC0 |
 
 ## Depth Maps
 

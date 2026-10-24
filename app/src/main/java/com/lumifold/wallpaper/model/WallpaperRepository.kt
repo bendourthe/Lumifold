@@ -368,6 +368,54 @@ object WallpaperRepository {
             R.drawable.wpv_la_night, 30.5f,
             "Downtown Los Angeles glowing at night."
         ),
+        video(
+            "iss_city_lights", "Orbit City Lights", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b9/Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm/Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm.1080p.vp9.webm",
+            R.drawable.wpv_iss_city_lights, 8.2f,
+            "Clusters of city lights and moonlit ocean seen from the International Space Station. NASA."
+        ),
+        video(
+            "iss_night_pass", "Night From Orbit", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b1/La_Tierra_de_noche_desde_el_espacio.ogv/La_Tierra_de_noche_desde_el_espacio.ogv.1080p.vp9.webm",
+            R.drawable.wpv_iss_night_pass, 19.8f,
+            "A night pass over glowing coastlines and cities, filmed from the space station. NASA."
+        ),
+        video(
+            "kuala_lumpur_street", "Kuala Lumpur Street", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/fc/Bukit_Bintang_in_2024.webm/Bukit_Bintang_in_2024.webm.1080p.vp9.webm",
+            R.drawable.wpv_kuala_lumpur_street, 8.4f,
+            "Bukit Bintang at night: the monorail, billboards and steady traffic."
+        ),
+        video(
+            "singapore_supertrees", "Singapore Supertrees", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8c/Supertree_Grove%2C_Gardens_by_the_Bay%2C_light_show_19_August.webm/Supertree_Grove%2C_Gardens_by_the_Bay%2C_light_show_19_August.webm.1080p.vp9.webm",
+            R.drawable.wpv_singapore_supertrees, 15.3f,
+            "The Supertree Grove at Gardens by the Bay glowing magenta and blue."
+        ),
+        video(
+            "la_crosse_lights", "Riverside Lights", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1c/Rotary_Lights_La_Crosse.webm/Rotary_Lights_La_Crosse.webm.1080p.vp9.webm",
+            R.drawable.wpv_la_crosse_lights, 4.8f,
+            "A riverside park covered in holiday lights at blue hour."
+        ),
+        video(
+            "hong_kong_timelapse", "Causeway Bay Timelapse", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/0c/Causeway_Bay_Time-lapse_videos_%28afternoon%29.ogv/Causeway_Bay_Time-lapse_videos_%28afternoon%29.ogv.1080p.vp9.webm",
+            R.drawable.wpv_hong_kong_timelapse, 16.3f,
+            "Trams, flyovers and towers of Causeway Bay in a Hong Kong afternoon time-lapse."
+        ),
+        video(
+            "amsterdam_canal", "Amsterdam Canal", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/91/Channel_cruise_in_Amsterdam_142945.webm/Channel_cruise_in_Amsterdam_142945.webm.1080p.vp9.webm",
+            R.drawable.wpv_amsterdam_canal, 25.5f,
+            "Gliding along an Amsterdam canal past gabled houses and houseboats."
+        ),
+        video(
+            "tartu_dusk_aerial", "Tartu Dusk Aerial", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/04/Drone_video_of_Annelinn_2021.webm/Drone_video_of_Annelinn_2021.webm.1080p.vp9.webm",
+            R.drawable.wpv_tartu_dusk_aerial, 18.0f,
+            "A slow drone hover over Tartu's rooftops under a pastel dusk sky."
+        ),
         // Scenes
         video(
             "deep_sea_jellyfish", "Deep-Sea Jellyfish", WallpaperCategory.SCENES,
@@ -424,65 +472,61 @@ object WallpaperRepository {
             "Campfire flames up close."
         ),
         // Illustrated
-        gen(
-            "aurora_veil", "Aurora Veil", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
-            Palette(0x030712, 0x0F2A3A, 0x34D399, 0xA855F7, 0x05080C),
-            "Green and violet curtains over a mountain ridge."
+        photo(
+            "great_wave", "The Great Wave", WallpaperCategory.ILLUSTRATED, R.drawable.wp_great_wave,
+            "Hokusai's great wave towers over three boats while Mount Fuji sits small in the distance, c. 1831.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_great_wave
         ),
-        gen(
-            "polar_night", "Polar Night", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
-            Palette(0x01040A, 0x0B1A2E, 0x22D3EE, 0x34D399, 0x020409),
-            "Cyan aurora over a black horizon."
+        photo(
+            "red_fuji", "Red Fuji", WallpaperCategory.ILLUSTRATED, R.drawable.wp_red_fuji,
+            "Mount Fuji glows red in the early light beneath rows of mackerel clouds, Hokusai, c. 1831.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_red_fuji
         ),
-        gen(
-            "crimson_aurora", "Crimson Aurora", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
-            Palette(0x0A0308, 0x2A0F1E, 0xF43F5E, 0xFBBF24, 0x07030A),
-            "Rare red and gold aurora over dark hills."
+        photo(
+            "sudden_shower", "Sudden Shower", WallpaperCategory.ILLUSTRATED, R.drawable.wp_sudden_shower,
+            "Travelers hurry across the Ohashi bridge through a sudden summer downpour, Hiroshige, 1857.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_sudden_shower
         ),
-        gen(
-            "sahara", "Sahara", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
-            Palette(0x2E3A6E, 0xF7A35C, 0xFFE8B0, 0xE59A5B, 0x7A3B2E),
-            "Layered dunes under a low evening sun."
+        photo(
+            "tennoji_snow", "Snow at Tennoji", WallpaperCategory.ILLUSTRATED, R.drawable.wp_tennoji_snow,
+            "A lone figure under an umbrella stands in falling snow before the pagoda of Shitenno-ji, Hasui, 1927.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_tennoji_snow
         ),
-        gen(
-            "moonlit_dunes", "Moonlit Dunes", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
-            Palette(0x050816, 0x1E2A4A, 0xE8EEF8, 0x5B6B8C, 0x141B2E),
-            "Cold dunes under a full moon."
+        photo(
+            "starry_night", "The Starry Night", WallpaperCategory.ILLUSTRATED, R.drawable.wp_starry_night,
+            "Van Gogh's swirling night sky rolls over a sleeping village at Saint-Remy, 1889.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_starry_night
         ),
-        gen(
-            "rose_dunes", "Rose Dunes", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
-            Palette(0x4C2A5E, 0xFFB4A2, 0xFFE5D9, 0xE5989B, 0x6D3B47),
-            "Pink dunes in a lilac dusk."
+        photo(
+            "cafe_terrace", "Café Terrace at Night", WallpaperCategory.ILLUSTRATED, R.drawable.wp_cafe_terrace,
+            "A gaslit cafe terrace glows yellow under a starry sky in Arles, Van Gogh, 1888.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_cafe_terrace
         ),
-        gen(
-            "still_sea", "Still Sea", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
-            Palette(0x1C2541, 0xF4A261, 0xFFF1D6, 0x14213D, 0xFFD6A5),
-            "A low sun over a calm sea."
+        photo(
+            "impression_sunrise", "Impression, Sunrise", WallpaperCategory.ILLUSTRATED, R.drawable.wp_impression_sunrise,
+            "An orange sun rises through the morning haze over the port of Le Havre, Monet, 1872.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_impression_sunrise
         ),
-        gen(
-            "arctic_sea", "Arctic Sea", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
-            Palette(0x0B2545, 0xE0FBFC, 0xFFFFFF, 0x13315C, 0xC2DFE3),
-            "A pale sun over icy blue water."
+        photo(
+            "water_lilies", "Water Lilies", WallpaperCategory.ILLUSTRATED, R.drawable.wp_water_lilies,
+            "Water lilies drift on a violet pond beneath trailing willow fronds, Monet, 1922.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_water_lilies
         ),
-        gen(
-            "violet_hour", "Violet Hour", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
-            Palette(0x240046, 0xFF7B00, 0xFFD000, 0x10002B, 0xC77DFF),
-            "Orange sun sinking into a violet sea."
+        photo(
+            "the_kiss", "The Kiss", WallpaperCategory.ILLUSTRATED, R.drawable.wp_the_kiss,
+            "Klimt's lovers are wrapped in a golden embrace at the edge of a flowered meadow, 1907-1908.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_the_kiss
         ),
-        gen(
-            "carina", "Carina", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
-            Palette(0x02030A, 0x7C3AED, 0x0EA5E9, 0xF472B6, 0xE0E7FF),
-            "Violet and cyan gas clouds in a deep star field."
+        photo(
+            "wanderer_fog", "Wanderer above the Fog", WallpaperCategory.ILLUSTRATED, R.drawable.wp_wanderer_fog,
+            "A lone wanderer stands on a rocky crag above a sea of fog, Friedrich, c. 1818.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_wanderer_fog
         ),
-        gen(
-            "ember_nebula", "Ember Nebula", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
-            Palette(0x050203, 0xEA580C, 0xBE123C, 0xFDE68A, 0xFFEDD5),
-            "Glowing orange and crimson nebula."
+        photo(
+            "ninth_wave", "The Ninth Wave", WallpaperCategory.ILLUSTRATED, R.drawable.wp_ninth_wave,
+            "Shipwreck survivors cling to a mast as a towering wave glows in the dawn light, Aivazovsky, 1850.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_ninth_wave
         ),
-        gen(
-            "teal_nebula", "Teal Nebula", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
-            Palette(0x01080A, 0x14B8A6, 0x2563EB, 0x86EFAC, 0xECFEFF),
-            "Teal and blue clouds lit by young stars."
+        photo(
+            "sierra_nevada", "Among the Sierra Nevada", WallpaperCategory.ILLUSTRATED, R.drawable.wp_sierra_nevada,
+            "Golden light breaks through storm clouds over a mountain lake in the Sierra Nevada, Bierstadt, 1868.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_sierra_nevada
+        ),
+        photo(
+            "grand_canyon_poster", "Grand Canyon", WallpaperCategory.ILLUSTRATED, R.drawable.wp_grand_canyon_poster,
+            "Layered canyon walls in pink and violet, from a 1938 WPA poster for Grand Canyon National Park.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_grand_canyon_poster
+        ),
+        photo(
+            "zion_poster", "Zion", WallpaperCategory.ILLUSTRATED, R.drawable.wp_zion_poster,
+            "Zion's great white cliff rises above a pine forest, from a 1938 WPA National Park poster.", MotionStyle.DEPTH, depthResId = R.drawable.wpd_zion_poster
         ),
         // Space
         video(

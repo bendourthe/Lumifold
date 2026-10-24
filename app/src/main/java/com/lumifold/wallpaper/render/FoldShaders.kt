@@ -402,36 +402,6 @@ half4 scene(float2 st, float b, float t) {
 }
 """
 
-    // Palette: c0 sky top, c1 horizon, c2 aurora base, c3 aurora crown, c4 ground.
-    private const val SCENE_AURORA = """
-half4 scene(float2 st, float b, float t) {
-    float asp = 2.0 / uPlaneH;
-    float2 p = float2(st.x * asp, st.y);
-    float3 col = mix(uC0, uC1, smoothstep(0.05, 0.8, st.y));
-    col += float3(0.9, 0.95, 1.0) * stars(p, b, t, 0.93) * smoothstep(0.75, 0.2, st.y);
-    for (int k = 0; k < 3; k++) {
-        float fk = float(k);
-        float base = 0.42 + fk * 0.06
-            + 0.07 * sin(p.x * 2.2 + t * 0.16 + fk * 2.0)
-            + 0.08 * (fbm4(float2(p.x * 1.5 + t * 0.04, fk * 3.0 + t * 0.02), b * 1.5) - 0.5);
-        float above = base - st.y;
-        float prof = smoothstep(-0.02 - b, 0.01 + b, above) * exp(-max(above, 0.0) * (5.0 + fk * 2.0));
-        prof *= 0.75 + 0.25 * sin(t * 0.4 + p.x * 3.0 + fk * 1.7);
-        float streak = fbm4(float2(p.x * 22.0 + fk * 5.0 + t * 0.18, fk + t * 0.05), b * 22.0);
-        streak = mix(0.35, 1.0, smoothstep(0.3, 0.75, streak));
-        float3 ac = mix(uC2, uC3, smoothstep(0.0, 0.32, above));
-        col += ac * prof * streak * (0.8 - fk * 0.2);
-    }
-    float ridge = 0.8 + 0.05 * sin(p.x * 3.3 + 1.0) + 0.07 * (fbm4(float2(p.x * 3.0, 4.0), b * 3.0) - 0.5);
-    float e = 0.0015 + b;
-    float m = smoothstep(ridge - e, ridge + e, st.y);
-    float3 ground = uC4 + uC2 * 0.05 * (1.0 - smoothstep(ridge, ridge + 0.15, st.y));
-    col = mix(col, ground, m);
-    col = 1.0 - exp(-col * 1.2);
-    return half4(half3(col), 1.0);
-}
-"""
-
     // Palette: c0 base, c1..c4 drifting color fields.
     private const val SCENE_MESH = """
 half4 scene(float2 st, float b, float t) {
@@ -451,41 +421,6 @@ half4 scene(float2 st, float b, float t) {
         wsum += w;
     }
     return half4(half3(acc / wsum), 1.0);
-}
-"""
-
-    // Palette: c0 sky top, c1 horizon haze, c2 sun, c3 lit sand, c4 shadowed sand.
-    private const val SCENE_DUNES = """
-half4 scene(float2 st, float b, float t) {
-    float asp = 2.0 / uPlaneH;
-    float2 p = float2(st.x * asp, st.y);
-    float3 col = mix(uC0, uC1, smoothstep(0.0, 0.55, st.y));
-    float2 sun = float2(0.68 * asp, 0.36);
-    float ds = length(p - sun);
-    float se = 0.002 + b;
-    col = mix(col, uC2, smoothstep(0.065 + se, 0.065 - se, ds));
-    col += uC2 * 0.3 * exp(-ds * 7.0);
-    float cloud = fbm4(float2(p.x * 2.2 - t * 0.025, st.y * 9.0), b * 2.2);
-    col = mix(col, mix(uC1, uC2, 0.35), smoothstep(0.55, 0.8, cloud) * 0.35 * (1.0 - smoothstep(0.1, 0.5, st.y)));
-    for (int i = 0; i < 5; i++) {
-        float fi = float(i);
-        float depth = fi / 4.0;
-        float y0 = 0.5 + fi * 0.095;
-        float x = p.x * (1.6 + fi * 0.5) + fi * 1.7 + t * 0.006 * (fi + 1.0);
-        float ridge = y0 + 0.045 * sin(x) + 0.022 * sin(x * 2.3 + 1.0) + 0.01 * sin(x * 5.1);
-        float slope = cos(x) + 0.5 * cos(x * 2.3 + 1.0);
-        float e = 0.0012 + b;
-        float m = smoothstep(ridge - e, ridge + e, st.y);
-        float shade = clamp(0.5 + 0.45 * slope, 0.0, 1.0);
-        shade *= 1.0 - 0.35 * smoothstep(ridge, ridge + 0.15, st.y);
-        float3 dune = mix(uC4, uC3, shade);
-        dune = mix(dune, uC1, (1.0 - depth) * 0.5);
-        float crest = 1.0 - smoothstep(0.0, 0.035, st.y - ridge);
-        float haze = fbm4(float2(p.x * 7.0 - t * 0.35 * (1.0 + depth), st.y * 30.0 + fi), b * 7.0);
-        dune = mix(dune, uC3 * 1.15, crest * smoothstep(0.5, 0.85, haze) * 0.45);
-        col = mix(col, dune, m);
-    }
-    return half4(half3(col), 1.0);
 }
 """
 
@@ -540,57 +475,6 @@ half4 scene(float2 st, float b, float t) {
     float3 col = mix(uC0, uC1, st.y);
     col += mix(uC2, uC3, major) * line * (0.55 + 0.45 * major);
     return half4(half3(col), 1.0);
-}
-"""
-
-    // Palette: c0 space, c1 gas A, c2 gas B, c3 hot core, c4 star tint.
-    private const val SCENE_NEBULA = """
-half4 scene(float2 st, float b, float t) {
-    float asp = 2.0 / uPlaneH;
-    float2 p = float2(st.x * asp, st.y);
-    float bb = b * 1.8;
-    float2 q = p * 1.8;
-    float2 w = float2(fbm4(q + float2(0.0, t * 0.02), bb),
-                      fbm4(q + float2(5.2, 1.3) - float2(t * 0.016, 0.0), bb));
-    float n = fbm4(q + 1.6 * w + float2(t * 0.01, 0.0), bb);
-    float dens = smoothstep(0.38, 0.9, n);
-    float3 col = uC0;
-    col += mix(uC1, uC2, smoothstep(0.3, 0.7, w.x)) * dens * 0.9;
-    col += uC3 * pow(dens, 3.0) * 0.7;
-    col *= 1.0 - 0.5 * smoothstep(0.55, 0.8, w.y) * dens;
-    col += uC4 * stars(p, b, t, 0.9);
-    col = 1.0 - exp(-col * 1.3);
-    return half4(half3(col), 1.0);
-}
-"""
-
-    // Palette: c0 sky top, c1 horizon, c2 sun, c3 sea, c4 sun glitter.
-    private const val SCENE_HORIZON = """
-half4 scene(float2 st, float b, float t) {
-    float asp = 2.0 / uPlaneH;
-    float2 p = float2(st.x * asp, st.y);
-    float hz = 0.6;
-    float e = 0.0012 + b;
-    float3 sky = mix(uC0, uC1, smoothstep(0.0, hz, st.y));
-    float2 sun = float2(0.5 * asp, hz - 0.06 + 0.004 * sin(t * 0.05));
-    float ds = length(p - sun);
-    sky = mix(sky, uC2, smoothstep(0.07 + e, 0.07 - e, ds));
-    sky += uC2 * 0.22 * exp(-ds * 6.0);
-    float cloud = fbm4(float2(p.x * 1.8 - t * 0.02, st.y * 7.0), b * 1.8);
-    sky = mix(sky, uC1 * 1.1, smoothstep(0.55, 0.85, cloud) * 0.3 * smoothstep(0.05, 0.4, st.y) * (1.0 - smoothstep(0.45, hz, st.y)));
-    float depth = clamp((st.y - hz) / (1.0 - hz), 0.0, 1.0);
-    float3 sea = mix(uC1 * 0.5 + uC3 * 0.5, uC3, smoothstep(0.0, 0.6, depth));
-    float swell = sin(st.y * 260.0 / (0.25 + depth) - t * 1.1 + 0.6 * sin(p.x * 6.0 + t * 0.3));
-    sea *= 1.0 + 0.06 * swell * clamp(1.0 - b * 120.0, 0.0, 1.0) * smoothstep(0.0, 0.15, depth);
-    float colw = 0.03 + 0.18 * depth;
-    float cd = (p.x - sun.x) / colw;
-    float colm = exp(-cd * cd);
-    float keep = clamp(1.0 - b * 160.0, 0.0, 1.0);
-    float gl = vnoise(float2(p.x * 90.0 + sin(t * 0.7 + st.y * 40.0), st.y * 420.0 / (0.3 + depth) - t * 1.4));
-    gl = mix(0.5, smoothstep(0.55, 0.85, gl), keep);
-    sea += uC4 * colm * gl * (0.5 + 0.5 * (1.0 - depth)) * 0.8;
-    float m = smoothstep(hz - e, hz + e, st.y);
-    return half4(half3(mix(sky, sea, m)), 1.0);
 }
 """
 
@@ -794,13 +678,9 @@ half4 scene(float2 st, float bl, float t) {
 
     private fun sceneBody(scene: Scene): String = when (scene) {
         Scene.RIBBONS -> SCENE_RIBBONS
-        Scene.AURORA -> SCENE_AURORA
         Scene.MESH -> SCENE_MESH
-        Scene.DUNES -> SCENE_DUNES
         Scene.BOKEH -> SCENE_BOKEH
         Scene.CONTOURS -> SCENE_CONTOURS
-        Scene.NEBULA -> SCENE_NEBULA
-        Scene.HORIZON -> SCENE_HORIZON
         Scene.IRIS -> SCENE_IRIS
         Scene.BLACK_HOLE -> SCENE_BLACK_HOLE
         Scene.GALAXY -> SCENE_GALAXY

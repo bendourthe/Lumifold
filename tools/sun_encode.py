@@ -16,7 +16,7 @@ import sys
 import imageio_ffmpeg
 
 FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
-# id: (start s, length s or None for all, output size, crf)
+# id: (start s, length s or None for all, output size, unused); average bitrate MAX_RATE (3.5M below 2048)
 JOBS = {
     "sun_flare_304": (0, None, 2048, 32),
     "sun_corona_171": (0, None, 2048, 32),
@@ -25,6 +25,7 @@ JOBS = {
     "solar_shreds": (0, 45, 1920, 30),
 }
 FADE = 1.0
+MAX_RATE = "5.5M"
 
 
 def duration(path):
@@ -52,7 +53,7 @@ def encode(vid, src):
     os.makedirs("build-output/sun_out", exist_ok=True)
     out = f"build-output/sun_out/{vid}.webm"
     cmd = [FFMPEG, "-y", "-loglevel", "error", "-i", src, "-filter_complex", graph, "-map", "[v]", "-an",
-           "-c:v", "libvpx-vp9", "-crf", str(crf), "-b:v", "0", "-row-mt", "1", "-cpu-used", "3",
+           "-c:v", "libvpx-vp9", "-b:v", MAX_RATE if size >= 2048 else "3.5M", "-row-mt", "1", "-cpu-used", "4",
            "-tile-columns", "2", "-g", "120", out]
     subprocess.run(cmd, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
     print(vid, f"{os.path.getsize(out) / 1e6:.1f} MB", flush=True)
