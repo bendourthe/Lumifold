@@ -98,7 +98,7 @@ Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 
 
 ## Video Loops
 
-Clips are downloaded from Wikimedia Commons when a video wallpaper is first applied (the 1080p VP9 WebM transcode), then kept in app storage. Posters bundled as `wpv_<id>.jpg` are the Commons poster frames.
+Clips are downloaded when a video wallpaper is first applied, then kept in app storage. Most are the 1080p VP9 WebM transcode from Wikimedia Commons. Four Sun clips (the three full-disk views and Ring Prominence) are re-encoded from the public-domain NASA originals and hosted on the [media-v1 release](https://github.com/bendourthe/lumifold/releases/tag/media-v1); the rows below still name the Commons source files. Posters bundled as `wpv_<id>.jpg` are a frame from each clip.
 
 | Wallpaper | Category | Source file | Author | License |
 | --- | --- | --- | --- | --- |
@@ -137,7 +137,7 @@ Clips are downloaded from Wikimedia Commons when a video wallpaper is first appl
 | `sun_flare_304` | Space | [An X1 0 Class Solar Flare - January 10, 2023 (SVS5066 - 20230110 AR13186X10 AIA304 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3AAn_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
 | `sun_corona_171` | Space | [An X1 0 Class Solar Flare - January 10, 2023 (SVS5066 - 20230110 AR13186X10 AIA171 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3AAn_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
 | `sun_teal_131` | Space | [Solar X-Flare - April 20, 2022 (X2 2 class) (SVS4999 - 20220420 AR12992X22 AIA131 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3ASolar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
-| `prominence_eruption` | Space | [SDO Video Toolkit (SVS14126 - 171-304-June 21 PE).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm) | NASA/Goddard/SDO | Public domain |
+| `ring_prominence` | Space | [NASA - Ring-shaped Prominence Erupts from Sun.webm](https://commons.wikimedia.org/wiki/File%3ANASA_-_Ring-shaped_Prominence_Erupts_from_Sun.webm) | NASA/Goddard/SDO | Public domain |
 | `solar_eruption` | Space | [SDO Video Toolkit (SVS14126 - Oct2 Eruption 2).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm) | NASA/Goddard/SDO | Public domain |
 | `iss_city_lights` | City | [Ocean Moon Glint and City Night Lights in 4K.webm](https://commons.wikimedia.org/wiki/File:Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm) | NASA | Public domain |
 | `iss_night_pass` | City | [La Tierra de noche desde el espacio.ogv](https://commons.wikimedia.org/wiki/File:La_Tierra_de_noche_desde_el_espacio.ogv) | Crew Earth Observations team | Public domain |

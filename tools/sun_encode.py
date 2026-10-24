@@ -48,13 +48,15 @@ def encode(vid, src):
         f"[0:v]trim=start={start}:duration={total},setpts=PTS-STARTPTS,{scale},fps=30,format=yuv420p,split[a][b];"
         f"[a]trim=0:{FADE},setpts=PTS-STARTPTS,fps=30[head];"
         f"[b]trim={FADE},setpts=PTS-STARTPTS,fps=30[rest];"
-        f"[rest][head]xfade=transition=fade:duration={FADE}:offset={body - FADE:.3f}[v]"
+        f"[rest][head]xfade=transition=fade:duration={FADE}:offset={body - FADE:.3f},format=yuv420p[v]"
     )
     os.makedirs("build-output/sun_out", exist_ok=True)
     out = f"build-output/sun_out/{vid}.webm"
+    rate = ("4500k", "5000k", "10000k") if size >= 2048 else ("3500k", "4000k", "8000k")
     cmd = [FFMPEG, "-y", "-loglevel", "error", "-i", src, "-filter_complex", graph, "-map", "[v]", "-an",
-           "-c:v", "libvpx-vp9", "-b:v", MAX_RATE if size >= 2048 else "3.5M", "-row-mt", "1", "-cpu-used", "4",
-           "-tile-columns", "2", "-g", "120", out]
+           "-c:v", "libvpx-vp9", "-pix_fmt", "yuv420p", "-profile:v", "0",
+           "-b:v", rate[0], "-maxrate", rate[1], "-bufsize", rate[2],
+           "-row-mt", "1", "-cpu-used", "4", "-tile-columns", "2", "-g", "120", out]
     subprocess.run(cmd, check=True, creationflags=subprocess.CREATE_NO_WINDOW)
     print(vid, f"{os.path.getsize(out) / 1e6:.1f} MB", flush=True)
 

@@ -34,7 +34,10 @@ class WallpaperRepositoryTest {
                 is WallpaperSource.Photo -> assertTrue(s.resId != 0)
                 is WallpaperSource.Generative -> assertEquals(5, s.palette.colors.size)
                 is WallpaperSource.Video -> {
-                    assertTrue(s.url.startsWith("https://upload.wikimedia.org/"))
+                    assertTrue(
+                        s.url.startsWith("https://upload.wikimedia.org/") ||
+                            s.url.startsWith("https://github.com/bendourthe/lumifold/releases/download/")
+                    )
                     assertTrue(s.posterResId != 0 && s.sizeMb > 0f)
                 }
             }

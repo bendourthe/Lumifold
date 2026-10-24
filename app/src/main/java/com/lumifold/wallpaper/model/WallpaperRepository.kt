@@ -71,6 +71,9 @@ object WallpaperRepository {
     // folded, its left limb sits on the right of the cover with eruptions and space to the left.
     private val SUN_FRAMING = VideoFraming(innerHeight = 1.55f, coverHeight = 2.4f, coverCenterX = 1.45f)
 
+    /** Full-resolution Sun clips, re-encoded from the NASA originals. See docs/reference/photo-credits.md. */
+    private const val SUN_MEDIA = "https://github.com/bendourthe/lumifold/releases/download/media-v1"
+
     private fun nebula(id: String, title: String, gasResId: Int, starsResId: Int, thumbResId: Int, depthResId: Int, description: String) =
         WallpaperItem(
             id, title, WallpaperCategory.SPACE,
@@ -531,27 +534,27 @@ object WallpaperRepository {
         // Space
         video(
             "sun_flare_304", "Solar Flare", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_sun_flare_304, 19.7f,
+            "$SUN_MEDIA/sun_flare_304.webm",
+            R.drawable.wpv_sun_flare_304, 36.5f,
             "The Sun in extreme ultraviolet as a strong flare erupts. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "sun_corona_171", "Golden Corona", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c1/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_sun_corona_171, 18.0f,
+            "$SUN_MEDIA/sun_corona_171.webm",
+            R.drawable.wpv_sun_corona_171, 35.8f,
             "Magnetic loops shimmering in the Sun's corona. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "sun_teal_131", "Flaring Sun", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/0a/Solar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm/Solar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_sun_teal_131, 18.9f,
+            "$SUN_MEDIA/sun_teal_131.webm",
+            R.drawable.wpv_sun_teal_131, 37.7f,
             "The hottest flaring plasma glowing teal. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
-            "prominence_eruption", "Prominence Eruption", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/7/7b/SDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
-            R.drawable.wpv_prominence_eruption, 2.2f,
-            "A prominence lifting off the Sun's edge. NASA Solar Dynamics Observatory."
+            "ring_prominence", "Ring Prominence", WallpaperCategory.SPACE,
+            "$SUN_MEDIA/ring_prominence.webm",
+            R.drawable.wpv_ring_prominence, 27.8f,
+            "A ring of plasma lifting off the Sun and breaking apart. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "solar_eruption", "Solar Eruption", WallpaperCategory.SPACE,

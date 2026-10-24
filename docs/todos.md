@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 47 | 48 | -1 |
+| Tasks Completed | 67 | 69 | -2 |
 | Wallpaper Designs | 103 (38 generative, 65 public-domain or CC0 photos) | 84 (12 per category) | Met |
 | Opening Effects | 12, plus an off switch | 12 | Met |
 | Unit Tests | 38 | 38 | Met |
@@ -83,7 +83,7 @@
 - [x] T050 [US5] Show six opening effects with a Show all button app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
 - [x] T051 [US5] Add rotating planets from NASA maps, live Sun scenes and drifting nebulae app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
 - [x] T052 [US5] Source public-domain or CC0 video loops: 15 Landscapes, 8 City, 9 Scenes docs/reference/photo-credits.md
-- [ ] T053 [US5] Grow City past 8 clips (no public-domain neon, rain-street or light-trail footage on Commons yet) docs/reference/photo-credits.md
+- [x] T053 [US5] Grow City past 8 clips (no public-domain neon, rain-street or light-trail footage on Commons yet) docs/reference/photo-credits.md
 - [x] T054 [US5] Rebuild Shattered Glass with hairline cracks, polygonal ring breaks and per-shard refraction app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
 - [x] T055 [US5] Label still wallpapers in the grid and detail page app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
 - [x] T056 [US5] Replace the generated suns with real NASA SDO footage, framed per display app/src/main/java/com/lumifold/wallpaper/model/WallpaperRepository.kt
@@ -97,6 +97,6 @@
 - [x] T064 [US5] Rebuild nebulae and selected photos in depth from estimated depth maps tools/depth_maps.py
 - [x] T065 [US5] Add a ray-traced black hole and a spiral galaxy simulation app/src/main/java/com/lumifold/wallpaper/render/BlackHoleLens.kt
 - [x] T066 [US5] Cap categories at about 16 and order Space and Landscapes by theme app/src/main/java/com/lumifold/wallpaper/model/WallpaperRepository.kt
-- [ ] T067 [US5] Replace Illustrated with public-domain artworks in depth
-- [ ] T068 [US5] Grow City to about 16 public-domain clips
-- [ ] T069 [US5] Host full-resolution Sun clips as release assets and point the catalog at them tools/sun_encode.py
+- [x] T067 [US5] Replace Illustrated with public-domain artworks in depth
+- [x] T068 [US5] Grow City to about 16 public-domain clips
+- [x] T069 [US5] Host full-resolution Sun clips as release assets and point the catalog at them tools/sun_encode.py
