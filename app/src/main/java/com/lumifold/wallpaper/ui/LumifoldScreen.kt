@@ -850,6 +850,7 @@ internal fun WallpaperThumbnail(item: WallpaperItem, modifier: Modifier) {
     when (val source = item.source) {
         is WallpaperSource.Generative -> GenerativeThumbnail(item, modifier)
         is WallpaperSource.Photo -> PhotoThumbnail(if (source.thumbResId != 0) source.thumbResId else source.resId, modifier)
+        is WallpaperSource.Video -> PhotoThumbnail(source.posterResId, modifier)
     }
 }
 

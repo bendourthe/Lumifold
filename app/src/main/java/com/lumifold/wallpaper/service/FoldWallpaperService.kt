@@ -24,6 +24,7 @@ import com.lumifold.wallpaper.model.WallpaperRepository as Repo
 import com.lumifold.wallpaper.model.WallpaperSource
 import com.lumifold.wallpaper.render.FoldOptics
 import com.lumifold.wallpaper.render.SurfaceSpec
+import com.lumifold.wallpaper.render.VideoFrames
 import com.lumifold.wallpaper.render.WallpaperShader
 import java.util.concurrent.Executors
 import kotlin.math.abs
@@ -68,6 +69,8 @@ class FoldWallpaperService : WallpaperService() {
 
         private var shader: WallpaperShader? = null
         private var loadingId: String? = null
+        private var video: VideoFrames? = null
+        private var videoItemId: String? = null
         private var spec: SurfaceSpec? = null
         private var lastSurfaceInner: Boolean? = null
         private var visible = false
@@ -121,8 +124,35 @@ class FoldWallpaperService : WallpaperService() {
             val next = motionPref && MotionPolicy.currentPause(ctx) == MotionPolicy.Pause.NONE
             if (next != motion) {
                 motion = next
+                updateVideoPlayback()
                 requestFrame()
             }
+        }
+
+        private fun startVideo(target: WallpaperItem) {
+            stopVideo()
+            if (target.source !is WallpaperSource.Video || !VideoCache.isCached(ctx, target)) return
+            video = runCatching {
+                VideoFrames(VideoCache.file(ctx, target), mainHandler) { frame ->
+                    val ws = shader
+                    if (ws != null && ws.item.id == target.id) {
+                        ws.setVideoFrame(frame)
+                        requestFrame()
+                    }
+                }
+            }.getOrNull()
+            videoItemId = target.id
+            updateVideoPlayback()
+        }
+
+        private fun stopVideo() {
+            video?.close()
+            video = null
+            videoItemId = null
+        }
+
+        private fun updateVideoPlayback() {
+            if (visible && motion) video?.play() else video?.pause()
         }
 
         override fun onDestroy() {
@@ -131,6 +161,7 @@ class FoldWallpaperService : WallpaperService() {
             prefs.unregisterOnSharedPreferenceChangeListener(this)
             ctx.unregisterReceiver(screenOffReceiver)
             ctx.unregisterReceiver(batteryReceiver)
+            stopVideo()
             hinge.stop()
             awake.release()
             shader?.pyramid?.recycle()
@@ -190,6 +221,7 @@ class FoldWallpaperService : WallpaperService() {
         override fun onVisibilityChanged(isVisible: Boolean) {
             visible = isVisible
             lastVisibleMs = SystemClock.uptimeMillis()
+            updateVideoPlayback()
             if (isVisible) {
                 hinge.start()
                 spring.clear()
@@ -277,10 +309,27 @@ class FoldWallpaperService : WallpaperService() {
         private fun ensureShader() {
             val current = shader
             if (current != null && current.item.id == item.id) {
+                if (current.isReady && video == null && loadingId == null) startVideo(item)
                 if (current.isReady || loadingId == item.id) return
             }
             val target = item
+            if (videoItemId != null && videoItemId != target.id) stopVideo()
             val created = WallpaperShader.create(target)
+            val clip = target.source as? WallpaperSource.Video
+            if (clip != null) {
+                loadingId = target.id
+                loader.execute {
+                    val poster = runCatching { WallpaperShader.decodePoster(resources, clip) }.getOrNull()
+                    mainHandler.post {
+                        if (loadingId != target.id || item.id != target.id) return@post
+                        loadingId = null
+                        poster?.let { created.setVideoFrame(it) }
+                        swapShader(created)
+                        startVideo(target)
+                    }
+                }
+                return
+            }
             val photo = target.source as? WallpaperSource.Photo
             if (photo == null) {
                 swapShader(created)

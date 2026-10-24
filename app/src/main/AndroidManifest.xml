@@ -11,6 +11,9 @@
     <!-- Screen wake lock that keeps the cover display on while the hinge opens -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
+    <!-- Downloads video wallpapers on demand. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:enableOnBackInvokedCallback="true"

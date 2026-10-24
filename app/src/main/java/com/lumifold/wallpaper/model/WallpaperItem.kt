@@ -6,6 +6,8 @@ enum class WallpaperCategory(val label: String) {
     ABSTRACT("Abstract"),
     GRADIENTS("Gradients"),
     LANDSCAPES("Landscapes"),
+    CITY("City"),
+    SCENES("Scenes"),
     ILLUSTRATED("Illustrated"),
     SPACE("Space"),
     TEXTURES("Textures"),
@@ -79,6 +81,14 @@ sealed interface WallpaperSource {
     ) : WallpaperSource
 
     data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource
+
+    /** A looping clip, downloaded on demand from [url]; [posterResId] stands in until it plays. */
+    data class Video(
+        val url: String,
+        @DrawableRes val posterResId: Int,
+        val sizeMb: Float,
+        val focusX: Float = 0.5f
+    ) : WallpaperSource
 }
 
 data class WallpaperItem(
@@ -88,5 +98,5 @@ data class WallpaperItem(
     val source: WallpaperSource,
     val description: String
 ) {
-    val isLive: Boolean get() = source is WallpaperSource.Generative
+    val isLive: Boolean get() = source is WallpaperSource.Generative || source is WallpaperSource.Video
 }

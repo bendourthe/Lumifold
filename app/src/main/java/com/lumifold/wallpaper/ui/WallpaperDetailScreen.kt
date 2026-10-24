@@ -37,7 +37,14 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import com.lumifold.wallpaper.model.MotionStyle
+import com.lumifold.wallpaper.service.VideoCache
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperSource
@@ -57,6 +64,27 @@ fun WallpaperDetailScreen(
 ) {
     var dynamic by remember(item.id) { mutableStateOf(initialMotion) }
     var view by remember(item.id) { mutableIntStateOf(0) }
+    val context = LocalContext.current
+    val clip = item.source as? WallpaperSource.Video
+    var cached by remember(item.id) { mutableStateOf(VideoCache.isCached(context, item)) }
+    var progress by remember(item.id) { mutableStateOf<Float?>(null) }
+    var failed by remember(item.id) { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val download: (then: () -> Unit) -> Unit = { then ->
+        failed = false
+        progress = 0f
+        scope.launch {
+            val ok = withContext(Dispatchers.IO) {
+                VideoCache.download(context, item, isCancelled = { !isActive }) { p ->
+                    scope.launch { progress = p }
+                }
+            }
+            progress = null
+            cached = ok
+            failed = !ok
+            if (ok) then()
+        }
+    }
     val shift = with(LocalDensity.current) { 72.dp.toPx() }
 
     Surface(
@@ -99,6 +127,7 @@ fun WallpaperDetailScreen(
                             v.setEffect(effect, intensity, dynamic, foldEffect)
                             v.handoffAngle = handoff
                             v.flat = view == 0
+                            if (cached) v.refreshVideo()
                         },
                         modifier = Modifier.fillMaxSize()
                     )
@@ -127,12 +156,27 @@ fun WallpaperDetailScreen(
                     Icon(BackIcon, contentDescription = "Back to wallpapers")
                 }
                 Spacer(Modifier.width(12.dp))
+                val needsDownload = clip != null && !cached
                 Button(
-                    onClick = { onApply(dynamic) },
+                    onClick = {
+                        when {
+                            progress != null -> Unit
+                            needsDownload -> download { onApply(dynamic) }
+                            else -> onApply(dynamic)
+                        }
+                    },
                     shape = RoundedCornerShape(18.dp),
                     modifier = Modifier.weight(1f).height(56.dp)
                 ) {
-                    Text(if (isApplied) "Update wallpaper" else "Apply", style = MaterialTheme.typography.titleMedium)
+                    val size = clip?.let { "%.0f MB".format(it.sizeMb) }
+                    val label = when {
+                        progress != null -> "Downloading ${((progress ?: 0f) * 100).toInt()}%"
+                        needsDownload && failed -> "Retry download ($size)"
+                        needsDownload -> "Download and apply ($size)"
+                        isApplied -> "Update wallpaper"
+                        else -> "Apply"
+                    }
+                    Text(label, style = MaterialTheme.typography.titleMedium)
                 }
             }
         }
@@ -141,6 +185,7 @@ fun WallpaperDetailScreen(
 
 private fun motionCaption(item: WallpaperItem): String = when (val s = item.source) {
     is WallpaperSource.Generative -> "Animated scene rendered live at your screen's resolution."
+    is WallpaperSource.Video -> "Real footage on a silent loop. Downloads once, then plays offline."
     is WallpaperSource.Photo -> when (s.motion) {
         MotionStyle.NONE -> "Still photograph. The fold effect still follows the hinge."
         MotionStyle.LIQUID -> "Slow, flowing liquid glass."

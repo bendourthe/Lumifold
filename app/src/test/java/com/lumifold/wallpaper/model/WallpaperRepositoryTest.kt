@@ -33,6 +33,10 @@ class WallpaperRepositoryTest {
             when (val s = item.source) {
                 is WallpaperSource.Photo -> assertTrue(s.resId != 0)
                 is WallpaperSource.Generative -> assertEquals(5, s.palette.colors.size)
+                is WallpaperSource.Video -> {
+                    assertTrue(s.url.startsWith("https://upload.wikimedia.org/"))
+                    assertTrue(s.posterResId != 0 && s.sizeMb > 0f)
+                }
             }
         }
     }

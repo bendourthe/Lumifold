@@ -104,3 +104,42 @@ Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 
 | `mars_globe` | [Mars Viking MDIM21 ClrMosaic 1km.jpg](https://commons.wikimedia.org/wiki/File%3AMars_Viking_MDIM21_ClrMosaic_1km.jpg) | NASA / Jet Propulsion Lab / USGS | Public domain |
 | `jupiter_globe` | [Jupiter Cylindrical Map - Dec 2000 PIA07782.jpg](https://commons.wikimedia.org/wiki/File%3AJupiter_Cylindrical_Map_-_Dec_2000_PIA07782.jpg) | NASA/JPL/Space Science Institute | Public domain |
 | `mercury_globe` | [Mercury MESSENGER MDIS Basemap BDR Mosaic Global 32ppd.jpg](https://commons.wikimedia.org/wiki/File%3AMercury_MESSENGER_MDIS_Basemap_BDR_Mosaic_Global_32ppd.jpg) | Planetary Data System, Applied Coherent Technology Corporation | Public domain |
+
+## Video Loops
+
+Clips are downloaded from Wikimedia Commons when a video wallpaper is first applied (the 1080p VP9 WebM transcode), then kept in app storage. Posters bundled as `wpv_<id>.jpg` are the Commons poster frames.
+
+| Wallpaper | Category | Source file | Author | License |
+| --- | --- | --- | --- | --- |
+| `canyon_clouds` | Landscapes | [B-roll Video - Time-lapse of Clouds over the Canyon - November 20, 2025 (55087231001).webm](https://commons.wikimedia.org/wiki/File:B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20,_2025_(55087231001).webm) | Grand Canyon NPS | Public domain |
+| `swiftcurrent_sunrise` | Landscapes | [Sunrise at Swiftcurrent Lake (26145798446).webm](https://commons.wikimedia.org/wiki/File:Sunrise_at_Swiftcurrent_Lake_(26145798446).webm) | GlacierNPS | Public domain |
+| `alaska_aurora` | Landscapes | [Alaskan Aurora Time Lapse (SVS15077).webm](https://commons.wikimedia.org/wiki/File:Alaskan_Aurora_Time_Lapse_(SVS15077).webm) | NASA's Scientific Visualization Studio - Amentum Services, Inc./Mike Toillion | Public domain |
+| `lake_mcdonald_clouds` | Landscapes | [Lake McDonald 8 6 15 (23809254046).webm](https://commons.wikimedia.org/wiki/File:Lake_McDonald_8_6_15_(23809254046).webm) | GlacierNPS | Public domain |
+| `golden_sunset` | Landscapes | [Golden sunset filmed in January.webm](https://commons.wikimedia.org/wiki/File:Golden_sunset_filmed_in_January.webm) | Vicky Ponce | CC0 |
+| `virginia_falls` | Landscapes | [Virginia Falls (26105159061).webm](https://commons.wikimedia.org/wiki/File:Virginia_Falls_(26105159061).webm) | GlacierNPS | Public domain |
+| `turquoise_waves` | Landscapes | [Plage d'Isola Rossa - 2017 - vagues.webm](https://commons.wikimedia.org/wiki/File:Plage_d%27Isola_Rossa_-_2017_-_vagues.webm) | Benoît Prieur | CC0 |
+| `misty_river` | Landscapes | [Misty river 47 seconds.webm](https://commons.wikimedia.org/wiki/File:Misty_river_47_seconds.webm) | Digitura | CC0 |
+| `snowfall` | Landscapes | [Snow falling in Charlton MA 2025-12-14.webm](https://commons.wikimedia.org/wiki/File:Snow_falling_in_Charlton_MA_2025-12-14.webm) | Peter Cooper Jr. | CC0 |
+| `meadow_breeze` | Landscapes | [Calmly waving grass and flowers.ogv](https://commons.wikimedia.org/wiki/File:Calmly_waving_grass_and_flowers.ogv) | Pixelmaniac pictures (Leave a reply) | Public domain |
+| `desert_night` | Landscapes | [Stars and Clouds Over Headstone Rock (30230087163).webm](https://commons.wikimedia.org/wiki/File:Stars_and_Clouds_Over_Headstone_Rock_(30230087163).webm) | Joshua Tree National Park | Public domain |
+| `lightning_storm` | Landscapes | [Lightning storm over Colorado, USA.ogg](https://commons.wikimedia.org/wiki/File:Lightning_storm_over_Colorado,_USA.ogg) | NathanScientific | CC0 |
+| `lenticular_cloud` | Landscapes | [Lenticular cloud over Longs Peak, Colorado (time lapse).ogv](https://commons.wikimedia.org/wiki/File:Lenticular_cloud_over_Longs_Peak,_Colorado_(time_lapse).ogv) | Stepleton | CC0 |
+| `yellowstone_falls` | Landscapes | [Upper Falls of the Yellowstone River (24503121190).webm](https://commons.wikimedia.org/wiki/File:Upper_Falls_of_the_Yellowstone_River_(24503121190).webm) | YellowstoneNPS | Public domain |
+| `misty_lake` | Landscapes | [Misty Morning at Lake McDonald (25569241623).webm](https://commons.wikimedia.org/wiki/File:Misty_Morning_at_Lake_McDonald_(25569241623).webm) | GlacierNPS | Public domain |
+| `shanghai_bund` | City | [Shanghai Bund, Lujiazui Skyline Timelapse.webm](https://commons.wikimedia.org/wiki/File:Shanghai_Bund,_Lujiazui_Skyline_Timelapse.webm) | Yigang Yu | CC0 |
+| `shibuya_crossing` | City | [Shibuya crossing time-lapse 2019-01-05.webm](https://commons.wikimedia.org/wiki/File:Shibuya_crossing_time-lapse_2019-01-05.webm) | Asanagi | CC0 |
+| `lujiazui_night` | City | [Timelapse de nuit de la vue du quartier de Lujiazui.webm](https://commons.wikimedia.org/wiki/File:Timelapse_de_nuit_de_la_vue_du_quartier_de_Lujiazui.webm) | Tomtoom03 | CC0 |
+| `eiffel_sunset` | City | [Sunset on Eiffel Tower in Paris - Vimeo.webm](https://commons.wikimedia.org/wiki/File:Sunset_on_Eiffel_Tower_in_Paris_-_Vimeo.webm) | Mythomen | CC0 |
+| `berlin_dusk` | City | [Berlin Bundesautobahn 100 2026-03-25 mov03.webm](https://commons.wikimedia.org/wiki/File:Berlin_Bundesautobahn_100_2026-03-25_mov03.webm) | LarsMueller | CC0 |
+| `berlin_motorway` | City | [Berlin Bundesautobahn 100 2026-03-25 mov04.webm](https://commons.wikimedia.org/wiki/File:Berlin_Bundesautobahn_100_2026-03-25_mov04.webm) | LarsMueller | CC0 |
+| `helsinki_harbour` | City | [Ajax South Harbour Helsinki 20260214 02.webm](https://commons.wikimedia.org/wiki/File:Ajax_South_Harbour_Helsinki_20260214_02.webm) | Estormiz | CC0 |
+| `la_night` | City | [DTLA by night, Los Angeles July 2022.webm](https://commons.wikimedia.org/wiki/File:DTLA_by_night,_Los_Angeles_July_2022.webm) | Benoît Prieur | CC0 |
+| `deep_sea_jellyfish` | Scenes | [Jellyfish - Deepwater Exploration of the Marianas expedition - April 24, 2016.webm](https://commons.wikimedia.org/wiki/File:Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24,_2016.webm) | oceanexplorergov | Public domain |
+| `blue_jellyfish` | Scenes | [Aquarium Boka - species 02.webm](https://commons.wikimedia.org/wiki/File:Aquarium_Boka_-_species_02.webm) | BuhaM | CC0 |
+| `spotted_jellyfish` | Scenes | [Méduses constellées à l'aquarium de Monaco en novembre 2021 (vidéo).webm](https://commons.wikimedia.org/wiki/File:M%C3%A9duses_constell%C3%A9es_%C3%A0_l%27aquarium_de_Monaco_en_novembre_2021_(vid%C3%A9o).webm) | Benoît Prieur | CC0 |
+| `sea_nettle` | Scenes | [Chrysaora fuscescens (Pacific sea nettle) swimming.webm](https://commons.wikimedia.org/wiki/File:Chrysaora_fuscescens_(Pacific_sea_nettle)_swimming.webm) | Celuici | CC0 |
+| `reef` | Scenes | [Sealife-Munich-3.ogv](https://commons.wikimedia.org/wiki/File:Sealife-Munich-3.ogv) | MartinThoma | CC0 |
+| `shark` | Scenes | [Sealife-Munich-Shark.ogv](https://commons.wikimedia.org/wiki/File:Sealife-Munich-Shark.ogv) | MartinThoma | CC0 |
+| `candle` | Scenes | [Corona.Candle.webm](https://commons.wikimedia.org/wiki/File:Corona.Candle.webm) | Bautsch | CC0 |
+| `embers` | Scenes | [Fire آتش 04.ogv](https://commons.wikimedia.org/wiki/File:Fire_%D8%A2%D8%AA%D8%B4_04.ogv) | Mostafameraji | CC0 |
+| `campfire` | Scenes | [Fire آتش 10.ogv](https://commons.wikimedia.org/wiki/File:Fire_%D8%A2%D8%AA%D8%B4_10.ogv) | Mostafameraji | CC0 |

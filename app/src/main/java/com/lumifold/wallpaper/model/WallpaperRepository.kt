@@ -55,6 +55,16 @@ object WallpaperRepository {
         focusY: Float = 0.5f
     ) = WallpaperItem(id, title, category, WallpaperSource.Photo(resId, motion, focusX, focusY), description)
 
+    private fun video(
+        id: String,
+        title: String,
+        category: WallpaperCategory,
+        url: String,
+        posterResId: Int,
+        sizeMb: Float,
+        description: String
+    ) = WallpaperItem(id, title, category, WallpaperSource.Video(url, posterResId, sizeMb), description)
+
     private fun globe(id: String, title: String, mapResId: Int, thumbResId: Int, globe: Globe, description: String) =
         WallpaperItem(
             id, title, WallpaperCategory.SPACE,
@@ -197,6 +207,200 @@ object WallpaperRepository {
             "sunset_strip", "Sunset Strip", WallpaperCategory.GRADIENTS, Scene.MESH,
             Palette(0x2D0B3A, 0xFF4D6D, 0xFF9E00, 0x9D4EDD, 0xFFD60A),
             "Neon pink, orange and purple of a city sunset."
+        ),
+
+        // Video loops: public-domain and CC0 footage, credited in docs/reference/photo-credits.md
+        video(
+            "canyon_clouds", "Canyon Clouds", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/e/ed/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_canyon_clouds, 15.6f,
+            "Clouds pouring over the rim of the Grand Canyon. National Park Service time-lapse."
+        ),
+        video(
+            "swiftcurrent_sunrise", "Swiftcurrent Sunrise", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/50/Sunrise_at_Swiftcurrent_Lake_%2826145798446%29.webm/Sunrise_at_Swiftcurrent_Lake_%2826145798446%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_swiftcurrent_sunrise, 17.7f,
+            "Red peaks reflected in Swiftcurrent Lake at sunrise, Glacier National Park."
+        ),
+        video(
+            "alaska_aurora", "Alaska Aurora", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_alaska_aurora, 7.1f,
+            "Green aurora rippling over Alaska. NASA time-lapse."
+        ),
+        video(
+            "lake_mcdonald_clouds", "Lake McDonald", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Lake_McDonald_8_6_15_%2823809254046%29.webm/Lake_McDonald_8_6_15_%2823809254046%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_lake_mcdonald_clouds, 16.0f,
+            "Clouds sailing over Lake McDonald, Glacier National Park."
+        ),
+        video(
+            "golden_sunset", "Golden Sunset", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/2/27/Golden_sunset_filmed_in_January.webm/Golden_sunset_filmed_in_January.webm.1080p.vp9.webm",
+            R.drawable.wpv_golden_sunset, 11.8f,
+            "A fiery gold sunset sky."
+        ),
+        video(
+            "virginia_falls", "Virginia Falls", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/51/Virginia_Falls_%2826105159061%29.webm/Virginia_Falls_%2826105159061%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_virginia_falls, 10.3f,
+            "Virginia Falls tumbling through the forest, Glacier National Park."
+        ),
+        video(
+            "turquoise_waves", "Turquoise Waves", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/14/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm/Plage_d%27Isola_Rossa_-_2017_-_vagues.webm.1080p.vp9.webm",
+            R.drawable.wpv_turquoise_waves, 10.4f,
+            "Turquoise waves rolling onto the beach at Isola Rossa, Corsica."
+        ),
+        video(
+            "misty_river", "Misty River", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/9e/Misty_river_47_seconds.webm/Misty_river_47_seconds.webm.1080p.vp9.webm",
+            R.drawable.wpv_misty_river, 26.9f,
+            "Fog drifting over a calm river."
+        ),
+        video(
+            "snowfall", "Snowfall", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/5/56/Snow_falling_in_Charlton_MA_2025-12-14.webm/Snow_falling_in_Charlton_MA_2025-12-14.webm.1080p.vp9.webm",
+            R.drawable.wpv_snowfall, 11.3f,
+            "Snow falling quietly in a winter forest."
+        ),
+        video(
+            "meadow_breeze", "Meadow Breeze", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/15/Calmly_waving_grass_and_flowers.ogv/Calmly_waving_grass_and_flowers.ogv.1080p.vp9.webm",
+            R.drawable.wpv_meadow_breeze, 6.1f,
+            "Daisies and grass swaying in the wind."
+        ),
+        video(
+            "desert_night", "Desert Night", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/12/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm/Stars_and_Clouds_Over_Headstone_Rock_%2830230087163%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_desert_night, 4.6f,
+            "Stars and clouds wheeling over Headstone Rock, Joshua Tree. National Park Service time-lapse."
+        ),
+        video(
+            "lightning_storm", "Lightning Storm", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/6/66/Lightning_storm_over_Colorado%2C_USA.ogg/Lightning_storm_over_Colorado%2C_USA.ogg.1080p.vp9.webm",
+            R.drawable.wpv_lightning_storm, 7.4f,
+            "Lightning flashing through a storm over Colorado."
+        ),
+        video(
+            "lenticular_cloud", "Lenticular Cloud", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/aa/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv.1080p.vp9.webm",
+            R.drawable.wpv_lenticular_cloud, 6.9f,
+            "A lenticular cloud swirling over Longs Peak, Colorado."
+        ),
+        video(
+            "yellowstone_falls", "Yellowstone Falls", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/79/Upper_Falls_of_the_Yellowstone_River_%2824503121190%29.webm/Upper_Falls_of_the_Yellowstone_River_%2824503121190%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_yellowstone_falls, 6.0f,
+            "The Upper Falls of the Yellowstone River in snow."
+        ),
+        video(
+            "misty_lake", "Misty Lake", WallpaperCategory.LANDSCAPES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c5/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm/Misty_Morning_at_Lake_McDonald_%2825569241623%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_misty_lake, 10.9f,
+            "Morning mist moving over Lake McDonald."
+        ),
+        video(
+            "shanghai_bund", "Shanghai Bund", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/91/Shanghai_Bund%2C_Lujiazui_Skyline_Timelapse.webm/Shanghai_Bund%2C_Lujiazui_Skyline_Timelapse.webm.1080p.vp9.webm",
+            R.drawable.wpv_shanghai_bund, 17.6f,
+            "The Shanghai skyline turning from dusk to night."
+        ),
+        video(
+            "shibuya_crossing", "Shibuya Crossing", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/4/47/Shibuya_crossing_time-lapse_2019-01-05.webm/Shibuya_crossing_time-lapse_2019-01-05.webm.1080p.vp9.webm",
+            R.drawable.wpv_shibuya_crossing, 15.8f,
+            "Crowds flowing across Shibuya crossing, Tokyo."
+        ),
+        video(
+            "lujiazui_night", "Lujiazui Night", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/a/aa/Timelapse_de_nuit_de_la_vue_du_quartier_de_Lujiazui.webm/Timelapse_de_nuit_de_la_vue_du_quartier_de_Lujiazui.webm.1080p.vp9.webm",
+            R.drawable.wpv_lujiazui_night, 4.0f,
+            "The towers of Lujiazui glittering at night."
+        ),
+        video(
+            "eiffel_sunset", "Eiffel Sunset", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/a/a9/Sunset_on_Eiffel_Tower_in_Paris_-_Vimeo.webm",
+            R.drawable.wpv_eiffel_sunset, 5.6f,
+            "The sun setting behind the Eiffel Tower, Paris."
+        ),
+        video(
+            "berlin_dusk", "Berlin Dusk", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/b/b7/Berlin_Bundesautobahn_100_2026-03-25_mov03.webm/Berlin_Bundesautobahn_100_2026-03-25_mov03.webm.1080p.vp9.webm",
+            R.drawable.wpv_berlin_dusk, 4.4f,
+            "Headlights streaming along a Berlin motorway at dusk."
+        ),
+        video(
+            "berlin_motorway", "Berlin Motorway", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/01/Berlin_Bundesautobahn_100_2026-03-25_mov04.webm/Berlin_Bundesautobahn_100_2026-03-25_mov04.webm.1080p.vp9.webm",
+            R.drawable.wpv_berlin_motorway, 5.9f,
+            "Evening traffic on the Berlin city motorway."
+        ),
+        video(
+            "helsinki_harbour", "Helsinki Harbour", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/9e/Ajax_South_Harbour_Helsinki_20260214_02.webm/Ajax_South_Harbour_Helsinki_20260214_02.webm.1080p.vp9.webm",
+            R.drawable.wpv_helsinki_harbour, 12.6f,
+            "A ship breaking through harbour ice in Helsinki."
+        ),
+        video(
+            "la_night", "Los Angeles Night", WallpaperCategory.CITY,
+            "https://upload.wikimedia.org/wikipedia/commons/9/92/DTLA_by_night%2C_Los_Angeles_July_2022.webm",
+            R.drawable.wpv_la_night, 30.5f,
+            "Downtown Los Angeles glowing at night."
+        ),
+        video(
+            "deep_sea_jellyfish", "Deep-Sea Jellyfish", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm.1080p.vp9.webm",
+            R.drawable.wpv_deep_sea_jellyfish, 8.5f,
+            "A glowing jellyfish drifting in the deep sea. NOAA footage."
+        ),
+        video(
+            "blue_jellyfish", "Blue Jellyfish", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8e/Aquarium_Boka_-_species_02.webm/Aquarium_Boka_-_species_02.webm.1080p.vp9.webm",
+            R.drawable.wpv_blue_jellyfish, 8.1f,
+            "Jellyfish pulsing through blue water."
+        ),
+        video(
+            "spotted_jellyfish", "Spotted Jellyfish", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/9b/M%C3%A9duses_constell%C3%A9es_%C3%A0_l%27aquarium_de_Monaco_en_novembre_2021_%28vid%C3%A9o%29.webm/M%C3%A9duses_constell%C3%A9es_%C3%A0_l%27aquarium_de_Monaco_en_novembre_2021_%28vid%C3%A9o%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_spotted_jellyfish, 4.1f,
+            "Spotted jellyfish floating in the dark."
+        ),
+        video(
+            "sea_nettle", "Sea Nettle", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/9/94/Chrysaora_fuscescens_%28Pacific_sea_nettle%29_swimming.webm",
+            R.drawable.wpv_sea_nettle, 10.3f,
+            "A Pacific sea nettle trailing its long tentacles."
+        ),
+        video(
+            "reef", "Reef", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/4/46/Sealife-Munich-3.ogv/Sealife-Munich-3.ogv.1080p.vp9.webm",
+            R.drawable.wpv_reef, 10.4f,
+            "Tropical fish around a colorful reef."
+        ),
+        video(
+            "shark", "Shark", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1f/Sealife-Munich-Shark.ogv/Sealife-Munich-Shark.ogv.1080p.vp9.webm",
+            R.drawable.wpv_shark, 10.0f,
+            "A shark gliding through blue water."
+        ),
+        video(
+            "candle", "Candle", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/72/Corona.Candle.webm/Corona.Candle.webm.1080p.vp9.webm",
+            R.drawable.wpv_candle, 1.5f,
+            "A single candle flickering in the dark."
+        ),
+        video(
+            "embers", "Embers", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f4/Fire_%D8%A2%D8%AA%D8%B4_04.ogv/Fire_%D8%A2%D8%AA%D8%B4_04.ogv.1080p.vp9.webm",
+            R.drawable.wpv_embers, 9.4f,
+            "Glowing embers and soft bokeh."
+        ),
+        video(
+            "campfire", "Campfire", WallpaperCategory.SCENES,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/71/Fire_%D8%A2%D8%AA%D8%B4_10.ogv/Fire_%D8%A2%D8%AA%D8%B4_10.ogv.1080p.vp9.webm",
+            R.drawable.wpv_campfire, 4.7f,
+            "Campfire flames up close."
         ),
 
         // Landscapes: public-domain and CC0 photographs, credited in docs/reference/photo-credits.md

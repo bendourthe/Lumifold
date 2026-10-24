@@ -19,8 +19,10 @@ import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperSource
 import com.lumifold.wallpaper.render.SurfaceSpec
+import com.lumifold.wallpaper.render.VideoFrames
 import com.lumifold.wallpaper.render.WallpaperShader
 import com.lumifold.wallpaper.service.FoldWallpaperService
+import com.lumifold.wallpaper.service.VideoCache
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.cos
@@ -62,6 +64,8 @@ class FoldPreviewView(context: Context) : View(context) {
     private var coverShader: WallpaperShader? = null
     private var innerShader: WallpaperShader? = null
     private var loadingId: String? = null
+    private var video: VideoFrames? = null
+    private var videoId: String? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val startMs = SystemClock.uptimeMillis()
@@ -85,7 +89,23 @@ class FoldPreviewView(context: Context) : View(context) {
     fun setWallpaper(next: WallpaperItem) {
         if (item?.id == next.id) return
         item = next
+        stopVideo()
         val cover = WallpaperShader.create(next)
+        val clip = next.source as? WallpaperSource.Video
+        if (clip != null) {
+            loadingId = next.id
+            loader.execute {
+                val poster = runCatching { WallpaperShader.decodePoster(resources, clip) }.getOrNull()
+                mainHandler.post {
+                    if (loadingId != next.id) return@post
+                    loadingId = null
+                    poster?.let { cover.setVideoFrame(it) }
+                    install(cover)
+                    refreshVideo()
+                }
+            }
+            return
+        }
         val photo = next.source as? WallpaperSource.Photo
         if (photo == null) {
             install(cover)
@@ -121,7 +141,48 @@ class FoldPreviewView(context: Context) : View(context) {
         this.intensity = intensity
         this.motion = motion
         this.foldEffect = foldEffect
+        updateVideoPlayback()
         invalidate()
+    }
+
+    /** Starts the current video wallpaper's clip once it has been downloaded. */
+    fun refreshVideo() {
+        val current = item ?: return
+        if (current.source !is WallpaperSource.Video || !isAttachedToWindow || coverShader?.item?.id != current.id) return
+        if (videoId == current.id && video != null) return
+        if (!VideoCache.isCached(context, current)) return
+        stopVideo()
+        video = runCatching {
+            VideoFrames(VideoCache.file(context, current), mainHandler) { frame ->
+                if (item?.id == current.id) {
+                    coverShader?.setVideoFrame(frame)
+                    innerShader?.setVideoFrame(frame)
+                    invalidate()
+                }
+            }
+        }.getOrNull()
+        videoId = current.id
+        updateVideoPlayback()
+    }
+
+    private fun stopVideo() {
+        video?.close()
+        video = null
+        videoId = null
+    }
+
+    private fun updateVideoPlayback() {
+        if (motion) video?.play() else video?.pause()
+    }
+
+    override fun onAttachedToWindow() {
+        super.onAttachedToWindow()
+        refreshVideo()
+    }
+
+    override fun onDetachedFromWindow() {
+        stopVideo()
+        super.onDetachedFromWindow()
     }
 
     fun setAngleManually(degrees: Float) {

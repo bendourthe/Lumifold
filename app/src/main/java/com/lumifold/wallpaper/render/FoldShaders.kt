@@ -16,6 +16,43 @@ object FoldShaders {
 
     fun photoSource(): String = COMMON + NOISE + PHOTO_CONTENT + EFFECT_MAIN
 
+    fun videoSource(): String = COMMON + NOISE + VIDEO_CONTENT + EFFECT_MAIN
+
+    // A video frame has no blur pyramid: frost comes from a 16-tap spiral with a per-pixel
+    // rotation, which the effect stage's grain hides.
+    private const val VIDEO_CONTENT = """
+uniform shader uVideo;
+uniform float2 uVidSize;
+uniform float uFocusX;
+
+half4 vtap(float2 st) {
+    float planeAsp = 2.0 / uPlaneH;
+    float vidAsp = uVidSize.x / uVidSize.y;
+    float2 uv = st;
+    if (vidAsp > planeAsp) {
+        float k = planeAsp / vidAsp;
+        uv.x = (st.x - 0.5) * k + 0.5 + (uFocusX - 0.5) * (1.0 - k);
+    } else {
+        uv.y = (st.y - 0.5) * vidAsp / planeAsp + 0.5;
+    }
+    return uVideo.eval(clamp(uv, float2(0.0), float2(1.0)) * uVidSize);
+}
+
+half4 content(float2 st, float sigma) {
+    if (sigma < 0.0015) { return vtap(st); }
+    float2 rad = float2(sigma * 0.5, sigma / uPlaneH) * 1.8;
+    float rot = hash12(st * 917.0) * 6.283;
+    half4 acc = half4(0.0);
+    for (int i = 0; i < 16; i++) {
+        float fi = float(i);
+        float r = sqrt((fi + 0.5) / 16.0);
+        float a = fi * 2.39996 + rot;
+        acc += vtap(st + rad * r * float2(cos(a), sin(a)));
+    }
+    return acc / 16.0;
+}
+"""
+
     fun sceneSource(scene: Scene): String =
         COMMON + PALETTE + NOISE + sceneBody(scene) + SCENE_CONTENT + EFFECT_MAIN
 

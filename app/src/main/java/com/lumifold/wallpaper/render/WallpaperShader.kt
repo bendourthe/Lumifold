@@ -1,6 +1,7 @@
 package com.lumifold.wallpaper.render
 
 import android.content.res.Resources
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapShader
 import android.graphics.Matrix
@@ -35,7 +36,25 @@ class WallpaperShader private constructor(
     var pyramid: BlurPyramid? = null
         private set
 
-    val isReady: Boolean get() = item.source is WallpaperSource.Generative || pyramid != null
+    /** Latest frame of a video wallpaper (its poster until the clip plays). */
+    var videoFrame: Bitmap? = null
+        private set
+
+    val isReady: Boolean
+        get() = when (item.source) {
+            is WallpaperSource.Generative -> true
+            is WallpaperSource.Photo -> pyramid != null
+            is WallpaperSource.Video -> videoFrame != null
+        }
+
+    fun setVideoFrame(frame: Bitmap) {
+        videoFrame = frame
+        shader.setInputShader("uVideo", BitmapShader(frame, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+            filterMode = BitmapShader.FILTER_MODE_LINEAR
+        })
+        shader.setFloatUniform("uVidSize", frame.width.toFloat(), frame.height.toFloat())
+        shader.setFloatUniform("uFocusX", (item.source as WallpaperSource.Video).focusX)
+    }
 
     fun attachPyramid(p: BlurPyramid) {
         pyramid = p
@@ -71,6 +90,7 @@ class WallpaperShader private constructor(
         val copy = WallpaperShader(item, RuntimeShader(sourceFor(item)))
         copy.applyPalette()
         pyramid?.let { copy.attachPyramid(it) }
+        videoFrame?.let { copy.setVideoFrame(it) }
         return copy
     }
 
@@ -131,7 +151,12 @@ class WallpaperShader private constructor(
         private fun sourceFor(item: WallpaperItem): String = when (val s = item.source) {
             is WallpaperSource.Photo -> FoldShaders.photoSource()
             is WallpaperSource.Generative -> FoldShaders.sceneSource(s.scene)
+            is WallpaperSource.Video -> FoldShaders.videoSource()
         }
+
+        /** Decodes a video's poster frame. Call off the main thread. */
+        fun decodePoster(resources: Resources, video: WallpaperSource.Video): Bitmap? =
+            BitmapFactory.decodeResource(resources, video.posterResId)
 
         fun create(item: WallpaperItem): WallpaperShader =
             WallpaperShader(item, RuntimeShader(sourceFor(item))).also { it.applyPalette() }
