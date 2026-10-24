@@ -39,7 +39,10 @@ enum class MotionStyle(val shaderIndex: Int) {
     LIQUID(1),
 
     /** Light travelling along bright features. */
-    PULSE(2)
+    PULSE(2),
+
+    /** A slow camera drift with twinkling stars. */
+    COSMOS(3)
 }
 
 sealed interface WallpaperSource {

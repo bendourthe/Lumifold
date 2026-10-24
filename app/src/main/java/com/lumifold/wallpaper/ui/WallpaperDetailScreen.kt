@@ -145,6 +145,7 @@ private fun motionCaption(item: WallpaperItem): String = when (val s = item.sour
         MotionStyle.NONE -> "Still photograph. The fold effect still follows the hinge."
         MotionStyle.LIQUID -> "Slow, flowing liquid glass."
         MotionStyle.PULSE -> "Pulses of light travel through the bright details."
+        MotionStyle.COSMOS -> "A slow drift through space with twinkling stars."
     }
 }
 

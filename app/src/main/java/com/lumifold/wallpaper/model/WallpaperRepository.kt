@@ -335,75 +335,75 @@ object WallpaperRepository {
         // Space: NASA, ESA and CC0 images, credited in docs/reference/photo-credits.md
         photo(
             "pillars_webb", "Pillars of Creation", WallpaperCategory.SPACE, R.drawable.wp_pillars_webb,
-            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.NONE
+            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "pillars_hubble", "Pillars, Hubble", WallpaperCategory.SPACE, R.drawable.wp_pillars_hubble,
-            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.NONE
+            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "cosmic_cliffs", "Cosmic Cliffs", WallpaperCategory.SPACE, R.drawable.wp_cosmic_cliffs,
-            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.NONE
+            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "tarantula", "Tarantula Nebula", WallpaperCategory.SPACE, R.drawable.wp_tarantula,
-            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.NONE
+            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "orion_nebula", "Orion Nebula", WallpaperCategory.SPACE, R.drawable.wp_orion_nebula,
-            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.NONE
+            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "helix", "Helix Nebula", WallpaperCategory.SPACE, R.drawable.wp_helix,
-            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.NONE
+            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "ring_nebula", "Ring Nebula", WallpaperCategory.SPACE, R.drawable.wp_ring_nebula,
-            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.NONE
+            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "crab_nebula", "Crab Nebula", WallpaperCategory.SPACE, R.drawable.wp_crab_nebula,
-            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.NONE
+            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "cygnus_loop", "Cygnus Loop", WallpaperCategory.SPACE, R.drawable.wp_cygnus_loop,
-            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.NONE
+            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.COSMOS
         ),
         photo(
             "whirlpool", "Whirlpool Galaxy", WallpaperCategory.SPACE, R.drawable.wp_whirlpool,
-            "The spiral arms of Messier 51, Hubble Space Telescope.", MotionStyle.NONE
+            "The spiral arms of Messier 51, Hubble Space Telescope.", MotionStyle.COSMOS
         ),
         photo(
             "andromeda", "Andromeda", WallpaperCategory.SPACE, R.drawable.wp_andromeda,
-            "The Andromeda Galaxy in a dense field of stars.", MotionStyle.NONE
+            "The Andromeda Galaxy in a dense field of stars.", MotionStyle.COSMOS
         ),
         photo(
             "backlit_saturn", "Backlit Saturn", WallpaperCategory.SPACE, R.drawable.wp_backlit_saturn,
-            "Saturn eclipsing the Sun, its rings glowing, from Cassini.", MotionStyle.NONE
+            "Saturn eclipsing the Sun, its rings glowing, from Cassini.", MotionStyle.COSMOS
         ),
         photo(
             "saturn_rings", "Saturn", WallpaperCategory.SPACE, R.drawable.wp_saturn_rings,
-            "Saturn and its rings in natural color, from Cassini.", MotionStyle.NONE
+            "Saturn and its rings in natural color, from Cassini.", MotionStyle.COSMOS
         ),
         photo(
             "full_moon", "Full Moon", WallpaperCategory.SPACE, R.drawable.wp_full_moon,
-            "The full Moon in sharp detail.", MotionStyle.NONE
+            "The full Moon in sharp detail.", MotionStyle.COSMOS
         ),
         photo(
             "earthrise", "Earthrise", WallpaperCategory.SPACE, R.drawable.wp_earthrise,
-            "Earth rising over the lunar horizon, Apollo 8.", MotionStyle.NONE, focusY = 0.3f
+            "Earth rising over the lunar horizon, Apollo 8.", MotionStyle.COSMOS, focusY = 0.3f
         ),
         photo(
             "nile_at_night", "Nile at Night", WallpaperCategory.SPACE, R.drawable.wp_nile_at_night,
-            "Cairo and the Nile Delta at night, from the International Space Station.", MotionStyle.NONE
+            "Cairo and the Nile Delta at night, from the International Space Station.", MotionStyle.COSMOS
         ),
         photo(
             "aurora_from_orbit", "Aurora from Orbit", WallpaperCategory.SPACE, R.drawable.wp_aurora_from_orbit,
-            "The aurora australis seen from the International Space Station.", MotionStyle.NONE
+            "The aurora australis seen from the International Space Station.", MotionStyle.COSMOS
         ),
         photo(
             "joshua_tree_night", "Joshua Tree Night", WallpaperCategory.SPACE, R.drawable.wp_joshua_tree_night,
-            "The Milky Way over Joshua Tree National Park.", MotionStyle.NONE
+            "The Milky Way over Joshua Tree National Park.", MotionStyle.COSMOS
         ),
 
         // Textures

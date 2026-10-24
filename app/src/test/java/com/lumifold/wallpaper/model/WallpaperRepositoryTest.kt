@@ -75,6 +75,5 @@ class WallpaperRepositoryTest {
 
     @Test
     fun effectShaderIndicesAreUniqueAndContiguous() {
-        assertEquals(OpeningEffect.entries.indices.toList(), OpeningEffect.entries.map { it.shaderIndex })
-    }
-}
+        assertEquals(OpeningEffect.entries.indices.toList(), OpeningEffect.entries.map { it.shaderIndex }.sorted())
+    }}

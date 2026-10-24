@@ -87,9 +87,26 @@ half4 flowSample(float2 st, float2 flow, float period, float sigma, float t) {
     return mix(a, b, half(w));
 }
 
+// Cosmos: a slow drifting camera, with stars (pixels brighter than their surroundings) twinkling.
+half4 cosmos(float2 st, float sigma, float t) {
+    float z = 1.0 + 0.018 * (0.5 + 0.5 * sin(t * 0.045));
+    float2 pan = 0.005 * float2(sin(t * 0.029), cos(t * 0.021));
+    float2 s2 = (st - 0.5) / z + 0.5 + pan;
+    half4 c = levels(s2, sigma);
+    half4 around = levels(s2, max(sigma, 0.004));
+    float lift = dot(float3(c.rgb - around.rgb), float3(0.299, 0.587, 0.114));
+    float star = smoothstep(0.04, 0.22, lift);
+    float2 cell = floor(s2 * uTexSize / 5.0);
+    float h = hash12(cell);
+    float tw = 0.5 + 0.5 * sin(t * (1.2 + 3.5 * h) + h * 40.0);
+    c.rgb *= half(1.0 + star * (tw * 0.7 - 0.35));
+    return c;
+}
+
 half4 content(float2 st, float sigma) {
     if (uMotion < 0.5 || uStyle < 0.5) { return levels(st, sigma); }
     float t = uTime;
+    if (uStyle > 2.5) { return cosmos(st, sigma, t); }
     st = (st - 0.5) / 1.025 + 0.5;
 
     if (uStyle < 1.5) {
@@ -605,6 +622,44 @@ half4 main(float2 fragCoord) {
         zoomK = 0.28 * I * s * (moving ? (0.4 + 0.6 * d) : 0.6);
         zoomC = inner ? float2(0.0, uPlaneH * 0.5) : float2(0.5, uPlaneH * 0.5);
         dark = 0.2 * s;
+    } else if (fx == 12) {
+        // Shattered Glass: the moving glass cracks from an impact as it lifts. Radial cracks and
+        // partial rings cut it into shards that shift, tilt and catch light, then mend on settling.
+        float prog = inner ? clamp((PI - a) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
+        float m = smoothstep(0.0, 0.8, prog);
+        q = mix(qFlat, qPersp, 0.5);
+        if (moving && m > 0.001) {
+            float2 p = float2(u, yPlane) - float2(0.62, uPlaneH * 0.42);
+            float r = length(p);
+            float N = 13.0;
+            float A = (atan(p.y, p.x) + PI) / (2.0 * PI) * N;
+            A += 0.45 * (vnoise(float2(r * 4.0, A * 0.9)) - 0.5);
+            float sector = mod(floor(A), N);
+            float hs = hash11(sector + 1.7);
+            float reach = 1.7 * m * (0.6 + 0.6 * hs);
+            float fa = fract(A);
+            float dRad = min(fa, 1.0 - fa) * (2.0 * PI / N) * r;
+            float rg = log(r * 9.0 + 1.0) * 3.2 + hs * 0.9;
+            float ring = floor(rg);
+            float fr = fract(rg);
+            float dRing = min(fr, 1.0 - fr) * (r * 9.0 + 1.0) / 28.8;
+            float inside = step(r, reach);
+            float ringOn = step(0.35, hash12(float2(sector, ring))) * step(r, reach * 0.75);
+            float dist = min(mix(9.0, dRad, inside), mix(9.0, dRing, ringOn));
+            float wid = 0.0025 + 0.004 * exp(-r * 5.0);
+            float line = 1.0 - smoothstep(0.0, wid, dist);
+            float halo = 1.0 - smoothstep(0.0, wid * 4.0, dist);
+            float2 sid = float2(sector, ring);
+            float2 dir = float2(hash12(sid + 3.1), hash12(sid + 7.9)) - 0.5;
+            q += dir * 0.03 * I * m * inside * (0.4 + hash12(sid + 1.3));
+            float crush = exp(-r * r / 0.0016);
+            sigma = SIGMA_MAX * 0.25 * I * m * exp(-r * 7.0);
+            dark = (hash12(sid + 5.5) - 0.5) * 0.35 * m * inside + (halo - line) * 0.55 * m + 0.15 * m * d;
+            edge = (line * 7.0 + crush * 6.0) * m * min(I, 1.2);
+            disp = halo * 0.012 * I * m;
+        } else {
+            dark = 0.1 * m;
+        }
     } else {
         // Silk Wave: a fabric fold travels across the panel with the hinge.
         q = mix(qFlat, qPersp, 0.7);

@@ -66,6 +66,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
@@ -492,14 +493,25 @@ private fun SectionTitle(title: String, subtitle: String) {
 
 @Composable
 private fun EffectGrid(selected: OpeningEffect, columns: Int, onSelect: (OpeningEffect) -> Unit) {
+    var expanded by rememberSaveable { mutableStateOf(false) }
+    val all = OpeningEffect.entries
+    val featured = all.take(OpeningEffect.FEATURED_COUNT)
+    val visible = when {
+        expanded -> all
+        selected in featured -> featured
+        else -> featured.dropLast(1) + selected
+    }
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        OpeningEffect.entries.chunked(columns).forEach { row ->
+        visible.chunked(columns).forEach { row ->
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 row.forEach { e ->
                     EffectTile(e, e == selected, Modifier.weight(1f)) { onSelect(e) }
                 }
                 repeat(columns - row.size) { Spacer(Modifier.weight(1f)) }
             }
+        }
+        OutlinedButton(onClick = { expanded = !expanded }, modifier = Modifier.fillMaxWidth()) {
+            Text(if (expanded) "Show fewer effects" else "Show all ${all.size} effects")
         }
         Surface(
             shape = RoundedCornerShape(16.dp),

@@ -1,8 +1,8 @@
 package com.lumifold.wallpaper.model
 
 /**
- * Hinge-driven transitions. [shaderIndex] selects the branch in the AGSL effect stage and must
- * match the order of the `uEffect` cases in FoldShaders.
+ * Hinge-driven transitions, in display order. [shaderIndex] selects the branch in the AGSL effect
+ * stage and must match the `uEffect` cases in FoldShaders.
  */
 enum class OpeningEffect(
     val id: String,
@@ -16,11 +16,29 @@ enum class OpeningEffect(
         "The iPhone Duo look. The moving panel turns to frosted glass, sharp at the hinge and soft at the free edge.",
         0
     ),
+    SHATTER(
+        "shatter",
+        "Shattered Glass",
+        "The glass cracks from an impact as the panel lifts. Shards shift and catch the light, then mend as it settles.",
+        12
+    ),
     FLUTED_GLASS(
         "fluted_glass",
         "Fluted Glass",
         "Reeded glass ribs bend the picture as the panel lifts, then straighten flat.",
         1
+    ),
+    CRYSTAL(
+        "crystal",
+        "Crystal",
+        "Faceted glass splits the view into shifted shards with softly lit edges.",
+        8
+    ),
+    PRISM(
+        "prism",
+        "Prism Edge",
+        "The free edge splits light into color fringes that settle as the hinge opens.",
+        5
     ),
     APERTURE(
         "aperture",
@@ -40,12 +58,6 @@ enum class OpeningEffect(
         "No blur. The picture stays fixed in space behind the glass while the panel moves.",
         4
     ),
-    PRISM(
-        "prism",
-        "Prism Edge",
-        "The free edge splits light into color fringes that settle as the hinge opens.",
-        5
-    ),
     RIPPLE(
         "ripple",
         "Ripple",
@@ -57,12 +69,6 @@ enum class OpeningEffect(
         "Mosaic",
         "The picture breaks into tiles that shrink back to pixels as the panel settles.",
         7
-    ),
-    CRYSTAL(
-        "crystal",
-        "Crystal",
-        "Faceted glass splits the view into shifted shards with softly lit edges.",
-        8
     ),
     COLOR_BLOOM(
         "color_bloom",
@@ -85,6 +91,9 @@ enum class OpeningEffect(
 
     companion object {
         val DEFAULT = DUO_FROST
+
+        /** Effects shown before "Show all". */
+        const val FEATURED_COUNT = 6
 
         /** Unknown and pre-0.5 ids (duo_blur, crease_bloom, ...) fall back to [DEFAULT]. */
         fun fromId(id: String?): OpeningEffect = entries.firstOrNull { it.id == id } ?: DEFAULT
