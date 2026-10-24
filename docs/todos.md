@@ -8,10 +8,10 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 39 | 40 | -1 |
-| Wallpaper Designs | 32 (20 generative, 12 photos) | 32 | Met |
-| Opening Effects | 12 | 12 | Met |
-| Unit Tests | 33 | 33 | Met |
+| Tasks Completed | 47 | 48 | -1 |
+| Wallpaper Designs | 103 (38 generative, 65 public-domain or CC0 photos) | 84 (12 per category) | Met |
+| Opening Effects | 12, plus an off switch | 12 | Met |
+| Unit Tests | 38 | 38 | Met |
 | Min SDK Target | 33 (Android 13) | 33 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
 
@@ -62,7 +62,7 @@
 - [x] T029 [US5] Generate the new adaptive icon from the supplied artwork app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
 - [x] T030 [US5] Verify on an Android 16 foldable emulator: preview sweep, all effects, live engine, settle, cover path docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
 - [x] T031 [US5] Update README, architecture handbook, changelog and known gaps docs/handbooks/architecture.md
-- [ ] T032 [US5] Verify cover keep-awake and display-switch diagnostics on a physical Pixel foldable docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
+- [x] T032 [US5] Verify cover keep-awake and display-switch diagnostics on a physical Pixel foldable (Pixel 11 Pro Fold: opening switch 90 degrees, closing switch 40 degrees) docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
 - [x] T033 [US5] Rename the app, packages and repository to Lumifold README.md
 - [x] T034 [US5] Move the preview angle readout out of the animation area app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
 - [x] T035 [US5] Add the wallpaper detail page with Dynamic or Static, back, apply and predictive back app/src/main/java/com/lumifold/wallpaper/ui/WallpaperDetailScreen.kt
@@ -71,3 +71,11 @@
 - [x] T038 [US5] Add six opening effects and an effect grid with rendered previews app/src/main/java/com/lumifold/wallpaper/model/OpeningEffect.kt
 - [x] T039 [US5] Smooth the hinge with a critically damped spring app/src/main/java/com/lumifold/wallpaper/service/HingeTracker.kt
 - [x] T040 [US5] Cache thumbnails as bitmaps to remove the per-frame shader redraw that caused an ANR app/src/main/java/com/lumifold/wallpaper/render/ShaderSnapshots.kt
+- [x] T041 [US5] Replace unlicensed photos with 65 public-domain or CC0 photos and credit them docs/reference/photo-credits.md
+- [x] T042 [US5] Grow every category to at least 12 designs and move drawn space scenes to Illustrated app/src/main/java/com/lumifold/wallpaper/model/WallpaperRepository.kt
+- [x] T043 [US5] Make effect strength scale shading and perspective without saturating, with a live sample app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T044 [US5] Fix cached shader images never re-rendering when their key changes app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
+- [x] T045 [US5] Add fold effect and live motion quick toggles in the app and as Quick Settings tiles app/src/main/java/com/lumifold/wallpaper/service/QuickTiles.kt
+- [x] T046 [US5] Pause live motion in Battery Saver or below a chosen battery level app/src/main/java/com/lumifold/wallpaper/service/MotionPolicy.kt
+- [x] T047 [US5] Hold the effect for 4 seconds at a still posture and ease it back gently app/src/main/java/com/lumifold/wallpaper/service/FoldWallpaperService.kt
+- [ ] T048 [US5] Add natural motion to landscape photos (wind, water, clouds) without the blocked video and depth tooling app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt

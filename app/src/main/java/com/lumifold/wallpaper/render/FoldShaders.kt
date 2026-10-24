@@ -482,7 +482,7 @@ half4 main(float2 fragCoord) {
     }
     float d = moving ? u : 0.0;
     float I = uIntensity;
-    float darkK = min(I, 1.2);
+    float darkK = I;
     int fx = int(uEffect + 0.5);
 
     float2 q = qFlat;
@@ -495,16 +495,19 @@ half4 main(float2 fragCoord) {
     float zoomK = 0.0;
     float2 zoomC = float2(0.0);
 
-    if (fx == 0) {
+    if (fx >= 90) {
+        // Fold effect off: the wallpaper as a flat picture.
+        s = 0.0;
+    } else if (fx == 0) {
         // Duo Frost, after Apple's model: the glass lifts away from a fixed picture, so blur and
         // shade grow toward the free edge until it falls into black at full fold.
         float prog = inner ? clamp((PI - a) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
         float motion = smoothstep(0.0, 0.75, prog);
-        q = qPersp;
+        q = mix(qFlat, qPersp, clamp(I, 0.0, 1.0));
         if (moving) {
             sigma = DUO_SIGMA * I * motion * pow(d, 1.5);
             float dg = clamp((d - 0.2) / 0.8, 0.0, 1.0);
-            dark = 2.0 * motion * pow(dg, 1.35);
+            dark = 1.3 * motion * pow(dg, 1.35);
         } else {
             dark = 0.1 * motion;
         }

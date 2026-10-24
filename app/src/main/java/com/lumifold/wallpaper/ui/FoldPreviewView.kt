@@ -57,6 +57,7 @@ class FoldPreviewView(context: Context) : View(context) {
     private var effect = OpeningEffect.DEFAULT
     private var intensity = 1f
     private var motion = true
+    private var foldEffect = true
 
     private var coverShader: WallpaperShader? = null
     private var innerShader: WallpaperShader? = null
@@ -115,10 +116,11 @@ class FoldPreviewView(context: Context) : View(context) {
         invalidate()
     }
 
-    fun setEffect(effect: OpeningEffect, intensity: Float, motion: Boolean) {
+    fun setEffect(effect: OpeningEffect, intensity: Float, motion: Boolean, foldEffect: Boolean = true) {
         this.effect = effect
         this.intensity = intensity
         this.motion = motion
+        this.foldEffect = foldEffect
         invalidate()
     }
 
@@ -407,7 +409,7 @@ class FoldPreviewView(context: Context) : View(context) {
             // The shader traces rays from this camera, in units of the surface's panel width.
             val unit = if (spec.isInner) 1f - BEZEL else 1f - 2f * BEZEL
             ws.bind(
-                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion,
+                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
                 eyeX = eyeWorld.x / unit,
                 eyeY = spec.planeHeight * 0.5f - eyeWorld.y / unit,
                 eyeZ = eyeWorld.z / unit

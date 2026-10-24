@@ -12,6 +12,11 @@ object WallpaperRepository {
     const val KEY_EFFECT_INTENSITY = "pref_effect_intensity"
     const val KEY_DYNAMIC_MOTION_ENABLED = "pref_dynamic_motion_enabled"
     const val KEY_COVER_AWAKE = "pref_cover_awake"
+    const val KEY_FOLD_EFFECT_ENABLED = "pref_fold_effect_enabled"
+    const val KEY_PAUSE_ON_SAVER = "pref_pause_motion_on_saver"
+    const val KEY_PAUSE_BELOW_LEVEL = "pref_pause_motion_below_level"
+    const val KEY_PAUSE_LEVEL = "pref_pause_motion_level"
+    const val DEFAULT_PAUSE_LEVEL = 20
     const val KEY_MEASURED_OPEN_SWITCH = "pref_measured_open_switch"
     const val KEY_MEASURED_CLOSE_SWITCH = "pref_measured_close_switch"
     const val KEY_INNER_W = "pref_inner_natural_w"
@@ -68,9 +73,19 @@ object WallpaperRepository {
             "Cold blue ribbons that move like light under ice."
         ),
         gen(
+            "jade_silk", "Jade Silk", WallpaperCategory.ABSTRACT, Scene.RIBBONS,
+            Palette(0x04130F, 0x34D399, 0x10B981, 0x2DD4BF, 0xD1FAE5),
+            "Emerald and teal ribbons folding over deep green."
+        ),
+        gen(
             "iris_flow", "Iris Flow", WallpaperCategory.ABSTRACT, Scene.IRIS,
             Palette(0x120B2E, 0x6D28D9, 0xEC4899, 0xF59E0B, 0x22D3EE),
             "Slowly folding bands of iridescent color."
+        ),
+        gen(
+            "opal", "Opal", WallpaperCategory.ABSTRACT, Scene.IRIS,
+            Palette(0x1A1530, 0x93C5FD, 0xF9A8D4, 0xFDE68A, 0xA7F3D0),
+            "Pastel opal light shifting through blue, pink and gold."
         ),
         gen(
             "mercury", "Mercury", WallpaperCategory.ABSTRACT, Scene.IRIS,
@@ -83,16 +98,36 @@ object WallpaperRepository {
             "Out-of-focus night lights floating in the dark."
         ),
         photo(
-            "oil_bubbles", "Oil Bubbles", WallpaperCategory.ABSTRACT, R.drawable.wp_oil_bubbles,
-            "Macro photograph of colored oil drops on water."
+            "ink_in_water", "Ink in Water", WallpaperCategory.ABSTRACT, R.drawable.wp_ink_in_water,
+            "Deep blue ink unfurling through clear water."
         ),
         photo(
-            "liquid_glass", "Liquid Glass", WallpaperCategory.ABSTRACT, R.drawable.wp_liquid_glass,
-            "Violet and blue waves of glossy color."
+            "ember_smoke", "Ember Smoke", WallpaperCategory.ABSTRACT, R.drawable.wp_ember_smoke,
+            "A ribbon of orange and gold smoke on black."
         ),
         photo(
-            "ink_bloom", "Ink Bloom", WallpaperCategory.ABSTRACT, R.drawable.wp_ink_bloom,
-            "Red and blue ink billowing through water."
+            "spectrum_smoke", "Spectrum Smoke", WallpaperCategory.ABSTRACT, R.drawable.wp_spectrum_smoke,
+            "Smoke curling through every color of the spectrum."
+        ),
+        photo(
+            "violet_smoke", "Violet Smoke", WallpaperCategory.ABSTRACT, R.drawable.wp_violet_smoke,
+            "Blue and violet smoke drifting in the dark."
+        ),
+        photo(
+            "holiday_bokeh", "Holiday Bokeh", WallpaperCategory.ABSTRACT, R.drawable.wp_holiday_bokeh,
+            "Soft discs of red, green and gold holiday lights."
+        ),
+        photo(
+            "night_bokeh", "Night Bokeh", WallpaperCategory.ABSTRACT, R.drawable.wp_night_bokeh,
+            "Blurred city lights glowing at the bottom of the frame."
+        ),
+        photo(
+            "light_trails", "Light Trails", WallpaperCategory.ABSTRACT, R.drawable.wp_light_trails,
+            "Long-exposure traffic light streaks at dusk."
+        ),
+        photo(
+            "frozen_bubble", "Frozen Bubble", WallpaperCategory.ABSTRACT, R.drawable.wp_frozen_bubble,
+            "A soap bubble freezing into ice crystals.", MotionStyle.NONE
         ),
 
         // Gradients
@@ -116,31 +151,123 @@ object WallpaperRepository {
             Palette(0x0F1F17, 0x3F6B4E, 0xA3B18A, 0x588157, 0xDAD7CD),
             "Muted greens and sage."
         ),
-        photo(
-            "pastel_haze", "Pastel Haze", WallpaperCategory.GRADIENTS, R.drawable.wp_pastel_haze,
-            "Soft pink, teal and violet light."
+        gen(
+            "peach_fuzz", "Peach Fuzz", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0xFFE5D9, 0xFFBE98, 0xF4978E, 0xFFD7BA, 0xF8AD9D),
+            "Warm peach and apricot, soft as felt."
+        ),
+        gen(
+            "northern", "Northern", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0x061A2B, 0x10B981, 0x0EA5E9, 0x6366F1, 0x064E3B),
+            "Aurora greens sliding into night blue."
+        ),
+        gen(
+            "citrus", "Citrus", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0xFFF3B0, 0xFFB703, 0xFB8500, 0xFFD166, 0xA7C957),
+            "Lemon, tangerine and lime."
+        ),
+        gen(
+            "orchid", "Orchid", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0x2A0A3D, 0xC026D3, 0xF0ABFC, 0x7E22CE, 0xFB7185),
+            "Magenta and lilac petals of color."
+        ),
+        gen(
+            "midnight", "Midnight", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0x020617, 0x1E3A8A, 0x312E81, 0x0F172A, 0x3B82F6),
+            "Deep navy with a faint electric glow."
+        ),
+        gen(
+            "coral_reef", "Coral Reef", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0x00303D, 0xFF7F50, 0x2EC4B6, 0xFFBF69, 0xCBF3F0),
+            "Coral and turquoise from a shallow reef."
+        ),
+        gen(
+            "mint", "Mint", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0xE8FFF4, 0xA7F3D0, 0x6EE7B7, 0xD1FAE5, 0x99F6E4),
+            "Cool pale mint, almost white."
+        ),
+        gen(
+            "sunset_strip", "Sunset Strip", WallpaperCategory.GRADIENTS, Scene.MESH,
+            Palette(0x2D0B3A, 0xFF4D6D, 0xFF9E00, 0x9D4EDD, 0xFFD60A),
+            "Neon pink, orange and purple of a city sunset."
         ),
 
-        // Landscapes
+        // Landscapes: public-domain and CC0 photographs, credited in docs/reference/photo-credits.md
         photo(
-            "misty_pines", "Misty Pines", WallpaperCategory.LANDSCAPES, R.drawable.wp_misty_pines,
-            "Pine forest fading into morning fog.", MotionStyle.NONE, focusY = 0.6f
+            "teton_mirror", "Teton Mirror", WallpaperCategory.LANDSCAPES, R.drawable.wp_teton_mirror,
+            "The Teton Range reflected in a still lake, Grand Teton National Park.", MotionStyle.NONE
         ),
         photo(
-            "fog_castle", "Fog Castle", WallpaperCategory.LANDSCAPES, R.drawable.wp_fog_castle,
-            "A stone castle and bridge in mist.", MotionStyle.NONE, focusY = 0.35f
+            "zion_afterglow", "Zion Afterglow", WallpaperCategory.LANDSCAPES, R.drawable.wp_zion_afterglow,
+            "Sandstone cliffs under a burning evening sky, Zion National Park.", MotionStyle.NONE
         ),
         photo(
-            "valley_river", "Valley River", WallpaperCategory.LANDSCAPES, R.drawable.wp_valley_river,
-            "Granite valley and river at dawn.", MotionStyle.NONE
+            "rainier_alpenglow", "Mount Rainier", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_alpenglow,
+            "Mount Rainier rising over dark evergreen forest.", MotionStyle.NONE
         ),
         photo(
-            "golden_shore", "Golden Shore", WallpaperCategory.LANDSCAPES, R.drawable.wp_golden_shore,
-            "Low sun over waves on a sandy beach.", MotionStyle.NONE
+            "rainier_falls", "Rainier Falls", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_falls,
+            "A waterfall below the snowfields of Mount Rainier.", MotionStyle.NONE
         ),
         photo(
-            "desert_road", "Desert Road", WallpaperCategory.LANDSCAPES, R.drawable.wp_desert_road,
-            "A yellow van on a road through red rock country.", MotionStyle.NONE, focusX = 0.3f
+            "rainier_meadow", "Autumn Meadow", WallpaperCategory.LANDSCAPES, R.drawable.wp_rainier_meadow,
+            "Golden autumn meadows on the Mazama Ridge Trail, Mount Rainier.", MotionStyle.NONE
+        ),
+        photo(
+            "arches_window", "Arches Window", WallpaperCategory.LANDSCAPES, R.drawable.wp_arches_window,
+            "A red rock arch framing blue sky, Arches National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "death_valley_dunes", "Death Valley Dunes", WallpaperCategory.LANDSCAPES, R.drawable.wp_death_valley_dunes,
+            "Sand dunes at sunset in Death Valley.", MotionStyle.NONE
+        ),
+        photo(
+            "olympic_sunset", "Olympic Sunset", WallpaperCategory.LANDSCAPES, R.drawable.wp_olympic_sunset,
+            "Layered ridges fading into an orange sunset, Olympic National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "olympic_blue_hour", "Blue Ridges", WallpaperCategory.LANDSCAPES, R.drawable.wp_olympic_blue_hour,
+            "Blue mountain ridges over a quiet lake, Olympic National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "sea_of_clouds", "Sea of Clouds", WallpaperCategory.LANDSCAPES, R.drawable.wp_sea_of_clouds,
+            "Snowy peaks above a valley filled with cloud, Olympic National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "forest_light", "Forest Light", WallpaperCategory.LANDSCAPES, R.drawable.wp_forest_light,
+            "Sunbeams through mist in an old-growth forest.", MotionStyle.NONE
+        ),
+        photo(
+            "lake_crescent", "Lake Crescent", WallpaperCategory.LANDSCAPES, R.drawable.wp_lake_crescent,
+            "Wild blossoms over the blue water of Lake Crescent.", MotionStyle.NONE
+        ),
+        photo(
+            "glacier_river", "Glacier River", WallpaperCategory.LANDSCAPES, R.drawable.wp_glacier_river,
+            "A turquoise river winding through autumn forest.", MotionStyle.NONE
+        ),
+        photo(
+            "crater_lake", "Crater Lake", WallpaperCategory.LANDSCAPES, R.drawable.wp_crater_lake,
+            "Deep blue Crater Lake and Wizard Island.", MotionStyle.NONE
+        ),
+        photo(
+            "crater_lake_dawn", "Crater Lake Dawn", WallpaperCategory.LANDSCAPES, R.drawable.wp_crater_lake_dawn,
+            "First light over the rim of Crater Lake.", MotionStyle.NONE
+        ),
+        photo(
+            "grand_canyon_sunset", "Grand Canyon", WallpaperCategory.LANDSCAPES, R.drawable.wp_grand_canyon_sunset,
+            "The South Rim of the Grand Canyon at sunset.", MotionStyle.NONE
+        ),
+        photo(
+            "emerald_bay", "Emerald Bay", WallpaperCategory.LANDSCAPES, R.drawable.wp_emerald_bay,
+            "Sunset over Emerald Bay, Lake Tahoe.", MotionStyle.NONE
+        ),
+        photo(
+            "mountain_lake", "Mountain Lake", WallpaperCategory.LANDSCAPES, R.drawable.wp_mountain_lake,
+            "Peaks mirrored in a rippled mountain lake.", MotionStyle.NONE
+        ),
+        photo(
+            "lofoten_aurora", "Lofoten Aurora", WallpaperCategory.LANDSCAPES, R.drawable.wp_lofoten_aurora,
+            "Green northern lights over the mountains of Lofoten, Norway.", MotionStyle.NONE
         ),
 
         // Illustrated
@@ -148,6 +275,16 @@ object WallpaperRepository {
             "aurora_veil", "Aurora Veil", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
             Palette(0x030712, 0x0F2A3A, 0x34D399, 0xA855F7, 0x05080C),
             "Green and violet curtains over a mountain ridge."
+        ),
+        gen(
+            "polar_night", "Polar Night", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
+            Palette(0x01040A, 0x0B1A2E, 0x22D3EE, 0x34D399, 0x020409),
+            "Cyan aurora over a black horizon."
+        ),
+        gen(
+            "crimson_aurora", "Crimson Aurora", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
+            Palette(0x0A0308, 0x2A0F1E, 0xF43F5E, 0xFBBF24, 0x07030A),
+            "Rare red and gold aurora over dark hills."
         ),
         gen(
             "sahara", "Sahara", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
@@ -160,30 +297,113 @@ object WallpaperRepository {
             "Cold dunes under a full moon."
         ),
         gen(
+            "rose_dunes", "Rose Dunes", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
+            Palette(0x4C2A5E, 0xFFB4A2, 0xFFE5D9, 0xE5989B, 0x6D3B47),
+            "Pink dunes in a lilac dusk."
+        ),
+        gen(
             "still_sea", "Still Sea", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
             Palette(0x1C2541, 0xF4A261, 0xFFF1D6, 0x14213D, 0xFFD6A5),
             "A low sun over a calm sea."
         ),
-
-        // Space
         gen(
-            "carina", "Carina", WallpaperCategory.SPACE, Scene.NEBULA,
+            "arctic_sea", "Arctic Sea", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
+            Palette(0x0B2545, 0xE0FBFC, 0xFFFFFF, 0x13315C, 0xC2DFE3),
+            "A pale sun over icy blue water."
+        ),
+        gen(
+            "violet_hour", "Violet Hour", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
+            Palette(0x240046, 0xFF7B00, 0xFFD000, 0x10002B, 0xC77DFF),
+            "Orange sun sinking into a violet sea."
+        ),
+        gen(
+            "carina", "Carina", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
             Palette(0x02030A, 0x7C3AED, 0x0EA5E9, 0xF472B6, 0xE0E7FF),
             "Violet and cyan gas clouds in a deep star field."
         ),
         gen(
-            "ember_nebula", "Ember Nebula", WallpaperCategory.SPACE, Scene.NEBULA,
+            "ember_nebula", "Ember Nebula", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
             Palette(0x050203, 0xEA580C, 0xBE123C, 0xFDE68A, 0xFFEDD5),
             "Glowing orange and crimson nebula."
         ),
         gen(
-            "polar_night", "Polar Night", WallpaperCategory.SPACE, Scene.AURORA,
-            Palette(0x01040A, 0x0B1A2E, 0x22D3EE, 0x34D399, 0x020409),
-            "Cyan aurora over a black horizon."
+            "teal_nebula", "Teal Nebula", WallpaperCategory.ILLUSTRATED, Scene.NEBULA,
+            Palette(0x01080A, 0x14B8A6, 0x2563EB, 0x86EFAC, 0xECFEFF),
+            "Teal and blue clouds lit by young stars."
+        ),
+
+        // Space: NASA, ESA and CC0 images, credited in docs/reference/photo-credits.md
+        photo(
+            "pillars_webb", "Pillars of Creation", WallpaperCategory.SPACE, R.drawable.wp_pillars_webb,
+            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.NONE
         ),
         photo(
-            "milky_way", "Milky Way", WallpaperCategory.SPACE, R.drawable.wp_milky_way,
-            "The Milky Way over snowy peaks.", MotionStyle.NONE
+            "pillars_hubble", "Pillars, Hubble", WallpaperCategory.SPACE, R.drawable.wp_pillars_hubble,
+            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "cosmic_cliffs", "Cosmic Cliffs", WallpaperCategory.SPACE, R.drawable.wp_cosmic_cliffs,
+            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "tarantula", "Tarantula Nebula", WallpaperCategory.SPACE, R.drawable.wp_tarantula,
+            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "orion_nebula", "Orion Nebula", WallpaperCategory.SPACE, R.drawable.wp_orion_nebula,
+            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "helix", "Helix Nebula", WallpaperCategory.SPACE, R.drawable.wp_helix,
+            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "ring_nebula", "Ring Nebula", WallpaperCategory.SPACE, R.drawable.wp_ring_nebula,
+            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "crab_nebula", "Crab Nebula", WallpaperCategory.SPACE, R.drawable.wp_crab_nebula,
+            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "cygnus_loop", "Cygnus Loop", WallpaperCategory.SPACE, R.drawable.wp_cygnus_loop,
+            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.NONE
+        ),
+        photo(
+            "whirlpool", "Whirlpool Galaxy", WallpaperCategory.SPACE, R.drawable.wp_whirlpool,
+            "The spiral arms of Messier 51, Hubble Space Telescope.", MotionStyle.NONE
+        ),
+        photo(
+            "andromeda", "Andromeda", WallpaperCategory.SPACE, R.drawable.wp_andromeda,
+            "The Andromeda Galaxy in a dense field of stars.", MotionStyle.NONE
+        ),
+        photo(
+            "backlit_saturn", "Backlit Saturn", WallpaperCategory.SPACE, R.drawable.wp_backlit_saturn,
+            "Saturn eclipsing the Sun, its rings glowing, from Cassini.", MotionStyle.NONE
+        ),
+        photo(
+            "saturn_rings", "Saturn", WallpaperCategory.SPACE, R.drawable.wp_saturn_rings,
+            "Saturn and its rings in natural color, from Cassini.", MotionStyle.NONE
+        ),
+        photo(
+            "full_moon", "Full Moon", WallpaperCategory.SPACE, R.drawable.wp_full_moon,
+            "The full Moon in sharp detail.", MotionStyle.NONE
+        ),
+        photo(
+            "earthrise", "Earthrise", WallpaperCategory.SPACE, R.drawable.wp_earthrise,
+            "Earth rising over the lunar horizon, Apollo 8.", MotionStyle.NONE, focusY = 0.3f
+        ),
+        photo(
+            "nile_at_night", "Nile at Night", WallpaperCategory.SPACE, R.drawable.wp_nile_at_night,
+            "Cairo and the Nile Delta at night, from the International Space Station.", MotionStyle.NONE
+        ),
+        photo(
+            "aurora_from_orbit", "Aurora from Orbit", WallpaperCategory.SPACE, R.drawable.wp_aurora_from_orbit,
+            "The aurora australis seen from the International Space Station.", MotionStyle.NONE
+        ),
+        photo(
+            "joshua_tree_night", "Joshua Tree Night", WallpaperCategory.SPACE, R.drawable.wp_joshua_tree_night,
+            "The Milky Way over Joshua Tree National Park.", MotionStyle.NONE
         ),
 
         // Textures
@@ -193,13 +413,52 @@ object WallpaperRepository {
             "Gold elevation lines drifting over black stone."
         ),
         photo(
-            "wave_lines", "Wave Lines", WallpaperCategory.TEXTURES, R.drawable.wp_wave_lines,
-            "Layered blue line waves."
+            "marble", "Marble", WallpaperCategory.TEXTURES, R.drawable.wp_marble,
+            "Pale veined marble from Euboea, Greece.", MotionStyle.NONE
         ),
         photo(
-            "circuit_glow", "Circuit Glow", WallpaperCategory.TEXTURES, R.drawable.wp_circuit_glow,
-            "Pulses of light running through circuit traces.",
-            MotionStyle.PULSE
+            "pine_grain", "Pine Grain", WallpaperCategory.TEXTURES, R.drawable.wp_pine_grain,
+            "Close-up of pressed pine grain.", MotionStyle.NONE
+        ),
+        photo(
+            "curly_grain", "Curly Grain", WallpaperCategory.TEXTURES, R.drawable.wp_curly_grain,
+            "Figured wood with rippling curly grain.", MotionStyle.NONE
+        ),
+        photo(
+            "leaf_veins", "Leaf Veins", WallpaperCategory.TEXTURES, R.drawable.wp_leaf_veins,
+            "The vein network of a green leaf in macro.", MotionStyle.NONE
+        ),
+        photo(
+            "backlit_leaf", "Backlit Leaf", WallpaperCategory.TEXTURES, R.drawable.wp_backlit_leaf,
+            "A translucent leaf glowing in sunlight.", MotionStyle.NONE
+        ),
+        photo(
+            "fjord_water", "Fjord Water", WallpaperCategory.TEXTURES, R.drawable.wp_fjord_water,
+            "Green water rippling on a Swedish fjord."
+        ),
+        photo(
+            "blue_ice", "Blue Ice", WallpaperCategory.TEXTURES, R.drawable.wp_blue_ice,
+            "Translucent blue glacier ice.", MotionStyle.NONE
+        ),
+        photo(
+            "ice_on_moss", "Ice on Moss", WallpaperCategory.TEXTURES, R.drawable.wp_ice_on_moss,
+            "Lace of ice over dark moss, Glacier National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "window_frost", "Window Frost", WallpaperCategory.TEXTURES, R.drawable.wp_window_frost,
+            "Frost flowers growing across a window pane.", MotionStyle.NONE
+        ),
+        photo(
+            "tree_bark", "Tree Bark", WallpaperCategory.TEXTURES, R.drawable.wp_tree_bark,
+            "Deeply cracked bark of a sapodilla tree.", MotionStyle.NONE
+        ),
+        photo(
+            "pebbles", "Pebbles", WallpaperCategory.TEXTURES, R.drawable.wp_pebbles,
+            "Colorful pebbles on a beach in Rethymno, Crete.", MotionStyle.NONE
+        ),
+        photo(
+            "granite", "Granite", WallpaperCategory.TEXTURES, R.drawable.wp_granite,
+            "Black and white granite blocks in a quarry.", MotionStyle.NONE
         ),
 
         // Minimal
@@ -214,9 +473,51 @@ object WallpaperRepository {
             "Barely moving shades of charcoal."
         ),
         gen(
+            "sand", "Sand", WallpaperCategory.MINIMAL, Scene.MESH,
+            Palette(0xEDE0D4, 0xE6CCB2, 0xDDB892, 0xF5EBE0, 0xD6CCC2),
+            "Warm beige and cream."
+        ),
+        gen(
             "contour_slate", "Contour Slate", WallpaperCategory.MINIMAL, Scene.CONTOURS,
             Palette(0x1E293B, 0x0F172A, 0x94A3B8, 0xE2E8F0, 0x000000),
             "Fine silver contours on slate."
+        ),
+        gen(
+            "contour_ink", "Contour Ink", WallpaperCategory.MINIMAL, Scene.CONTOURS,
+            Palette(0xF8F7F4, 0xEEECE7, 0x2B2B2B, 0x6B6B6B, 0xFFFFFF),
+            "Fine ink contours on paper white."
+        ),
+        photo(
+            "lake_matheson", "Lake Matheson", WallpaperCategory.MINIMAL, R.drawable.wp_lake_matheson,
+            "Morning fog and a violet reflection on Lake Matheson.", MotionStyle.NONE
+        ),
+        photo(
+            "lake_mcdonald_fog", "Lake McDonald", WallpaperCategory.MINIMAL, R.drawable.wp_lake_mcdonald_fog,
+            "Still water and distant peaks at dawn, Glacier National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "quartz_lake_fog", "Quartz Lake", WallpaperCategory.MINIMAL, R.drawable.wp_quartz_lake_fog,
+            "Fog lifting off forest and water, Glacier National Park.", MotionStyle.NONE
+        ),
+        photo(
+            "calm_sea", "Calm Sea", WallpaperCategory.MINIMAL, R.drawable.wp_calm_sea,
+            "A long exposure of a smooth grey sea.", MotionStyle.NONE
+        ),
+        photo(
+            "dune_walk", "Dune Walk", WallpaperCategory.MINIMAL, R.drawable.wp_dune_walk,
+            "A lone hiker on pale dunes under a pastel sky.", MotionStyle.NONE
+        ),
+        photo(
+            "foggy_forest", "Foggy Forest", WallpaperCategory.MINIMAL, R.drawable.wp_foggy_forest,
+            "Green trees fading into fog on a hillside.", MotionStyle.NONE
+        ),
+        photo(
+            "snow_field", "Snow Field", WallpaperCategory.MINIMAL, R.drawable.wp_snow_field,
+            "A white winter field under a wide sky.", MotionStyle.NONE
+        ),
+        photo(
+            "salt_flats", "Salt Flats", WallpaperCategory.MINIMAL, R.drawable.wp_salt_flats,
+            "Pink salt flats beside the sea at Cabo Rojo, Puerto Rico.", MotionStyle.NONE
         )
     )
 
@@ -261,6 +562,32 @@ object WallpaperRepository {
 
     fun setDynamicMotionEnabled(context: Context, enabled: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_DYNAMIC_MOTION_ENABLED, enabled).apply()
+    }
+
+    fun isFoldEffectEnabled(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_FOLD_EFFECT_ENABLED, true)
+
+    fun setFoldEffectEnabled(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_FOLD_EFFECT_ENABLED, enabled).apply()
+    }
+
+    fun isPauseOnSaver(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_ON_SAVER, true)
+
+    fun setPauseOnSaver(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_PAUSE_ON_SAVER, enabled).apply()
+    }
+
+    fun isPauseBelowLevel(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_BELOW_LEVEL, false)
+
+    fun setPauseBelowLevel(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_PAUSE_BELOW_LEVEL, enabled).apply()
+    }
+
+    fun getPauseLevel(context: Context): Int =
+        getPrefs(context).getInt(KEY_PAUSE_LEVEL, DEFAULT_PAUSE_LEVEL).coerceIn(5, 80)
+
+    fun setPauseLevel(context: Context, level: Int) {
+        getPrefs(context).edit().putInt(KEY_PAUSE_LEVEL, level.coerceIn(5, 80)).apply()
     }
 
     fun isCoverAwakeEnabled(context: Context): Boolean =

@@ -11,6 +11,7 @@ import android.graphics.Paint
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.PowerManager
 import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.view.Choreographer
@@ -58,8 +59,12 @@ class FoldWallpaperService : WallpaperService() {
         private var item: WallpaperItem = Repo.getActiveWallpaper(ctx)
         private var effect: OpeningEffect = OpeningEffect.DEFAULT
         private var intensity = Repo.DEFAULT_INTENSITY
-        private var motion = true
+        private var motionPref = true
+        private var foldEffect = true
         private var coverAwakeEnabled = true
+
+        /** Living motion after the battery rules. */
+        private var motion = true
 
         private var shader: WallpaperShader? = null
         private var loadingId: String? = null
@@ -87,6 +92,12 @@ class FoldWallpaperService : WallpaperService() {
             }
         }
 
+        private val batteryReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                updateMotion()
+            }
+        }
+
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
             setTouchEventsEnabled(true)
@@ -95,7 +106,23 @@ class FoldWallpaperService : WallpaperService() {
                 ctx, screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF),
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
+            ContextCompat.registerReceiver(
+                ctx, batteryReceiver,
+                IntentFilter().apply {
+                    addAction(Intent.ACTION_BATTERY_CHANGED)
+                    addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
+                },
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
             loadPreferences()
+        }
+
+        private fun updateMotion() {
+            val next = motionPref && MotionPolicy.currentPause(ctx) == MotionPolicy.Pause.NONE
+            if (next != motion) {
+                motion = next
+                requestFrame()
+            }
         }
 
         override fun onDestroy() {
@@ -103,6 +130,7 @@ class FoldWallpaperService : WallpaperService() {
             mainHandler.removeCallbacks(settleCheck)
             prefs.unregisterOnSharedPreferenceChangeListener(this)
             ctx.unregisterReceiver(screenOffReceiver)
+            ctx.unregisterReceiver(batteryReceiver)
             hinge.stop()
             awake.release()
             shader?.pyramid?.recycle()
@@ -113,8 +141,10 @@ class FoldWallpaperService : WallpaperService() {
         private fun loadPreferences() {
             effect = Repo.getOpeningEffect(ctx)
             intensity = Repo.getIntensity(ctx)
-            motion = Repo.isDynamicMotionEnabled(ctx)
+            motionPref = Repo.isDynamicMotionEnabled(ctx)
+            foldEffect = Repo.isFoldEffectEnabled(ctx)
             coverAwakeEnabled = Repo.isCoverAwakeEnabled(ctx)
+            updateMotion()
             val next = Repo.getActiveWallpaper(ctx)
             if (next.id != item.id || shader == null) {
                 item = next
@@ -302,7 +332,7 @@ class FoldWallpaperService : WallpaperService() {
             if (!hingeMoving) spring.snap(target)
 
             val goal = settleTarget()
-            settle = HingeTracker.smoothToward(settle, goal, dt, if (goal > settle) 0.12f else 0.35f)
+            settle = HingeTracker.smoothToward(settle, goal, dt, if (goal > settle) 0.25f else 0.6f)
             val settling = abs(goal - settle) > 0.002f
             if (!settling) settle = goal
 
@@ -335,7 +365,7 @@ class FoldWallpaperService : WallpaperService() {
                 val ws = shader
                 if (ws != null && ws.isReady) {
                     val angle = effectAngle(s)
-                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion)
+                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, foldEffect)
                     paint.shader = ws.shader
                     canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
                 } else {
@@ -355,6 +385,6 @@ class FoldWallpaperService : WallpaperService() {
         const val SETTLE_MOVE_DEG = 3f
 
         /** Stillness after which a half-open posture counts as settled. */
-        const val SETTLE_DELAY_MS = 1_500L
+        const val SETTLE_DELAY_MS = 4_000L
     }
 }

@@ -48,6 +48,7 @@ fun WallpaperDetailScreen(
     initialMotion: Boolean,
     effect: OpeningEffect,
     intensity: Float,
+    foldEffect: Boolean,
     handoff: Float,
     isApplied: Boolean,
     backProgress: Float,
@@ -95,7 +96,7 @@ fun WallpaperDetailScreen(
                         factory = { ctx -> FoldPreviewView(ctx) },
                         update = { v ->
                             v.setWallpaper(item)
-                            v.setEffect(effect, intensity, dynamic)
+                            v.setEffect(effect, intensity, dynamic, foldEffect)
                             v.handoffAngle = handoff
                             v.flat = view == 0
                         },

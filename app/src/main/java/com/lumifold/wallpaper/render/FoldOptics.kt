@@ -42,9 +42,9 @@ object FoldOptics {
         DUO_SIGMA * motion * Math.pow(distanceFromHinge.coerceIn(0.0, 1.0), 1.5)
 
     /** Duo brightness on a moving panel: falls to black at the free edge at full motion. */
-    fun duoBrightness(motion: Double, distanceFromHinge: Double): Double {
+    fun duoBrightness(motion: Double, distanceFromHinge: Double, strength: Double = 1.0): Double {
         val g = ((distanceFromHinge - 0.2) / 0.8).coerceIn(0.0, 1.0)
-        return (1.0 - 2.0 * motion * Math.pow(g, 1.35)).coerceIn(0.0, 1.0)
+        return (1.0 - 1.3 * motion * Math.pow(g, 1.35) * strength).coerceIn(0.0, 1.0)
     }
 
     /**

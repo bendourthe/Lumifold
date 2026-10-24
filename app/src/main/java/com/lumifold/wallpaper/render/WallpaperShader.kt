@@ -66,6 +66,7 @@ class WallpaperShader private constructor(
         effect: OpeningEffect,
         intensity: Float,
         motion: Boolean,
+        foldEffect: Boolean = true,
         eyeX: Float = if (spec.isInner) 0f else 0.5f,
         eyeY: Float = spec.planeHeight * 0.5f,
         eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat()
@@ -79,7 +80,7 @@ class WallpaperShader private constructor(
         shader.setFloatUniform("uSurfH", spec.surfaceHeight)
         shader.setFloatUniform("uIntensity", intensity)
         shader.setFloatUniform("uTime", timeSec)
-        shader.setFloatUniform("uEffect", effect.shaderIndex.toFloat())
+        shader.setFloatUniform("uEffect", if (foldEffect) effect.shaderIndex.toFloat() else NO_FOLD_INDEX)
         if (item.source is WallpaperSource.Photo) {
             shader.setFloatUniform("uMotion", if (motion) 1f else 0f)
         }
@@ -98,6 +99,9 @@ class WallpaperShader private constructor(
     }
 
     companion object {
+        /** Effect index the shader treats as "fold effect off". */
+        private const val NO_FOLD_INDEX = 99f
+
         /** Decodes a photo into a pyramid of [width] x [height]. Call off the main thread. */
         fun buildPyramid(resources: Resources, photo: WallpaperSource.Photo, width: Int, height: Int): BlurPyramid =
             BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY)

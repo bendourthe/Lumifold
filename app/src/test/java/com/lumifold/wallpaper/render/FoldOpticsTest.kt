@@ -37,6 +37,15 @@ class FoldOpticsTest {
     }
 
     @Test
+    fun strengthVisiblyChangesShadingWithoutSaturatingAtDefault() {
+        val low = FoldOptics.duoBrightness(1.0, 0.8, strength = 0.25)
+        val normal = FoldOptics.duoBrightness(1.0, 0.8, strength = 1.0)
+        val high = FoldOptics.duoBrightness(1.0, 0.8, strength = 1.5)
+        assertTrue(low - normal > 0.5)
+        assertTrue(normal > high)
+    }
+
+    @Test
     fun projectionIsIdentityWhenClosedAndMirroredWhenFlat() {
         val h = 2.24
         val closed = FoldOptics.projectMovingPanel(0.7, 1.3, 0.0, h)

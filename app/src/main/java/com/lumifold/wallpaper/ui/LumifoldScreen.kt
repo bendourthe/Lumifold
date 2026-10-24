@@ -98,6 +98,8 @@ import com.lumifold.wallpaper.render.ShaderSnapshots
 import com.lumifold.wallpaper.render.SurfaceSpec
 import com.lumifold.wallpaper.render.WallpaperShader
 import com.lumifold.wallpaper.service.FoldWallpaperService
+import com.lumifold.wallpaper.service.MotionPolicy
+import androidx.compose.ui.draw.alpha
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -120,8 +122,16 @@ fun LumifoldScreen(
     var activeId by rememberSaveable { mutableStateOf(WallpaperRepository.getActiveWallpaper(context).id) }
     var effect by remember { mutableStateOf(WallpaperRepository.getOpeningEffect(context)) }
     var intensity by remember { mutableFloatStateOf(WallpaperRepository.getIntensity(context)) }
-    var motion by remember { mutableStateOf(WallpaperRepository.isDynamicMotionEnabled(context)) }
+    // Re-read on resume: the Quick Settings tiles can change these while the app is away.
+    var motion by remember(refreshKey) { mutableStateOf(WallpaperRepository.isDynamicMotionEnabled(context)) }
+    var foldEffect by remember(refreshKey) { mutableStateOf(WallpaperRepository.isFoldEffectEnabled(context)) }
     var coverAwake by remember { mutableStateOf(WallpaperRepository.isCoverAwakeEnabled(context)) }
+    var pauseOnSaver by remember { mutableStateOf(WallpaperRepository.isPauseOnSaver(context)) }
+    var pauseBelow by remember { mutableStateOf(WallpaperRepository.isPauseBelowLevel(context)) }
+    var pauseLevel by remember { mutableFloatStateOf(WallpaperRepository.getPauseLevel(context).toFloat()) }
+    val pause = remember(refreshKey, pauseOnSaver, pauseBelow, pauseLevel.roundToInt()) {
+        MotionPolicy.currentPause(context)
+    }
     var category by rememberSaveable { mutableStateOf<WallpaperCategory?>(null) }
     var detailId by rememberSaveable { mutableStateOf<String?>(null) }
     var lastDetailId by remember { mutableStateOf<String?>(null) }
@@ -164,6 +174,7 @@ fun LumifoldScreen(
             effect = effect,
             intensity = intensity,
             motion = motion,
+            foldEffect = foldEffect,
             handoff = handoff,
             visible = detailId == null,
             angle = previewAngle,
@@ -184,23 +195,61 @@ fun LumifoldScreen(
         )
     }
 
+    val quickToggles: @Composable () -> Unit = {
+        QuickToggles(
+            foldEffect = foldEffect,
+            onFoldEffect = {
+                foldEffect = it
+                WallpaperRepository.setFoldEffectEnabled(context, it)
+            },
+            motion = motion,
+            onMotion = {
+                motion = it
+                WallpaperRepository.setDynamicMotionEnabled(context, it)
+            },
+            pause = pause
+        )
+    }
+
     val controls: LazyGridScope.(effectColumns: Int) -> Unit = { effectColumns ->
         fullSpan {
-            SectionTitle("Opening effect", "${OpeningEffect.entries.size} effects, driven by the real hinge angle on both screens")
+            SectionTitle(
+                "Opening effect",
+                if (foldEffect) "${OpeningEffect.entries.size} effects, driven by the real hinge angle on both screens"
+                else "Fold effect is off. The wallpaper shows without any opening effect."
+            )
         }
         fullSpan {
-            EffectGrid(effect, effectColumns) {
-                effect = it
-                WallpaperRepository.setOpeningEffect(context, it)
+            Box(Modifier.alpha(if (foldEffect) 1f else 0.4f)) {
+                EffectGrid(effect, effectColumns) {
+                    effect = it
+                    WallpaperRepository.setOpeningEffect(context, it)
+                    if (!foldEffect) {
+                        foldEffect = true
+                        WallpaperRepository.setFoldEffectEnabled(context, true)
+                    }
+                }
             }
         }
         fullSpan {
             TuningCard(
+                effect = effect,
                 intensity = intensity,
-                onIntensity = {
-                    intensity = it
-                    WallpaperRepository.setIntensity(context, it)
+                onIntensity = { intensity = it },
+                onIntensityDone = { WallpaperRepository.setIntensity(context, intensity) },
+                pauseOnSaver = pauseOnSaver,
+                onPauseOnSaver = {
+                    pauseOnSaver = it
+                    WallpaperRepository.setPauseOnSaver(context, it)
                 },
+                pauseBelow = pauseBelow,
+                onPauseBelow = {
+                    pauseBelow = it
+                    WallpaperRepository.setPauseBelowLevel(context, it)
+                },
+                pauseLevel = pauseLevel,
+                onPauseLevel = { pauseLevel = it },
+                onPauseLevelDone = { WallpaperRepository.setPauseLevel(context, pauseLevel.roundToInt()) },
                 coverAwake = coverAwake,
                 onCoverAwake = {
                     coverAwake = it
@@ -233,7 +282,9 @@ fun LumifoldScreen(
                         Modifier.weight(0.46f).fillMaxHeight().padding(start = 20.dp, top = 12.dp, bottom = 16.dp)
                     ) {
                         Header(hingeAngle, hasHingeSensor)
-                        Spacer(Modifier.height(16.dp))
+                        Spacer(Modifier.height(12.dp))
+                        quickToggles()
+                        Spacer(Modifier.height(12.dp))
                         preview(Modifier.weight(1f).fillMaxWidth())
                         Spacer(Modifier.height(16.dp))
                         ApplyBar(wallpaperActive, onOpenPicker)
@@ -256,6 +307,7 @@ fun LumifoldScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         fullSpan { Header(hingeAngle, hasHingeSensor) }
+                        fullSpan { quickToggles() }
                         fullSpan { preview(Modifier.fillMaxWidth().height(460.dp)) }
                         controls(3)
                     }
@@ -274,6 +326,7 @@ fun LumifoldScreen(
                     initialMotion = motion,
                     effect = effect,
                     intensity = intensity,
+                    foldEffect = foldEffect,
                     handoff = handoff,
                     isApplied = wallpaperActive && item.id == activeId,
                     backProgress = backProgress,
@@ -344,6 +397,7 @@ private fun PreviewCard(
     effect: OpeningEffect,
     intensity: Float,
     motion: Boolean,
+    foldEffect: Boolean,
     handoff: Float,
     visible: Boolean,
     angle: FloatState,
@@ -373,7 +427,7 @@ private fun PreviewCard(
                     factory = { ctx -> FoldPreviewView(ctx).also(onViewCreated) },
                     update = { view ->
                         view.setWallpaper(item)
-                        view.setEffect(effect, intensity, motion)
+                        view.setEffect(effect, intensity, motion, foldEffect)
                         view.handoffAngle = handoff
                         view.visibility = if (visible) android.view.View.VISIBLE else android.view.View.INVISIBLE
                     },
@@ -463,6 +517,10 @@ private fun EffectGrid(selected: OpeningEffect, columns: Int, onSelect: (Opening
 private val EFFECT_SAMPLE: WallpaperItem by lazy { WallpaperRepository.resolveWallpaper("duo_ribbons") }
 private const val EFFECT_SAMPLE_ANGLE = 125f
 
+/** Fine dark lines on white make blur and shading easy to compare across strengths. */
+private val STRENGTH_SAMPLE: WallpaperItem by lazy { WallpaperRepository.resolveWallpaper("contour_ink") }
+private const val STRENGTH_SAMPLE_ANGLE = 55f
+
 /**
  * Shows a shader rendered once into a cached bitmap at this composable's pixel size. The shader is
  * compiled and rendered on [ShaderSnapshots.dispatcher], never on the main thread.
@@ -471,8 +529,13 @@ private const val EFFECT_SAMPLE_ANGLE = 125f
 private fun ShaderImage(key: String, modifier: Modifier, shader: (width: Int, height: Int) -> Shader) {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val sizedKey = "$key@${size.width}x${size.height}"
+    // produceState keeps its value across key changes, so the previous image stays up until the new one is ready.
     val bitmap by produceState(ShaderSnapshots.cached(sizedKey)?.asImageBitmap(), sizedKey) {
-        if (size.width == 0 || size.height == 0 || value != null) return@produceState
+        ShaderSnapshots.cached(sizedKey)?.let {
+            value = it.asImageBitmap()
+            return@produceState
+        }
+        if (size.width == 0 || size.height == 0) return@produceState
         value = withContext(ShaderSnapshots.dispatcher) {
             ShaderSnapshots.getOrRender(sizedKey, size.width, size.height) { shader(size.width, size.height) }
         }.asImageBitmap()
@@ -482,11 +545,19 @@ private fun ShaderImage(key: String, modifier: Modifier, shader: (width: Int, he
     }
 }
 
-private fun boundShader(item: WallpaperItem, w: Int, h: Int, angleDeg: Float, effect: OpeningEffect, intensity: Float): Shader {
-    val surfH = h / (w * 0.5f)
+private fun boundShader(
+    item: WallpaperItem,
+    w: Int,
+    h: Int,
+    angleDeg: Float,
+    effect: OpeningEffect,
+    intensity: Float,
+    inner: Boolean = true
+): Shader {
+    val surfH = if (inner) h / (w * 0.5f) else h / w.toFloat()
     val ws = WallpaperShader.create(item)
     ws.bind(
-        SurfaceSpec(w, h, 0, true, surfH, surfH),
+        SurfaceSpec(w, h, 0, inner, surfH, surfH),
         (angleDeg * PI / 180.0).toFloat(), FoldWallpaperService.STILL_TIME, effect, intensity, false
     )
     return ws.shader
@@ -522,9 +593,68 @@ private fun EffectTile(effect: OpeningEffect, selected: Boolean, modifier: Modif
 }
 
 @Composable
+private fun QuickToggles(
+    foldEffect: Boolean,
+    onFoldEffect: (Boolean) -> Unit,
+    motion: Boolean,
+    onMotion: (Boolean) -> Unit,
+    pause: MotionPolicy.Pause
+) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        QuickToggle(
+            title = "Fold effect",
+            status = if (foldEffect) "On" else "Off, wallpaper only",
+            checked = foldEffect,
+            onChange = onFoldEffect,
+            modifier = Modifier.weight(1f)
+        )
+        QuickToggle(
+            title = "Live motion",
+            status = when {
+                !motion -> "Off, still images"
+                pause == MotionPolicy.Pause.BATTERY_SAVER -> "Paused by Battery Saver"
+                pause == MotionPolicy.Pause.LOW_BATTERY -> "Paused, low battery"
+                else -> "On"
+            },
+            checked = motion,
+            onChange = onMotion,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun QuickToggle(title: String, status: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier) {
+    Surface(
+        onClick = { onChange(!checked) },
+        shape = RoundedCornerShape(20.dp),
+        color = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            Switch(checked = checked, onCheckedChange = onChange, colors = SwitchDefaults.colors(uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest))
+        }
+    }
+}
+
+@Composable
 private fun TuningCard(
+    effect: OpeningEffect,
     intensity: Float,
     onIntensity: (Float) -> Unit,
+    onIntensityDone: () -> Unit,
+    pauseOnSaver: Boolean,
+    onPauseOnSaver: (Boolean) -> Unit,
+    pauseBelow: Boolean,
+    onPauseBelow: (Boolean) -> Unit,
+    pauseLevel: Float,
+    onPauseLevel: (Float) -> Unit,
+    onPauseLevelDone: () -> Unit,
     coverAwake: Boolean,
     onCoverAwake: (Boolean) -> Unit,
     hingeAngle: FloatState,
@@ -540,15 +670,54 @@ private fun TuningCard(
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Strength", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
-                Text("${(intensity * 100).roundToInt()}%", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("Effect strength", style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+                        Text("${(intensity * 100).roundToInt()}%", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+                    }
+                    Text(
+                        "How much blur, shading and distortion the opening effect applies. The sample shows ${effect.title} on the cover screen, partly open.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Slider(
+                        value = intensity,
+                        onValueChange = onIntensity,
+                        onValueChangeFinished = onIntensityDone,
+                        valueRange = WallpaperRepository.MIN_INTENSITY..WallpaperRepository.MAX_INTENSITY,
+                        colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                    )
+                }
+                val step = (intensity * 10).roundToInt()
+                Box(Modifier.width(112.dp).aspectRatio(0.92f).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceContainerHigh)) {
+                    ShaderImage("strength:${effect.id}:$step", Modifier.fillMaxSize()) { w, h ->
+                        boundShader(STRENGTH_SAMPLE, w, h, STRENGTH_SAMPLE_ANGLE, effect, step / 10f, inner = false)
+                    }
+                }
             }
-            Slider(
-                value = intensity,
-                onValueChange = onIntensity,
-                valueRange = WallpaperRepository.MIN_INTENSITY..WallpaperRepository.MAX_INTENSITY,
-                colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
+            SwitchRow(
+                title = "Pause motion in Battery Saver",
+                body = "Live motion stops while Battery Saver is on. The fold effect keeps working.",
+                checked = pauseOnSaver,
+                onChange = onPauseOnSaver
             )
+            SwitchRow(
+                title = "Pause motion on low battery",
+                body = if (pauseBelow) "Stops live motion at ${pauseLevel.roundToInt()}% or less, unless charging." else "Stops live motion below a battery level you choose, unless charging.",
+                checked = pauseBelow,
+                onChange = onPauseBelow
+            )
+            if (pauseBelow) {
+                Slider(
+                    value = pauseLevel,
+                    onValueChange = onPauseLevel,
+                    onValueChangeFinished = onPauseLevelDone,
+                    valueRange = 5f..80f,
+                    steps = 14,
+                    colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
+                )
+            }
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
             SwitchRow(
                 title = "Keep cover on while opening",
