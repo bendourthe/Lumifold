@@ -2,28 +2,49 @@ package com.ambientfold.wallpaper.model
 
 import androidx.annotation.DrawableRes
 
-enum class WallpaperCategory(val displayName: String) {
+enum class WallpaperCategory(val label: String) {
+    ABSTRACT("Abstract"),
+    GRADIENTS("Gradients"),
     LANDSCAPES("Landscapes"),
-    ABSTRACT_DYNAMIC("Abstract Flow"),
+    SPACE("Space"),
     TEXTURES("Textures"),
-    GEOMETRIC("Geometric"),
     MINIMAL("Minimal")
 }
 
-enum class MotionType {
-    LANDSCAPE_BREATHING,
-    LIQUID_GLASS,
-    TEXTURE_SHIMMER
+/** Procedural scenes rendered by AGSL at the display's native resolution. */
+enum class Scene {
+    RIBBONS,
+    AURORA,
+    MESH,
+    DUNES,
+    BOKEH,
+    CONTOURS,
+    NEBULA,
+    HORIZON,
+    IRIS
+}
+
+/** Five sRGB colors (0xRRGGBB) whose meaning is defined by each [Scene]. */
+data class Palette(val c0: Int, val c1: Int, val c2: Int, val c3: Int, val c4: Int) {
+    val colors: List<Int> get() = listOf(c0, c1, c2, c3, c4)
+}
+
+sealed interface WallpaperSource {
+    data class Photo(
+        @DrawableRes val resId: Int,
+        val focusX: Float = 0.5f,
+        val focusY: Float = 0.5f
+    ) : WallpaperSource
+
+    data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource
 }
 
 data class WallpaperItem(
     val id: String,
     val title: String,
     val category: WallpaperCategory,
-    val isDark: Boolean = true,
-    @DrawableRes val drawableResId: Int,
-    val description: String,
-    val isDynamic: Boolean = true,
-    val motionType: MotionType = MotionType.LANDSCAPE_BREATHING,
-    val particleColor: Int = -0x1
-)
+    val source: WallpaperSource,
+    val description: String
+) {
+    val isLive: Boolean get() = source is WallpaperSource.Generative
+}

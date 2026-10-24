@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
 }
 
 android {
@@ -9,10 +10,10 @@ android {
 
     defaultConfig {
         applicationId = "com.ambientfold.wallpaper"
-        minSdk = 31 // Android 12 (S) required for RenderEffect and AGSL
+        minSdk = 33 // AGSL RuntimeShader; every Pixel Fold model ships Android 13 or later
         targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        versionCode = 5
+        versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -34,7 +35,7 @@ android {
         jvmTarget = "17"
     }
     buildFeatures {
-        viewBinding = true
+        compose = true
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
@@ -43,10 +44,10 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.window)
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
     testImplementation("junit:junit:4.13.2")
 }

@@ -9,72 +9,64 @@ import org.junit.Test
 class WallpaperRepositoryTest {
 
     @Test
-    fun testResolveWallpaperWithValidId() {
-        val wallpaper = WallpaperRepository.resolveWallpaper("mountain_sunset")
-        assertNotNull(wallpaper)
-        assertEquals("Alpine Glacier Dusk", wallpaper.title)
-        assertEquals(WallpaperCategory.LANDSCAPES, wallpaper.category)
-        assertTrue("Must be dynamic", wallpaper.isDynamic)
+    fun defaultWallpaperIsFirstAndGenerative() {
+        val first = WallpaperRepository.wallpapers.first()
+        assertEquals(WallpaperRepository.DEFAULT_WALLPAPER_ID, first.id)
+        assertTrue(first.isLive)
     }
 
     @Test
-    fun testResolveWallpaperWithNullOrEmptyFallsBackToFirst() {
-        val fromNull = WallpaperRepository.resolveWallpaper(null)
-        val fromEmpty = WallpaperRepository.resolveWallpaper("")
-        val fromBlank = WallpaperRepository.resolveWallpaper("   ")
-
-        val expectedDefault = WallpaperRepository.wallpapers.first()
-        assertEquals(expectedDefault.id, fromNull.id)
-        assertEquals(expectedDefault.id, fromEmpty.id)
-        assertEquals(expectedDefault.id, fromBlank.id)
+    fun resolveFallsBackToDefault() {
+        val expected = WallpaperRepository.wallpapers.first().id
+        assertEquals(expected, WallpaperRepository.resolveWallpaper(null).id)
+        assertEquals(expected, WallpaperRepository.resolveWallpaper("  ").id)
+        assertEquals(expected, WallpaperRepository.resolveWallpaper("mountain_sunset").id)
     }
 
     @Test
-    fun testResolveWallpaperWithUnknownIdFallsBack() {
-        val result = WallpaperRepository.resolveWallpaper("non_existent_id_xyz")
-        val expectedDefault = WallpaperRepository.wallpapers.first()
-        assertEquals("Unrecognized wallpaper ID must fall back to default", expectedDefault.id, result.id)
-    }
-
-    @Test
-    fun testCatalogIntegrity() {
+    fun catalogIntegrity() {
         val all = WallpaperRepository.wallpapers
-        assertTrue("Catalog must contain at least 6 wallpapers", all.size >= 6)
-
-        val uniqueIds = all.map { it.id }.toSet()
-        assertEquals("All wallpaper IDs must be unique", all.size, uniqueIds.size)
-
+        assertEquals(all.size, all.map { it.id }.toSet().size)
         for (item in all) {
-            assertTrue("Wallpaper title must not be blank", item.title.isNotBlank())
-            assertTrue("Wallpaper description must not be blank", item.description.isNotBlank())
-            assertTrue("Drawable resource ID must be non-zero", item.drawableResId != 0)
+            assertTrue(item.title.isNotBlank())
+            assertTrue(item.description.isNotBlank())
+            when (val s = item.source) {
+                is WallpaperSource.Photo -> assertTrue(s.resId != 0)
+                is WallpaperSource.Generative -> assertEquals(5, s.palette.colors.size)
+            }
         }
     }
 
     @Test
-    fun testCategoryFiltering() {
-        val landscapes = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.LANDSCAPES)
-        val abstractDynamic = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.ABSTRACT_DYNAMIC)
-
-        assertTrue("Must contain landscape wallpapers", landscapes.size >= 4)
-        assertTrue("Must contain abstract dynamic wallpapers", abstractDynamic.isNotEmpty())
+    fun everyCategoryHasAtLeastThreeDesigns() {
+        for (c in WallpaperCategory.entries) {
+            assertTrue("$c", WallpaperRepository.getWallpapersByCategory(c).size >= 3)
+        }
+        assertEquals(WallpaperRepository.wallpapers, WallpaperRepository.getWallpapersByCategory(null))
     }
 
     @Test
-    fun testGetWallpaperById() {
-        val found = WallpaperRepository.getWallpaperById("dark_prism")
-        assertNotNull(found)
-        assertEquals("Obsidian Prism", found?.title)
-
-        val notFound = WallpaperRepository.getWallpaperById("invalid_id")
-        assertNull(notFound)
+    fun everySceneIsUsed() {
+        val used = WallpaperRepository.wallpapers.mapNotNull { (it.source as? WallpaperSource.Generative)?.scene }.toSet()
+        assertEquals(Scene.entries.toSet(), used)
     }
 
     @Test
-    fun testOpeningEffectConstants() {
-        assertEquals("duo_blur", WallpaperRepository.EFFECT_DUO_BLUR)
-        assertEquals("crease_bloom", WallpaperRepository.EFFECT_CREASE_BLOOM)
-        assertEquals("aperture_zoom", WallpaperRepository.EFFECT_APERTURE_ZOOM)
-        assertEquals("prismatic_wave", WallpaperRepository.EFFECT_PRISMATIC_WAVE)
+    fun getWallpaperById() {
+        assertNotNull(WallpaperRepository.getWallpaperById("aurora_veil"))
+        assertNull(WallpaperRepository.getWallpaperById("invalid_id"))
+    }
+
+    @Test
+    fun legacyEffectIdsMapToDuoFrost() {
+        for (legacy in listOf("duo_blur", "crease_bloom", "aperture_zoom", "prismatic_wave", null, "")) {
+            assertEquals(OpeningEffect.DUO_FROST, OpeningEffect.fromId(legacy))
+        }
+        for (e in OpeningEffect.entries) assertEquals(e, OpeningEffect.fromId(e.id))
+    }
+
+    @Test
+    fun effectShaderIndicesAreUniqueAndContiguous() {
+        assertEquals(OpeningEffect.entries.indices.toList(), OpeningEffect.entries.map { it.shaderIndex })
     }
 }

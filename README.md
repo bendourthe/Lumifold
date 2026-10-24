@@ -1,120 +1,41 @@
-# Ambient Fold Wallpaper
+# DuoBlur (ambient-fold-wallpaper)
 
-Dynamic Android live wallpaper engineered for Google Pixel foldables. It links physical hinge articulation to hardware-accelerated blur transitions (`RenderEffect`), creating smooth depth transitions as the phone opens and closes without replacing the stock Pixel Launcher.
-
----
+Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold and later) that recreates the iPhone Duo frosted-glass opening effect and adds five other hinge-driven transitions. Every frame maps the real hinge angle to an AGSL shader, so the effect follows your hand instead of playing a canned animation.
 
 ## Features
 
-- **Hinge Sensor Integration**: Reads mechanical posture in real-time via `Sensor.TYPE_HINGE_ANGLE` (0° folded to 180° flat).
-- **GPU-Accelerated Depth Blur**: Android 12+ `RenderEffect.createBlurEffect` executed inside native `RenderNode` pipelines at 120 Hz with zero CPU raster overhead.
-- **Stock Launcher Compatible**: Implements the standard Android `WallpaperService` contract. App icons, widgets, and Pixel Launcher gestures remain untouched.
-- **Multi-Theme Collection**:
-  - *Landscapes*: Cyber Aurora, Dunes Horizon.
-  - *Abstract Geometric*: Prismatic Crystal (Dark), Material Matrix (Light).
-  - *Minimal*: OLED Ambient Rings (Dark), Clean Polar (Light).
-- **Zero Idle Battery Drain**: Sensor listeners and surface render loops unregister automatically when the screen turns off or when apps cover the home screen.
-- **Interactive Simulator**: Built-in test slider allows previewing the fold blur curves without needing physical hardware.
+- **Duo Frost**: the iPhone Duo model as reconstructed by [Empirical Health](https://www.empirical.health/blog/why-iphone-duo-fold-animation-works/). Both displays sample one shared image plane behind the phone, blur grows as `sigmaMax * sin(angle) * d^3` from the hinge to the free edge, and each panel has its own brightness curve.
+- **Five more opening effects**: Fluted Glass, Aperture, Dawn, Window (pure parallax) and Prism Edge.
+- **Cover display stays on while opening** (Android 16 and later): the wallpaper holds a short screen wake lock while the cover is showing, which keeps book-style Pixels in the CLOSED device state up to about 90 degrees. See [Cover Display](#cover-display).
+- **32 designs in six categories**: 20 generative designs rendered by GPU shaders at the display's native resolution (Abstract, Gradients, Landscapes, Space, Textures, Minimal) plus 12 photographs.
+- **Settle behavior**: a hinge held still at a half-open posture (tabletop, book, tent) eases back to a sharp wallpaper after 1.5 seconds.
+- **3D preview**: the app shows a physically correct book foldable rendered with the same shader as the wallpaper. Scrub the angle, let it auto-play, or follow your real hinge.
+- **Diagnostics**: the app reports the live hinge angle and the angles at which your device actually switched displays.
 
----
+## Cover Display
 
-## Technical Architecture
+Android decides which display is on, not the wallpaper. On Android 16, book-style foldables that use `BookStyleDeviceStatePolicy` switch to the inner display as soon as the hinge moves, unless an app holds a screen wake lock; then the device stays CLOSED (cover on) until about 90 degrees. DuoBlur's "Keep cover on while opening" option holds that lock only while the cover shows the wallpaper, re-arms it only on wallpaper interaction, and lets it expire one second before your screen timeout (10 seconds on the lock screen). On older Android versions the system switches immediately and no app can change that; the inner display still runs its half of the effect.
 
-```
-Hardware Hinge Movement (0° to 180°)
-        │
-        ▼
-Sensor.TYPE_HINGE_ANGLE (Low-pass filtered in HingeSensorObserver)
-        │
-        ▼
-Normalized Progress: p = clamp(angle / 180.0, 0.0, 1.0)
-        │
-        ▼
-Blur Radius: r = (1.0 - p) * MaxBlurRadius
-        │
-        ▼
-Hardware Canvas / RenderNode.setRenderEffect(RenderEffect.createBlurEffect(r, r))
-        │
-        ▼
-SurfaceHolder Frame Presentation
-```
+`FLAG_KEEP_SCREEN_ON` only applies to a foreground activity window, and `WindowAreaController` (rear display and dual screen) only works for a foreground activity on an already-open device, so neither can serve a home-screen wallpaper.
 
----
+## Build
 
-## Project Structure
-
-```
-ambient-fold-wallpaper/
-├── app/
-│   ├── build.gradle.kts
-│   ├── proguard-rules.pro
-│   └── src/main/
-│       ├── AndroidManifest.xml
-│       ├── java/com/ambientfold/wallpaper/
-│       │   ├── model/
-│       │   │   ├── WallpaperItem.kt
-│       │   │   └── WallpaperRepository.kt
-│       │   ├── service/
-│       │   │   ├── FoldWallpaperService.kt
-│       │   │   └── HingeSensorObserver.kt
-│       │   └── ui/
-│       │       ├── MainActivity.kt
-│       │       └── WallpaperAdapter.kt
-│       └── res/
-│           ├── drawable/
-│           ├── layout/
-│           ├── values/
-│           └── xml/wallpaper.xml
-├── gradle/
-│   ├── libs.versions.toml
-│   └── wrapper/
-├── build.gradle.kts
-├── settings.gradle.kts
-└── README.md
-```
-
----
-
-## Requirements
-
-- Android Studio Koala / Ladybug or newer.
-- Android SDK 35 (Android 15+).
-- Minimum Android version: Android 12 (API level 31) for `RenderEffect` hardware acceleration.
-- Device: Google Pixel Fold, Pixel 9 Pro Fold, or future Pixel foldable hardware. Also runs in foldable Android emulators with configurable hinge angle sensors.
-
----
-
-## Setup and Installation
-
-1. Open Android Studio.
-2. Select **File > Open** and point to `ambient-fold-wallpaper`.
-3. Let Gradle sync project dependencies.
-4. Connect your Pixel Fold or launch an Android Foldable Emulator (e.g. 7.6" Fold-in with outer display).
-5. Run the app (`Shift + F10`).
-6. From the app interface, select your preferred theme and tap **Set as Wallpaper** to activate it via Android's native Live Wallpaper Picker.
-
----
-
-## GitHub Repository Setup
-
-To publish this codebase to your GitHub account:
-
-### 1. Suggested Repository Metadata
-- **Repository Name**: `ambient-fold-wallpaper`
-- **Description**: `Dynamic Android live wallpaper for Google Pixel foldables with hardware-accelerated hinge angle blur transitions.`
-- **Visibility**: Public or Private
-- **Initialize with README**: No (already included)
-- **Add .gitignore**: None (already included)
-
-### 2. Git Initialization Commands
-Run the following commands in PowerShell from the project root:
+Requirements: JDK 17, Android SDK 35. Minimum Android version is 13 (API 33) for AGSL.
 
 ```powershell
-cd C:\Users\BEDOURTHE\.gemini\antigravity-ide\scratch\ambient-fold-wallpaper
-git init
-git add .
-git commit -m "feat: initial commit for ambient fold dynamic wallpaper app"
-git branch -M main
-git remote add origin https://github.com/<YOUR_GITHUB_USERNAME>/ambient-fold-wallpaper.git
-git push -u origin main
+.\gradlew.bat testDebugUnitTest assembleDebug
 ```
+
+The APK is written to `app\build\outputs\apk\debug\app-debug.apk`. Install it, open DuoBlur, choose a design and effect, then tap **Set as wallpaper**.
+
+## Project Layout
+
+```
+app/src/main/java/com/ambientfold/wallpaper/
+  model/     WallpaperItem, OpeningEffect, WallpaperRepository (catalog and preferences)
+  render/    FoldShaders (AGSL), FoldOptics (geometry spec), BlurPyramid, WallpaperShader
+  service/   FoldWallpaperService, HingeTracker, CoverAwakeKeeper
+  ui/        MainActivity, DuoBlurScreen (Compose), FoldPreviewView (3D preview), theme/
+```
+
+Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md).

@@ -1,0 +1,106 @@
+package com.ambientfold.wallpaper.render
+
+import android.graphics.BitmapShader
+import android.graphics.Matrix
+import android.graphics.RuntimeShader
+import android.graphics.Shader
+import com.ambientfold.wallpaper.model.OpeningEffect
+import com.ambientfold.wallpaper.model.WallpaperItem
+import com.ambientfold.wallpaper.model.WallpaperSource
+
+/** One display surface as the fold shader sees it. */
+data class SurfaceSpec(
+    val width: Int,
+    val height: Int,
+    val rotation: Int,
+    val isInner: Boolean,
+    /** Natural height of this surface in panel widths. */
+    val surfaceHeight: Float,
+    /** Height of the shared image plane in panel widths. */
+    val planeHeight: Float
+)
+
+/**
+ * A compiled fold shader for one wallpaper. Photo wallpapers need a [BlurPyramid] attached before
+ * they can draw; generative wallpapers are ready immediately.
+ */
+class WallpaperShader private constructor(
+    val item: WallpaperItem,
+    val shader: RuntimeShader
+) {
+    var pyramid: BlurPyramid? = null
+        private set
+
+    val isReady: Boolean get() = item.source is WallpaperSource.Generative || pyramid != null
+
+    fun attachPyramid(p: BlurPyramid) {
+        pyramid = p
+        val base = p.levels[0]
+        p.levels.forEachIndexed { k, bmp ->
+            val bs = BitmapShader(bmp, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+                filterMode = BitmapShader.FILTER_MODE_LINEAR
+                setLocalMatrix(Matrix().apply {
+                    setScale(base.width.toFloat() / bmp.width, base.height.toFloat() / bmp.height)
+                })
+            }
+            shader.setInputShader("L$k", bs)
+        }
+        shader.setFloatUniform("uTexSize", base.width.toFloat(), base.height.toFloat())
+    }
+
+    /** A second instance with its own uniforms, sharing the compiled effect and pyramid. */
+    fun duplicate(): WallpaperShader {
+        val copy = WallpaperShader(item, RuntimeShader(sourceFor(item)))
+        copy.applyPalette()
+        pyramid?.let { copy.attachPyramid(it) }
+        return copy
+    }
+
+    fun bind(
+        spec: SurfaceSpec,
+        angleRad: Float,
+        timeSec: Float,
+        effect: OpeningEffect,
+        intensity: Float,
+        motion: Boolean,
+        eyeX: Float = 0.5f,
+        eyeY: Float = spec.planeHeight * 0.5f,
+        eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat()
+    ) {
+        shader.setFloatUniform("uEye", eyeX, eyeY, eyeZ)
+        shader.setFloatUniform("uSize", spec.width.toFloat(), spec.height.toFloat())
+        shader.setFloatUniform("uRot", spec.rotation.toFloat())
+        shader.setFloatUniform("uInner", if (spec.isInner) 1f else 0f)
+        shader.setFloatUniform("uAngle", angleRad)
+        shader.setFloatUniform("uPlaneH", spec.planeHeight)
+        shader.setFloatUniform("uSurfH", spec.surfaceHeight)
+        shader.setFloatUniform("uIntensity", intensity)
+        shader.setFloatUniform("uTime", timeSec)
+        shader.setFloatUniform("uEffect", effect.shaderIndex.toFloat())
+        if (item.source is WallpaperSource.Photo) {
+            shader.setFloatUniform("uMotion", if (motion) 1f else 0f)
+        }
+    }
+
+    private fun applyPalette() {
+        val source = item.source as? WallpaperSource.Generative ?: return
+        source.palette.colors.forEachIndexed { i, rgb ->
+            shader.setFloatUniform(
+                "uC$i",
+                ((rgb shr 16) and 0xFF) / 255f,
+                ((rgb shr 8) and 0xFF) / 255f,
+                (rgb and 0xFF) / 255f
+            )
+        }
+    }
+
+    companion object {
+        private fun sourceFor(item: WallpaperItem): String = when (val s = item.source) {
+            is WallpaperSource.Photo -> FoldShaders.photoSource()
+            is WallpaperSource.Generative -> FoldShaders.sceneSource(s.scene)
+        }
+
+        fun create(item: WallpaperItem): WallpaperShader =
+            WallpaperShader(item, RuntimeShader(sourceFor(item))).also { it.applyPalette() }
+    }
+}

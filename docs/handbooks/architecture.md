@@ -1,64 +1,63 @@
-# Architecture Handbook -- Ambient Fold Wallpaper
+# Architecture Handbook -- DuoBlur
 
-Technical manual detailing the runtime architecture, sensor processing pipeline, and graphics subsystems of Ambient Fold.
+Runtime architecture of the live wallpaper, the fold optics model, and the cover display policy.
 
 ---
 
-## 1. System Overview
+## 1. Pipeline
 
 ```
-Physical Hinge Articulation (0° to 180°)
-        │
-        ▼
-Sensor.TYPE_HINGE_ANGLE (Type 36)
-        │
-        ▼
-HingeSensorObserver
-  ├── Exponential Moving Average filter (alpha = 0.35f)
-  └── Ease-In Power Curve: blurProgress = (1.0 - angle/180)^1.8
-        │
-        ▼
-FoldWallpaperService (Engine)
-  ├── Dual-Display Bitmap Cache (Cover vs Inner aspect ratio boundary 1.4)
-  ├── Hardware RenderNode recording
-  ├── Depth Zoom Transform: 1.0f + blurProgress * 0.04f (center-anchored)
-  └── RenderEffect.createBlurEffect(blurProgress * maxBlur, blurProgress * maxBlur)
-        │
-        ▼
-Hardware Canvas Presentation via SurfaceHolder
+Sensor.TYPE_HINGE_ANGLE  ->  HingeTracker (raw degrees)
+        |
+        v
+FoldWallpaperService.FoldEngine
+  - classifies the surface: inner (aspect <= 1.4) or cover, using natural (rotation 0) size
+  - smooths the angle per frame (time constant 45 ms) and applies settle
+  - CoverAwakeKeeper: screen wake lock while the cover shows the wallpaper
+  - Choreographer frames: every vsync while the hinge moves, 30 fps for ambient motion, none when idle
+        |
+        v
+WallpaperShader.bind(surface, angle, time, effect, intensity)
+        |
+        v
+AGSL: content(st, sigma) + fold effect stage  ->  lockHardwareCanvas().drawRect
 ```
 
----
+`FoldPreviewView` in the app draws the same shader onto a 3D book model, so the preview and the wallpaper produce the same pixels.
 
-## 2. Sensor Processing & Ease-In Mathematics
+## 2. Fold Optics
 
-Mechanical hinge movements introduce micro-vibrations and discrete step readings. `HingeSensorObserver` filters raw sensor events using an exponential moving average:
+Units are panel widths: the cover width, or half the inner width. The hinge runs along x = 0. The inner right half (natural orientation) is stationary; the cover and the inner left half sit on the moving leaf. The hinge angle is 0 closed and pi flat.
 
-$$S_t = (1 - \alpha) S_{t-1} + \alpha R_t \quad (\alpha = 0.35)$$
+- **Shared image plane**: every moving-panel pixel at distance `u` from the hinge sits at `P = (u cos a, y, u sin a)`. Its color comes from the point where the ray from the eye through `P` meets the plane z = 0. The wallpaper uses an eye 4 panel widths in front of the stationary half; the preview passes its own camera. Content near the hinge never moves, and the cover and inner screens show the same image point along the same ray, so nothing jumps at the handoff.
+- **Duo blur**: `sigma = SIGMA_MAX * sin(a) * d^3` with `d` the distance from the hinge. At a 30 degree fold with a 96 px maximum this gives 48 px at the free edge and 6 px halfway, matching the published reconstruction. Both endpoints are sharp and the peak is at 90 degrees.
+- **Brightness**: cover `1 - 0.55 sin(a)(0.4 + 0.6 d)`, inner moving half `1 - 0.75 sin(a)(0.35 + 0.65 d)`, inner stationary half `1 - 0.28 sin(a)`.
+- **Hinge zoom**: content scales by `1 + 0.03 sin(a)` about the plane center.
 
-The normalized angle is then transformed into an ease-in progress curve:
+`FoldOptics.kt` is the unit-tested specification of these formulas; `FoldShaders.kt` implements them in AGSL.
 
-$$p = \left(1.0 - \frac{\theta}{180.0}\right)^{1.8}$$
+## 3. Content
 
-- **180° (Unfolded)**: $p = 0.0$ (0% blur, 1.0x scale)
-- **90° (Tabletop)**: $p = (0.5)^{1.8} \approx 0.287$ (~28% blur, 1.011x scale)
-- **0° (Closed)**: $p = 1.0$ (100% blur, 1.04x scale)
+- **Photos**: decoded once at the shared-plane resolution and turned into a 9-level Gaussian pyramid (`BlurPyramid`). Level k carries roughly 2^k pixels of blur; the shader blends the two levels around the requested sigma. Living motion adds a slow drift and a 3 percent zoom so the drift never reveals an edge.
+- **Generative designs**: nine AGSL scenes (ribbons, aurora, mesh gradient, dunes, bokeh, contours, nebula, horizon, iris) with five-color palettes. Each scene receives the blur radius and band-limits its own detail: noise octaves below the radius fade to their mean, edges and lines widen while keeping their energy. A frosted frame costs the same as a sharp one.
 
----
+## 4. Effects
 
-## 3. Dual-Display Cache & Memory Hygiene
+| Effect | Moving panel | Stationary half |
+|--------|--------------|-----------------|
+| Duo Frost | full perspective, cubic edge blur, darkening | darkening only |
+| Fluted Glass | 16 refracting ribs, moderate blur, rib highlights | slight darkening |
+| Aperture | iris around the cover center or the crease | iris continues across |
+| Dawn | darkness spreads from the free edge, returns from the crease with a warm front | same front |
+| Window | full perspective, no blur | unchanged |
+| Prism Edge | color dispersion and light blur toward the free edge | slight darkening |
 
-Foldable devices switch display configurations dynamically. Rather than re-allocating or re-rasterizing vector drawables on every fold event, `FoldWallpaperService` maintains two cached slots:
+## 5. Cover Display Policy
 
-1. `coverBitmap`: Activated when surface aspect ratio (height / width) > 1.4.
-2. `innerBitmap`: Activated when surface aspect ratio <= 1.4.
+Android 16 `BookStyleDeviceStatePolicy` keeps the CLOSED device state up to about 90 degrees while the power manager reports `SCREEN_TIMEOUT_KEEP_DISPLAY_ON`, which any screen wake lock triggers. `CoverAwakeKeeper` holds a `SCREEN_DIM_WAKE_LOCK` only when all of these hold: the option is on, the wallpaper is visible on the cover, the screen is interactive, it is not the picker preview, and the hinge is below 120 degrees. The lock times out one second before the user's screen timeout (capped at 10 seconds on the lock screen) and is re-armed only by taps, touches and page scrolls on the wallpaper.
 
-Old bitmaps are recycled explicitly when the user switches themes, keeping total wallpaper process memory strictly bounded under 35 MB.
+The engine records the hinge angle at each display switch it observes while visible (`pref_measured_open_switch`, `pref_measured_close_switch`); the app shows both values as diagnostics.
 
----
+## 6. Settle
 
-## 4. Power & Battery Cutoff
-
-To prevent background battery consumption:
-- `onVisibilityChanged(false)` immediately halts `SensorManager` listeners and cancels pending UI handler posts.
-- `onVisibilityChanged(true)` re-attaches listeners only when the wallpaper is actively displayed on screen.
+The fold effect is a transition. When the hinge moves less than 3 degrees for 1.5 seconds, the angle fed to the shader eases toward the current display's resting angle (0 for the cover, 180 for the inner display) with a 0.35 s time constant, and snaps back within about 60 ms once the hinge moves again.

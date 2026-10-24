@@ -1,6 +1,6 @@
 # Ambient Fold Wallpaper -- Progress Dashboard
 
-**Branch:** `develop`
+**Branch:** `feature/duo-fold-effect-overhaul` (from `develop`)
 
 ---
 
@@ -8,9 +8,11 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 20 | 20 | 0 |
-| Supported Wallpaper Themes | 6 | 6 | 0 |
-| Min SDK Target | 31 (Android 12) | 31 | Met |
+| Tasks Completed | 31 | 33 | -2 |
+| Wallpaper Designs | 32 (20 generative, 12 photos) | 32 | Met |
+| Opening Effects | 6 | 6 | Met |
+| Unit Tests | 27 | 27 | Met |
+| Min SDK Target | 33 (Android 13) | 33 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
 
 ---
@@ -46,3 +48,19 @@
 - [x] T018 [US4] Author manual QA verification checklist for Pixel Fold hardware docs/releases/v0/v0.1/development/manual-qa-checklist.md
 - [x] T019 [US4] Run complete local test and check suite docs/todos.md
 - [x] T020 [US4] Merge develop into main, tag v0.1.0 release, and publish to origin CHANGELOG.md
+
+## Phase 5 -- Duo Effect Overhaul (v0.5.0) [IN PROGRESS]
+
+- [x] T021 [US5] Implement the Duo model (shared image plane, cubic edge blur, brightness curves) in AGSL app/src/main/java/com/ambientfold/wallpaper/render/FoldShaders.kt
+- [x] T022 [US5] Add the unit-tested optics specification app/src/main/java/com/ambientfold/wallpaper/render/FoldOptics.kt
+- [x] T023 [US5] Keep the cover display awake while opening with a bounded screen wake lock app/src/main/java/com/ambientfold/wallpaper/service/CoverAwakeKeeper.kt
+- [x] T024 [US5] Rewrite the wallpaper engine with per-frame hinge mapping, settle, and switch-angle diagnostics app/src/main/java/com/ambientfold/wallpaper/service/FoldWallpaperService.kt
+- [x] T025 [US5] Add Fluted Glass, Aperture, Dawn, Window and Prism Edge effects app/src/main/java/com/ambientfold/wallpaper/model/OpeningEffect.kt
+- [x] T026 [US5] Add 20 generative wallpapers and a photo blur pyramid app/src/main/java/com/ambientfold/wallpaper/render/BlurPyramid.kt
+- [x] T027 [US5] Relabel the photo catalog to match image content and drop low-resolution photos app/src/main/java/com/ambientfold/wallpaper/model/WallpaperRepository.kt
+- [x] T028 [US5] Rebuild the UI in Compose with a physically correct 3D book-fold preview app/src/main/java/com/ambientfold/wallpaper/ui/FoldPreviewView.kt
+- [x] T029 [US5] Generate the new adaptive icon from the supplied artwork app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+- [x] T030 [US5] Verify on an Android 16 foldable emulator: preview sweep, all effects, live engine, settle, cover path docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
+- [x] T031 [US5] Update README, architecture handbook, changelog and known gaps docs/handbooks/architecture.md
+- [ ] T032 [US5] Verify cover keep-awake and display-switch diagnostics on a physical Pixel foldable docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
+- [ ] T033 [US5] Decide the final app and repository name and apply it README.md

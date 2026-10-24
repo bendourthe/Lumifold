@@ -1,491 +1,361 @@
 package com.ambientfold.wallpaper.service
 
-import android.animation.ValueAnimator
+import android.app.WallpaperManager
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.BitmapShader
-import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.LinearGradient
-import android.graphics.Matrix
 import android.graphics.Paint
-import android.graphics.RadialGradient
-import android.graphics.RuntimeShader
-import android.graphics.Shader
-import android.os.Build
+import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
+import android.view.Choreographer
 import android.view.MotionEvent
 import android.view.SurfaceHolder
-import android.view.animation.DecelerateInterpolator
-import com.ambientfold.wallpaper.model.DuoBlurStateManager
+import androidx.core.content.ContextCompat
+import com.ambientfold.wallpaper.model.OpeningEffect
 import com.ambientfold.wallpaper.model.WallpaperItem
-import com.ambientfold.wallpaper.model.WallpaperRepository
-import com.ambientfold.wallpaper.render.DuoBlurShader
-import com.ambientfold.wallpaper.render.DynamicMotionEngine
-import kotlin.math.max
+import com.ambientfold.wallpaper.model.WallpaperRepository as Repo
+import com.ambientfold.wallpaper.model.WallpaperSource
+import com.ambientfold.wallpaper.render.BlurPyramid
+import com.ambientfold.wallpaper.render.FoldOptics
+import com.ambientfold.wallpaper.render.SurfaceSpec
+import com.ambientfold.wallpaper.render.WallpaperShader
+import java.util.concurrent.Executors
+import kotlin.math.abs
+import kotlin.math.min
 
 /**
- * Native Android Live Wallpaper Service for Google Pixel Foldables.
- * Implements:
- * 1. Physical Foldable Topology Handoff: Seamless state continuity across Outer Cover Display
- *    (Display 0) and Inner Main Display (Display 1).
- * 2. Synchronized Frosting at 90° Handoff: When the inner display illuminates at ~90°, it begins
- *    at 100% peak frost and darkened luminance matching the outer display, clearing smoothly from
- *    the center crease outward as the phone opens to 180°.
- * 3. Continuous Hinge Telemetry: Shared DuoBlurStateManager keeps sensor observations active across
- *    display reconfiguration and engine recreations.
- * 4. 60fps Dynamic Motion: Living ambient motion active on both cover and inner displays.
+ * Live wallpaper for book-style foldables. Every frame maps the current hinge angle straight to
+ * the fold shader, so the effect tracks the hinge instead of playing a timed animation.
  */
 class FoldWallpaperService : WallpaperService() {
 
-    private var sharedHingeObserver: HingeSensorObserver? = null
+    private val loader = Executors.newSingleThreadExecutor()
 
-    override fun onCreate() {
-        super.onCreate()
-        sharedHingeObserver = HingeSensorObserver(this) { _, _ ->
-            // DuoBlurStateManager is automatically updated by HingeSensorObserver
-        }
-        sharedHingeObserver?.start()
-    }
+    override fun onCreateEngine(): Engine = FoldEngine()
 
     override fun onDestroy() {
+        loader.shutdownNow()
         super.onDestroy()
-        sharedHingeObserver?.stop()
-        sharedHingeObserver = null
-    }
-
-    override fun onCreateEngine(): Engine {
-        return FoldEngine()
     }
 
     inner class FoldEngine : Engine(),
         SharedPreferences.OnSharedPreferenceChangeListener,
-        DuoBlurStateManager.TelemetryListener {
+        Choreographer.FrameCallback {
 
+        private val ctx: Context = this@FoldWallpaperService
+        private val prefs = Repo.getPrefs(ctx)
         private val mainHandler = Handler(Looper.getMainLooper())
-        private val motionEngine = DynamicMotionEngine()
+        private val hinge = HingeTracker(ctx) { onHingeChanged() }
+        private val awake = CoverAwakeKeeper(ctx)
+        private val paint = Paint()
+        private val startMs = SystemClock.uptimeMillis()
 
-        private var activeWallpaper: WallpaperItem? = null
-        private var surfaceWidth: Int = 1080
-        private var surfaceHeight: Int = 2400
+        private var item: WallpaperItem = Repo.getActiveWallpaper(ctx)
+        private var effect: OpeningEffect = OpeningEffect.DEFAULT
+        private var intensity = Repo.DEFAULT_INTENSITY
+        private var motion = true
+        private var coverAwakeEnabled = true
 
-        // Shared Image Base: Single decoded high-resolution bitmap with preserved aspect ratio
-        private var sharedBitmap: Bitmap? = null
-        private var currentLoadedResId: Int = 0
+        private var shader: WallpaperShader? = null
+        private var loadingId: String? = null
+        private var spec: SurfaceSpec? = null
+        private var lastSurfaceInner: Boolean? = null
+        private var visible = false
+        private var lastVisibleMs = 0L
 
-        // Opening effect and animation state
-        private var openingEffect: String = WallpaperRepository.DEFAULT_OPENING_EFFECT
-        private var isDynamicMotionEnabled: Boolean = true
-        private var maxBlurRadius: Float = WallpaperRepository.DEFAULT_MAX_BLUR
-        private var animationDurationMs: Long = WallpaperRepository.DEFAULT_ANIMATION_DURATION
+        private var shownAngle = Float.NaN
+        private var lastFrameNanos = 0L
+        private var frameScheduled = false
+        private var oddFrame = false
 
-        // 0.0 = crystal sharp, 1.0 = peak frost at 90° handoff
-        private var currentBlurProgress: Float = 0.0f
-        private var isUnfoldingAnimating: Boolean = false
-        private var unfoldAnimator: ValueAnimator? = null
+        // The fold effect is a transition: a hinge held still at a half-open posture (tabletop,
+        // book, tent) eases back to the sharp resting look of the current display.
+        private var anchorAngle = Float.NaN
+        private var lastMoveMs = 0L
+        private var settle = 0f
+        private val settleCheck = Runnable { requestFrame() }
 
-        private val effectPaint = Paint(Paint.ANTI_ALIAS_FLAG or Paint.FILTER_BITMAP_FLAG)
-        private val seamPaint = Paint(Paint.ANTI_ALIAS_FLAG)
-        private val matrix = Matrix()
-
-        // Hardware AGSL RuntimeShader for API 33+ (Android 13/14/15/16/17 on Pixel Fold)
-        private var duoBlurRuntimeShader: Any? = null
-
-        private var isVisibleState = false
-        private var isInnerScreenActive = false
-        private var isFrameLoopRunning = false
-
-        private val frameRunnable = object : Runnable {
-            override fun run() {
-                if (!isVisibleState) {
-                    isFrameLoopRunning = false
-                    return
-                }
-
-                drawCurrentFrame()
-
-                if (isVisibleState && (isDynamicMotionEnabled || isUnfoldingAnimating || currentBlurProgress > 0.005f)) {
-                    mainHandler.postDelayed(this, 16L) // 60 fps
-                } else {
-                    isFrameLoopRunning = false
-                }
+        private val screenOffReceiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                hinge.stop()
+                awake.release()
             }
         }
 
         override fun onCreate(surfaceHolder: SurfaceHolder) {
             super.onCreate(surfaceHolder)
-
-            WallpaperRepository.getPrefs(this@FoldWallpaperService)
-                .registerOnSharedPreferenceChangeListener(this)
-
-            reloadPreferences()
-            initDuoBlurShaderIfSupported()
-
-            DuoBlurStateManager.addListener(this)
-        }
-
-        private fun initDuoBlurShaderIfSupported() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                try {
-                    duoBlurRuntimeShader = RuntimeShader(DuoBlurShader.DUO_FOLD_SHADER_SRC)
-                } catch (e: Throwable) {
-                    duoBlurRuntimeShader = null
-                }
-            }
-        }
-
-        private fun reloadPreferences() {
-            activeWallpaper = WallpaperRepository.getActiveWallpaper(this@FoldWallpaperService)
-            maxBlurRadius = WallpaperRepository.getMaxBlurRadius(this@FoldWallpaperService)
-            openingEffect = WallpaperRepository.getOpeningEffect(this@FoldWallpaperService)
-            isDynamicMotionEnabled = WallpaperRepository.isDynamicMotionEnabled(this@FoldWallpaperService)
-            animationDurationMs = WallpaperRepository.getAnimationDuration(this@FoldWallpaperService)
-
-            activeWallpaper?.let { item ->
-                if (currentLoadedResId != item.drawableResId || sharedBitmap == null) {
-                    loadSharedBitmap(item.drawableResId)
-                }
-            }
-        }
-
-        private fun loadSharedBitmap(drawableResId: Int) {
-            try {
-                sharedBitmap?.recycle()
-                sharedBitmap = null
-
-                val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeResource(resources, drawableResId, options)
-
-                val maxDimension = 2560
-                var sampleSize = 1
-                while (options.outWidth / sampleSize > maxDimension || options.outHeight / sampleSize > maxDimension) {
-                    sampleSize *= 2
-                }
-
-                val decodeOptions = BitmapFactory.Options().apply {
-                    inSampleSize = sampleSize
-                    inPreferredConfig = Bitmap.Config.ARGB_8888
-                }
-                sharedBitmap = BitmapFactory.decodeResource(resources, drawableResId, decodeOptions)
-                currentLoadedResId = drawableResId
-            } catch (e: Throwable) {
-                // Fallback
-            }
+            setTouchEventsEnabled(true)
+            prefs.registerOnSharedPreferenceChangeListener(this)
+            ContextCompat.registerReceiver(
+                ctx, screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF),
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            loadPreferences()
         }
 
         override fun onDestroy() {
+            Choreographer.getInstance().removeFrameCallback(this)
+            mainHandler.removeCallbacks(settleCheck)
+            prefs.unregisterOnSharedPreferenceChangeListener(this)
+            ctx.unregisterReceiver(screenOffReceiver)
+            hinge.stop()
+            awake.release()
+            shader?.pyramid?.recycle()
+            shader = null
             super.onDestroy()
-            DuoBlurStateManager.removeListener(this)
-            WallpaperRepository.getPrefs(this@FoldWallpaperService)
-                .unregisterOnSharedPreferenceChangeListener(this)
-            unfoldAnimator?.cancel()
-            mainHandler.removeCallbacksAndMessages(null)
-            sharedBitmap?.recycle()
-            sharedBitmap = null
         }
 
-        override fun onVisibilityChanged(visible: Boolean) {
-            isVisibleState = visible
-            if (visible) {
-                // When inner screen powers on during unfolding, synchronize frost with current angle
-                if (isInnerScreenActive) {
-                    val angle = DuoBlurStateManager.currentAngle
-                    if (angle < 170f) {
-                        // Starts at matching frost (e.g. 100% at ~90°) and smoothly clears to 180°
-                        currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(angle, true)
-                        triggerInnerDefrostAnimation()
-                    } else {
-                        currentBlurProgress = 0.0f
-                    }
-                }
-                startFrameLoop()
-            } else {
-                unfoldAnimator?.cancel()
-                mainHandler.removeCallbacksAndMessages(null)
-                isFrameLoopRunning = false
+        private fun loadPreferences() {
+            effect = Repo.getOpeningEffect(ctx)
+            intensity = Repo.getIntensity(ctx)
+            motion = Repo.isDynamicMotionEnabled(ctx)
+            coverAwakeEnabled = Repo.isCoverAwakeEnabled(ctx)
+            val next = Repo.getActiveWallpaper(ctx)
+            if (next.id != item.id || shader == null) {
+                item = next
+                ensureShader()
             }
+            updateAwake()
         }
 
-        private fun startFrameLoop() {
-            if (!isFrameLoopRunning) {
-                isFrameLoopRunning = true
-                mainHandler.post(frameRunnable)
-            }
+        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
+            if (key == Repo.KEY_MEASURED_OPEN_SWITCH || key == Repo.KEY_MEASURED_CLOSE_SWITCH) return
+            loadPreferences()
+            requestFrame()
         }
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
-            val newAspect = if (width > 0) height.toFloat() / width.toFloat() else 2.0f
+            val rotation = displayContext?.display?.rotation ?: 0
+            val (nw, nh) = FoldOptics.naturalSize(width, height, rotation)
+            val inner = FoldOptics.isInnerDisplay(nw, nh)
+            rememberNaturalSize(inner, nw, nh)
+            recordSwitchAngle(inner)
 
-            surfaceWidth = width
-            surfaceHeight = height
-
-            // Foldable topology detection: Inner tablet display is <= 1.35; Outer cover display is >= 1.8
-            val newlyInner = newAspect <= 1.35f
-            val displaySwitched = newlyInner != isInnerScreenActive
-            isInnerScreenActive = newlyInner
-
-            DuoBlurStateManager.updateDisplayContext(if (newlyInner) 1 else 0, newlyInner)
-
-            if (sharedBitmap == null && activeWallpaper != null) {
-                loadSharedBitmap(activeWallpaper!!.drawableResId)
-            }
-
-            if (displaySwitched && newlyInner) {
-                // Handoff to Inner Main Display: Start at 100% peak frost and unbend toward 180°
-                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(DuoBlurStateManager.currentAngle, true)
-                triggerInnerDefrostAnimation()
-            } else {
-                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(DuoBlurStateManager.currentAngle, isInnerScreenActive)
-                startFrameLoop()
-            }
+            val innerW = prefs.getInt(Repo.KEY_INNER_W, Repo.DEFAULT_INNER_W)
+            val innerH = prefs.getInt(Repo.KEY_INNER_H, Repo.DEFAULT_INNER_H)
+            val coverW = prefs.getInt(Repo.KEY_COVER_W, Repo.DEFAULT_COVER_W)
+            val coverH = prefs.getInt(Repo.KEY_COVER_H, Repo.DEFAULT_COVER_H)
+            val surfaceHeight = if (inner) nh / (nw * 0.5f) else nh.toFloat() / nw
+            spec = SurfaceSpec(
+                width, height, rotation, inner, surfaceHeight,
+                FoldOptics.planeHeight(innerW, innerH, coverW, coverH)
+            )
+            shownAngle = Float.NaN
+            ensureShader()
+            updateAwake()
+            drawFrame()
         }
 
-        override fun onSharedPreferenceChanged(sharedPreferences: SharedPreferences?, key: String?) {
-            reloadPreferences()
-            startFrameLoop()
+        override fun onSurfaceRedrawNeeded(holder: SurfaceHolder) {
+            super.onSurfaceRedrawNeeded(holder)
+            drawFrame()
+        }
+
+        override fun onVisibilityChanged(isVisible: Boolean) {
+            visible = isVisible
+            lastVisibleMs = SystemClock.uptimeMillis()
+            if (isVisible) {
+                hinge.start()
+                shownAngle = Float.NaN
+                anchorAngle = Float.NaN
+                settle = settleTarget()
+                updateAwake()
+                drawFrame()
+                requestFrame()
+            } else {
+                updateAwake()
+                Choreographer.getInstance().removeFrameCallback(this)
+                frameScheduled = false
+                lastFrameNanos = 0L
+            }
         }
 
         override fun onTouchEvent(event: MotionEvent) {
-            super.onTouchEvent(event)
-            if (event.action == MotionEvent.ACTION_DOWN || event.action == MotionEvent.ACTION_MOVE) {
-                motionEngine.addTouchRipple(event.x, event.y)
-                if (!isFrameLoopRunning) {
-                    startFrameLoop()
-                }
-            }
+            if (event.actionMasked == MotionEvent.ACTION_DOWN) awake.onUserActivity()
         }
 
-        /**
-         * Telemetry listener called whenever hardware hinge angle changes.
-         * Synchronously computes frost progress matching the active display leaf.
-         */
-        override fun onTelemetryUpdated(
-            angle: Float,
-            isInner: Boolean,
-            displayId: Int,
-            frostProgress: Float,
-            phaseLabel: String
+        override fun onCommand(
+            action: String?, x: Int, y: Int, z: Int, extras: Bundle?, resultRequested: Boolean
+        ): Bundle? {
+            if (action == WallpaperManager.COMMAND_TAP) awake.onUserActivity()
+            return null
+        }
+
+        override fun onOffsetsChanged(
+            xOffset: Float, yOffset: Float, xOffsetStep: Float, yOffsetStep: Float,
+            xPixelOffset: Int, yPixelOffset: Int
         ) {
-            if (!isUnfoldingAnimating) {
-                currentBlurProgress = DuoBlurStateManager.getCurrentFrostProgress(angle, isInnerScreenActive)
-                if (!isFrameLoopRunning) {
-                    startFrameLoop()
-                }
-            }
+            awake.onUserActivity()
         }
 
-        /**
-         * Smoothly animates the inner screen from its handoff frost (1.0) down to crystal clarity (0.0).
-         */
-        private fun triggerInnerDefrostAnimation() {
-            unfoldAnimator?.cancel()
-            isUnfoldingAnimating = true
-
-            val startFrost = currentBlurProgress.coerceAtLeast(0.85f)
-            unfoldAnimator = ValueAnimator.ofFloat(startFrost, 0.0f).apply {
-                duration = animationDurationMs
-                interpolator = DecelerateInterpolator(2.2f)
-                addUpdateListener { anim ->
-                    currentBlurProgress = anim.animatedValue as Float
-                }
-                addListener(object : android.animation.AnimatorListenerAdapter() {
-                    override fun onAnimationEnd(animation: android.animation.Animator) {
-                        isUnfoldingAnimating = false
-                        currentBlurProgress = 0.0f
-                    }
-                })
-                start()
+        private fun onHingeChanged() {
+            val angle = hinge.angle
+            if (anchorAngle.isNaN()) {
+                anchorAngle = angle
+            } else if (abs(angle - anchorAngle) > SETTLE_MOVE_DEG) {
+                anchorAngle = angle
+                lastMoveMs = SystemClock.uptimeMillis()
+                mainHandler.removeCallbacks(settleCheck)
+                mainHandler.postDelayed(settleCheck, SETTLE_DELAY_MS + 20L)
             }
-            startFrameLoop()
+            updateAwake()
+            requestFrame()
         }
 
-        private fun drawCurrentFrame() {
-            if (!isVisibleState) return
+        private fun settleTarget(): Float =
+            if (SystemClock.uptimeMillis() - lastMoveMs < SETTLE_DELAY_MS) 1f else 0f
 
-            val item = activeWallpaper ?: return
-            val bmp = sharedBitmap ?: return
-            if (bmp.isRecycled) return
-
-            val holder = surfaceHolder
-            var canvas: Canvas? = null
-
-            try {
-                canvas = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    holder.lockHardwareCanvas()
-                } else {
-                    holder.lockCanvas()
-                }
-
-                if (canvas != null) {
-                    val w = surfaceWidth
-                    val h = surfaceHeight
-
-                    // If DuoBlur AGSL transition is active
-                    if (openingEffect == WallpaperRepository.EFFECT_DUO_BLUR &&
-                        currentBlurProgress > 0.005f &&
-                        Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                        duoBlurRuntimeShader != null
-                    ) {
-                        drawAgslDuoBlurFrame(canvas, bmp, w, h)
-                    } else {
-                        // Render wallpaper with Center-Crop and living motion engine
-                        motionEngine.render(
-                            canvas = canvas,
-                            bitmap = bmp,
-                            width = w,
-                            height = h,
-                            wallpaper = item,
-                            isDynamic = isDynamicMotionEnabled,
-                            blurProgress = currentBlurProgress
-                        )
-
-                        // Render fallback overlay if effect is active
-                        if (currentBlurProgress > 0.01f) {
-                            drawFallbackOpeningOverlay(canvas)
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                // Surface transient during display power cycle
-            } finally {
-                if (canvas != null) {
-                    try {
-                        holder.unlockCanvasAndPost(canvas)
-                    } catch (e: Exception) {
-                        // Surface released during fold
-                    }
-                }
-            }
-        }
-
-        private fun drawAgslDuoBlurFrame(canvas: Canvas, bitmap: Bitmap, width: Int, height: Int) {
-            val shader = duoBlurRuntimeShader as? RuntimeShader ?: return
-
-            val scaleBase = max(width.toFloat() / bitmap.width.toFloat(), height.toFloat() / bitmap.height.toFloat())
-            val scaledW = bitmap.width * scaleBase
-            val scaledH = bitmap.height * scaleBase
-            val dx = (width - scaledW) * 0.5f
-            val dy = (height - scaledH) * 0.5f
-
-            matrix.reset()
-            matrix.postScale(scaleBase, scaleBase)
-            matrix.postTranslate(dx, dy)
-
-            val bmpShader = BitmapShader(bitmap, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
-                setLocalMatrix(matrix)
-            }
-
-            shader.setInputShader("content", bmpShader)
-            shader.setFloatUniform("resolution", width.toFloat(), height.toFloat())
-            shader.setFloatUniform("foldProgress", currentBlurProgress)
-            shader.setFloatUniform("isInnerScreen", if (isInnerScreenActive) 1.0f else 0.0f)
-
-            effectPaint.shader = shader
-            canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), effectPaint)
-
-            // Crease light bloom on inner folding screen (centered at x = 50%)
-            if (isInnerScreenActive && currentBlurProgress > 0.02f) {
-                val cx = width * 0.5f
-                val beamW = (6f + currentBlurProgress * 16f)
-                val alpha = (currentBlurProgress * 235f).toInt().coerceIn(0, 255)
-                val beam = LinearGradient(
-                    cx - beamW, 0f, cx + beamW, 0f,
-                    intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 255, 255), Color.TRANSPARENT),
-                    floatArrayOf(0.0f, 0.5f, 1.0f),
-                    Shader.TileMode.CLAMP
+        private fun updateAwake() {
+            val angle = hinge.angle.takeUnless { it.isNaN() } ?: 0f
+            awake.update(
+                CoverAwakeKeeper.shouldHold(
+                    enabled = coverAwakeEnabled,
+                    visible = visible,
+                    onInnerDisplay = spec?.isInner ?: true,
+                    isPreview = isPreview,
+                    interactive = awake.isInteractive,
+                    hingeAngle = angle
                 )
-                seamPaint.shader = beam
-                canvas.drawRect(cx - beamW, 0f, cx + beamW, height.toFloat(), seamPaint)
+            )
+        }
+
+        private fun rememberNaturalSize(inner: Boolean, w: Int, h: Int) {
+            val (kw, kh) = if (inner) Repo.KEY_INNER_W to Repo.KEY_INNER_H else Repo.KEY_COVER_W to Repo.KEY_COVER_H
+            if (prefs.getInt(kw, 0) != w || prefs.getInt(kh, 0) != h) {
+                prefs.edit().putInt(kw, w).putInt(kh, h).apply()
             }
         }
 
-        private fun drawFallbackOpeningOverlay(canvas: Canvas) {
-            val w = surfaceWidth.toFloat()
-            val h = surfaceHeight.toFloat()
-            val cx = w * 0.5f
-            val cy = h * 0.5f
+        /** Stores the hinge angle at which the system moved the wallpaper between displays. */
+        private fun recordSwitchAngle(inner: Boolean) {
+            val previous = lastSurfaceInner
+            lastSurfaceInner = inner
+            if (isPreview || previous == null || previous == inner) return
+            val wasWatched = visible || SystemClock.uptimeMillis() - lastVisibleMs < 1_500L
+            val angle = hinge.angle
+            if (!wasWatched || angle.isNaN()) return
+            val key = if (inner) Repo.KEY_MEASURED_OPEN_SWITCH else Repo.KEY_MEASURED_CLOSE_SWITCH
+            prefs.edit().putFloat(key, angle).apply()
+        }
 
-            when (openingEffect) {
-                WallpaperRepository.EFFECT_DUO_BLUR -> {
-                    val edgeAlpha = (currentBlurProgress * 195f).toInt().coerceIn(0, 255)
-                    val midAlpha = (currentBlurProgress * 110f).toInt().coerceIn(0, 255)
-
-                    val duoBlurGradient = LinearGradient(
-                        0f, 0f, w, 0f,
-                        intArrayOf(
-                            Color.argb(edgeAlpha, 235, 240, 250),
-                            Color.argb(midAlpha, 225, 235, 245),
-                            Color.TRANSPARENT,
-                            Color.argb(midAlpha, 225, 235, 245),
-                            Color.argb(edgeAlpha, 235, 240, 250)
-                        ),
-                        floatArrayOf(0.0f, 0.28f, 0.50f, 0.72f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                    effectPaint.shader = duoBlurGradient
-                    canvas.drawRect(0f, 0f, w, h, effectPaint)
-
-                    val creaseWidth = (24f + (currentBlurProgress * 60f))
-                    val beamAlpha = (currentBlurProgress * 220f).toInt().coerceIn(0, 255)
-                    val creaseBeam = LinearGradient(
-                        cx - creaseWidth, 0f, cx + creaseWidth, 0f,
-                        intArrayOf(Color.TRANSPARENT, Color.argb(beamAlpha, 255, 255, 255), Color.TRANSPARENT),
-                        floatArrayOf(0.0f, 0.5f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                    effectPaint.shader = creaseBeam
-                    canvas.drawRect(cx - creaseWidth, 0f, cx + creaseWidth, h, effectPaint)
-                }
-
-                WallpaperRepository.EFFECT_CREASE_BLOOM -> {
-                    val beamWidth = (40f + (currentBlurProgress * 150f)).coerceAtLeast(10f)
-                    val alpha = (currentBlurProgress * 220f).toInt().coerceIn(0, 255)
-                    val gradient = LinearGradient(
-                        cx - beamWidth, 0f, cx + beamWidth, 0f,
-                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 255, 248, 220), Color.TRANSPARENT),
-                        floatArrayOf(0.0f, 0.5f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                    effectPaint.shader = gradient
-                    canvas.drawRect(cx - beamWidth, 0f, cx + beamWidth, h, effectPaint)
-                }
-
-                WallpaperRepository.EFFECT_LIQUID_GLASS -> {
-                    val waveWidth = (1.0f - currentBlurProgress) * (w * 0.55f)
-                    val alpha = (currentBlurProgress * 160f).toInt().coerceIn(0, 255)
-                    val gradient = LinearGradient(
-                        cx - waveWidth, 0f, cx + waveWidth, 0f,
-                        intArrayOf(
-                            Color.TRANSPARENT,
-                            Color.argb(alpha, 99, 102, 241),
-                            Color.argb(alpha, 236, 72, 153),
-                            Color.argb(alpha, 56, 189, 248),
-                            Color.TRANSPARENT
-                        ),
-                        floatArrayOf(0.0f, 0.35f, 0.50f, 0.65f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                    effectPaint.shader = gradient
-                    canvas.drawRect(0f, 0f, w, h, effectPaint)
-                }
-
-                WallpaperRepository.EFFECT_APERTURE_HORIZON -> {
-                    val radius = w * (0.5f + (1.0f - currentBlurProgress) * 0.8f)
-                    val alpha = (currentBlurProgress * 160f).toInt().coerceIn(0, 255)
-                    val gradient = RadialGradient(
-                        cx, cy, radius.coerceAtLeast(10f),
-                        intArrayOf(Color.TRANSPARENT, Color.argb(alpha, 15, 23, 42)),
-                        floatArrayOf(0.45f, 1.0f),
-                        Shader.TileMode.CLAMP
-                    )
-                    effectPaint.shader = gradient
-                    canvas.drawRect(0f, 0f, w, h, effectPaint)
+        private fun ensureShader() {
+            val current = shader
+            if (current != null && current.item.id == item.id) {
+                if (current.isReady || loadingId == item.id) return
+            }
+            val target = item
+            val created = WallpaperShader.create(target)
+            val photo = target.source as? WallpaperSource.Photo
+            if (photo == null) {
+                swapShader(created)
+                return
+            }
+            val s = spec ?: return
+            loadingId = target.id
+            val texW = min(2560, prefs.getInt(Repo.KEY_INNER_W, Repo.DEFAULT_INNER_W))
+            val texH = (texW * s.planeHeight / 2f).toInt()
+            loader.execute {
+                val pyramid = runCatching {
+                    BlurPyramid.fromResource(resources, photo.resId, texW, texH, photo.focusX, photo.focusY)
+                }.getOrNull()
+                mainHandler.post {
+                    if (loadingId != target.id || pyramid == null || item.id != target.id) {
+                        pyramid?.recycle()
+                        return@post
+                    }
+                    loadingId = null
+                    created.attachPyramid(pyramid)
+                    swapShader(created)
                 }
             }
         }
+
+        private fun swapShader(next: WallpaperShader) {
+            val old = shader
+            shader = next
+            if (old != null && old.pyramid !== next.pyramid) old.pyramid?.recycle()
+            requestFrame()
+        }
+
+        private fun requestFrame() {
+            if (!visible || frameScheduled) return
+            frameScheduled = true
+            Choreographer.getInstance().postFrameCallback(this)
+        }
+
+        override fun doFrame(frameTimeNanos: Long) {
+            frameScheduled = false
+            if (!visible) return
+            val dt = if (lastFrameNanos == 0L) 0.016f
+            else ((frameTimeNanos - lastFrameNanos) / 1e9f).coerceIn(0f, 0.1f)
+            lastFrameNanos = frameTimeNanos
+
+            val target = targetAngle()
+            shownAngle = HingeTracker.smoothToward(shownAngle, target, dt)
+            val hingeMoving = abs(target - shownAngle) > 0.05f
+            if (!hingeMoving) shownAngle = target
+
+            val goal = settleTarget()
+            settle = HingeTracker.smoothToward(settle, goal, dt, if (goal > settle) 0.06f else 0.35f)
+            val settling = abs(goal - settle) > 0.002f
+            if (!settling) settle = goal
+
+            oddFrame = !oddFrame
+            if (hingeMoving || settling || !motion || oddFrame) drawFrame()
+            if (hingeMoving || settling || motion) requestFrame()
+        }
+
+        /** Hinge angle fed to the shader, eased toward the display's resting angle by [settle]. */
+        private fun effectAngle(s: SurfaceSpec): Float {
+            val angle = if (shownAngle.isNaN()) targetAngle() else shownAngle
+            val rest = if (s.isInner) 180f else 0f
+            return rest + (angle - rest) * settle
+        }
+
+        private fun targetAngle(): Float {
+            val raw = hinge.angle
+            if (!raw.isNaN()) return raw
+            return if (spec?.isInner == false) 0f else 180f
+        }
+
+        private fun timeSec(): Float =
+            if (motion) ((SystemClock.uptimeMillis() - startMs) % 100_000_000L) / 1000f else STILL_TIME
+
+        private fun drawFrame() {
+            val s = spec ?: return
+            val holder = surfaceHolder
+            val canvas = runCatching { holder.lockHardwareCanvas() }.getOrNull() ?: return
+            try {
+                val ws = shader
+                if (ws != null && ws.isReady) {
+                    val angle = effectAngle(s)
+                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion)
+                    paint.shader = ws.shader
+                    canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
+                } else {
+                    canvas.drawColor(Color.BLACK)
+                }
+            } finally {
+                runCatching { holder.unlockCanvasAndPost(canvas) }
+            }
+        }
+    }
+
+    companion object {
+        /** Scene time used when living motion is off. */
+        const val STILL_TIME = 42f
+
+        /** Hinge travel that counts as the user moving the hinge. */
+        const val SETTLE_MOVE_DEG = 3f
+
+        /** Stillness after which a half-open posture counts as settled. */
+        const val SETTLE_DELAY_MS = 1_500L
     }
 }
