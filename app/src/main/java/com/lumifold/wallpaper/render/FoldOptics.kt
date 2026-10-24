@@ -20,19 +20,31 @@ object FoldOptics {
     /** Eye distance in panel widths (about 30 cm for a 7.5 cm panel). */
     const val VIEW_DISTANCE = 4.0
 
-    /** Peak Gaussian sigma at the free edge, as a fraction of one panel width. */
-    const val SIGMA_MAX = 0.17
+    /** Peak Duo Gaussian sigma at the free edge, as a fraction of one panel width. */
+    const val DUO_SIGMA = 0.09
 
     /** Inner displays are near-square; covers are tall. */
     private const val INNER_MAX_ASPECT = 1.4f
 
     /**
-     * Duo blur strength: `sigmaMax * sin(angle) * d^3`, where d runs from 0 at the hinge to 1 at
-     * the free edge. Both settled endpoints (closed and flat) are sharp.
+     * Duo transition strength, after Apple's model: 0 at the display's resting angle (closed for
+     * the cover, flat for the inner display), rising to 1 three quarters of the way to 90 degrees.
      */
-    fun duoSigma(angleRad: Double, distanceFromHinge: Double, sigmaMax: Double = SIGMA_MAX): Double {
-        val d = distanceFromHinge.coerceIn(0.0, 1.0)
-        return sigmaMax * sin(angleRad.coerceIn(0.0, PI)) * d * d * d
+    fun duoMotion(angleRad: Double, inner: Boolean): Double {
+        val a = angleRad.coerceIn(0.0, PI)
+        val progress = if (inner) (PI - a) / (PI / 2) else a / (PI / 2)
+        val t = (progress.coerceIn(0.0, 1.0) / 0.75).coerceIn(0.0, 1.0)
+        return t * t * (3 - 2 * t)
+    }
+
+    /** Duo blur: `DUO_SIGMA * motion * d^1.5`, d from 0 at the hinge to 1 at the free edge. */
+    fun duoSigma(motion: Double, distanceFromHinge: Double): Double =
+        DUO_SIGMA * motion * Math.pow(distanceFromHinge.coerceIn(0.0, 1.0), 1.5)
+
+    /** Duo brightness on a moving panel: falls to black at the free edge at full motion. */
+    fun duoBrightness(motion: Double, distanceFromHinge: Double): Double {
+        val g = ((distanceFromHinge - 0.2) / 0.8).coerceIn(0.0, 1.0)
+        return (1.0 - 2.0 * motion * Math.pow(g, 1.35)).coerceIn(0.0, 1.0)
     }
 
     /**
@@ -45,26 +57,16 @@ object FoldOptics {
         y: Double,
         angleRad: Double,
         planeHeight: Double,
-        viewDistance: Double = VIEW_DISTANCE
+        viewDistance: Double = VIEW_DISTANCE,
+        eyeX: Double = 0.5
     ): Pair<Double, Double> {
         val px = u * kotlin.math.cos(angleRad)
         val pz = u * sin(angleRad)
-        val vx = 0.5
+        val vx = eyeX
         val vy = planeHeight * 0.5
         val k = viewDistance / (viewDistance - pz)
         return Pair(vx + (px - vx) * k, vy + (y - vy) * k)
     }
-
-    /** Duo brightness for the cover display (moving panel, outer face). */
-    fun coverBrightness(angleRad: Double, d: Double): Double =
-        1.0 - 0.55 * sin(angleRad) * (0.4 + 0.6 * d)
-
-    /** Duo brightness for the moving half of the inner display. */
-    fun innerMovingBrightness(angleRad: Double, d: Double): Double =
-        1.0 - 0.75 * sin(angleRad) * (0.35 + 0.65 * d)
-
-    /** Duo brightness for the stationary half of the inner display. */
-    fun innerStationaryBrightness(angleRad: Double): Double = 1.0 - 0.28 * sin(angleRad)
 
     fun isInnerDisplay(naturalWidth: Int, naturalHeight: Int): Boolean {
         if (naturalWidth <= 0 || naturalHeight <= 0) return false

@@ -6,6 +6,7 @@ enum class WallpaperCategory(val label: String) {
     ABSTRACT("Abstract"),
     GRADIENTS("Gradients"),
     LANDSCAPES("Landscapes"),
+    ILLUSTRATED("Illustrated"),
     SPACE("Space"),
     TEXTURES("Textures"),
     MINIMAL("Minimal")
@@ -31,33 +32,20 @@ data class Palette(val c0: Int, val c1: Int, val c2: Int, val c3: Int, val c4: I
 
 /** How a photo moves when living motion is on. */
 enum class MotionStyle(val shaderIndex: Int) {
+    /** A still photograph. */
+    NONE(0),
+
     /** Slow flowing liquid glass over the whole image. */
     LIQUID(1),
 
-    /** Region-based nature motion driven by a motion map. */
-    NATURE(2),
-
     /** Light travelling along bright features. */
-    PULSE(3)
+    PULSE(2)
 }
-
-/**
- * Motion for a photo. For [MotionStyle.NATURE], [mapResId] is an RGB motion map aligned with the
- * photo: red marks drifting sky, fog and clouds, green marks water, blue marks swaying foliage.
- * Directions are in image fractions per second.
- */
-data class PhotoMotion(
-    val style: MotionStyle,
-    @DrawableRes val mapResId: Int = 0,
-    val windX: Float = 0.004f,
-    val waterX: Float = 0f,
-    val waterY: Float = 0.012f
-)
 
 sealed interface WallpaperSource {
     data class Photo(
         @DrawableRes val resId: Int,
-        val motion: PhotoMotion,
+        val motion: MotionStyle,
         val focusX: Float = 0.5f,
         val focusY: Float = 0.5f
     ) : WallpaperSource

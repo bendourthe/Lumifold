@@ -52,16 +52,11 @@ class WallpaperRepositoryTest {
     }
 
     @Test
-    fun naturePhotosHaveMotionMapsAndLandscapesMove() {
-        val photos = WallpaperRepository.wallpapers.mapNotNull { it.source as? WallpaperSource.Photo }
-        for (p in photos.filter { it.motion.style == MotionStyle.NATURE }) {
-            assertTrue(p.motion.mapResId != 0)
-        }
-        val landscapePhotos = WallpaperRepository.wallpapers
-            .filter { it.category == WallpaperCategory.LANDSCAPES }
-            .mapNotNull { it.source as? WallpaperSource.Photo }
-        assertTrue(landscapePhotos.isNotEmpty())
-        assertTrue(landscapePhotos.all { it.motion.style == MotionStyle.NATURE })
+    fun landscapesHoldNoDrawnScenes() {
+        val landscapes = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.LANDSCAPES)
+        assertTrue(landscapes.none { it.source is WallpaperSource.Generative })
+        val illustrated = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.ILLUSTRATED).map { it.id }
+        assertTrue(illustrated.containsAll(listOf("aurora_veil", "sahara", "moonlit_dunes", "still_sea")))
     }
 
     @Test

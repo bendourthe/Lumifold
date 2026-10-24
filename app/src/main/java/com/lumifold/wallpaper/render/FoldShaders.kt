@@ -33,6 +33,7 @@ uniform float3 uEye;
 
 const float PI = 3.14159265;
 const float SIGMA_MAX = 0.17;
+const float DUO_SIGMA = 0.09;
 
 float hash12(float2 p) {
     float3 p3 = fract(float3(p.xyx) * 0.1031);
@@ -51,12 +52,9 @@ uniform shader L5;
 uniform shader L6;
 uniform shader L7;
 uniform shader L8;
-uniform shader uMap;
 uniform float2 uTexSize;
 uniform float uMotion;
 uniform float uStyle;
-uniform float uWind;
-uniform float2 uWater;
 
 half4 levels(float2 st, float sigma) {
     float2 p = st * uTexSize;
@@ -104,22 +102,6 @@ half4 content(float2 st, float sigma) {
         float sheen = 0.5 + 0.5 * sin(dot(st, float2(2.3, 1.7)) * 3.0 - t * 0.25 + ang * 0.6);
         c.rgb *= half(0.97 + 0.06 * sheen * sheen);
         return c;
-    }
-
-    if (uStyle < 2.5) {
-        half4 m = uMap.eval(st * uTexSize);
-        float drift = float(m.r);
-        float water = float(m.g);
-        float sway = float(m.b);
-        float gust = 0.55 + 0.45 * sin(t * 0.5 + st.x * 2.0) * sin(t * 0.23 + 1.3);
-        float2 disp = float2(
-            sway * gust * (0.0045 * sin(t * 1.7 + st.y * 38.0 + st.x * 9.0) + 0.0025 * sin(t * 0.9 + st.x * 4.0)),
-            sway * 0.0012 * sin(t * 1.3 + st.x * 31.0));
-        disp += water * 0.0018 * float2(sin(st.y * 170.0 + t * 2.4), sin(st.x * 95.0 - t * 1.9));
-        if (drift + water < 0.01) { return levels(st + disp, sigma); }
-        float2 flow = drift * float2(uWind, 0.0) + water * uWater;
-        float period = mix(9.0, 2.6, clamp(water / (water + drift), 0.0, 1.0));
-        return flowSample(st + disp, flow, period, sigma, t);
     }
 
     half4 c = levels(st, sigma);
@@ -514,9 +496,18 @@ half4 main(float2 fragCoord) {
     float2 zoomC = float2(0.0);
 
     if (fx == 0) {
+        // Duo Frost, after Apple's model: the glass lifts away from a fixed picture, so blur and
+        // shade grow toward the free edge until it falls into black at full fold.
+        float prog = inner ? clamp((PI - a) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
+        float motion = smoothstep(0.0, 0.75, prog);
         q = qPersp;
-        sigma = moving ? SIGMA_MAX * I * s * d * d * d : 0.0;
-        dark = !inner ? 0.55 * s * (0.4 + 0.6 * d) : (moving ? 0.75 * s * (0.35 + 0.65 * d) : 0.28 * s);
+        if (moving) {
+            sigma = DUO_SIGMA * I * motion * pow(d, 1.5);
+            float dg = clamp((d - 0.2) / 0.8, 0.0, 1.0);
+            dark = 2.0 * motion * pow(dg, 1.35);
+        } else {
+            dark = 0.1 * motion;
+        }
     } else if (fx == 1) {
         q = mix(qFlat, qPersp, 0.6);
         if (moving) {
@@ -641,7 +632,12 @@ half4 main(float2 fragCoord) {
         col = content(st, sigma);
     }
 
-    float bright = clamp(1.0 - dark * darkK, 0.0, 1.0);
+    // Rays that miss the picture see black; the frost blurs that edge into the image.
+    float2 cw = float2(max(sigma * 0.5, 0.003), max(sigma / uPlaneH, 0.003));
+    float2 cv = clamp(st / cw, 0.0, 1.0) * clamp((1.0 - st) / cw, 0.0, 1.0);
+    float coverage = cv.x * cv.y;
+
+    float bright = clamp(1.0 - dark * darkK, 0.0, 1.0) * coverage;
     float3 rgb = float3(col.rgb);
     float luma = dot(rgb, float3(0.299, 0.587, 0.114));
     rgb = mix(float3(luma), rgb, satK) * bright * tint + edge * 0.1;

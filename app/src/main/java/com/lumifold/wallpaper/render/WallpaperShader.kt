@@ -1,7 +1,6 @@
 package com.lumifold.wallpaper.render
 
 import android.content.res.Resources
-import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Matrix
 import android.graphics.RuntimeShader
@@ -47,21 +46,9 @@ class WallpaperShader private constructor(
             }
             shader.setInputShader("L$k", bs)
         }
-        val map = p.motionMap ?: EMPTY_MAP
-        shader.setInputShader(
-            "uMap",
-            BitmapShader(map, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
-                filterMode = BitmapShader.FILTER_MODE_LINEAR
-                setLocalMatrix(Matrix().apply {
-                    setScale(base.width.toFloat() / map.width, base.height.toFloat() / map.height)
-                })
-            }
-        )
         shader.setFloatUniform("uTexSize", base.width.toFloat(), base.height.toFloat())
         val motion = (item.source as WallpaperSource.Photo).motion
-        shader.setFloatUniform("uStyle", motion.style.shaderIndex.toFloat())
-        shader.setFloatUniform("uWind", motion.windX)
-        shader.setFloatUniform("uWater", motion.waterX, motion.waterY)
+        shader.setFloatUniform("uStyle", motion.shaderIndex.toFloat())
     }
 
     /** A second instance with its own uniforms, sharing the compiled effect and pyramid. */
@@ -79,7 +66,7 @@ class WallpaperShader private constructor(
         effect: OpeningEffect,
         intensity: Float,
         motion: Boolean,
-        eyeX: Float = 0.5f,
+        eyeX: Float = if (spec.isInner) 0f else 0.5f,
         eyeY: Float = spec.planeHeight * 0.5f,
         eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat()
     ) {
@@ -111,13 +98,9 @@ class WallpaperShader private constructor(
     }
 
     companion object {
-        private val EMPTY_MAP: Bitmap by lazy { Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888) }
-
-        /** Decodes a photo and its motion map into a pyramid of [width] x [height]. Off the main thread. */
+        /** Decodes a photo into a pyramid of [width] x [height]. Call off the main thread. */
         fun buildPyramid(resources: Resources, photo: WallpaperSource.Photo, width: Int, height: Int): BlurPyramid =
-            BlurPyramid.fromResource(
-                resources, photo.resId, width, height, photo.focusX, photo.focusY, photo.motion.mapResId
-            )
+            BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY)
 
         private fun sourceFor(item: WallpaperItem): String = when (val s = item.source) {
             is WallpaperSource.Photo -> FoldShaders.photoSource()

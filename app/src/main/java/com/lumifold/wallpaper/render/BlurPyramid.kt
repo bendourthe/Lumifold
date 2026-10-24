@@ -14,18 +14,13 @@ import kotlin.math.roundToInt
  * Gaussian pyramid of the shared image plane. Level k is half the size of level k-1 and carries a
  * blur of roughly 2^k level-0 pixels, so the shader can pick any sigma by blending two levels.
  */
-class BlurPyramid private constructor(
-    val levels: List<Bitmap>,
-    /** Motion map cropped exactly like level 0, or null. */
-    val motionMap: Bitmap?
-) {
+class BlurPyramid private constructor(val levels: List<Bitmap>) {
 
     val width: Int get() = levels[0].width
     val height: Int get() = levels[0].height
 
     fun recycle() {
         levels.forEach { if (!it.isRecycled) it.recycle() }
-        motionMap?.let { if (!it.isRecycled) it.recycle() }
     }
 
     companion object {
@@ -40,8 +35,7 @@ class BlurPyramid private constructor(
             targetWidth: Int,
             targetHeight: Int,
             focusX: Float = 0.5f,
-            focusY: Float = 0.5f,
-            motionMapResId: Int = 0
+            focusY: Float = 0.5f
         ): BlurPyramid {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeResource(resources, resId, bounds)
@@ -61,22 +55,10 @@ class BlurPyramid private constructor(
 
             val base = cropTo(decoded, targetWidth, targetHeight, focusX, focusY)
             if (base !== decoded) decoded.recycle()
-
-            val map = if (motionMapResId == 0) null else {
-                val raw = BitmapFactory.decodeResource(
-                    resources, motionMapResId,
-                    BitmapFactory.Options().apply { inScaled = false }
-                )
-                raw?.let {
-                    val cropped = cropTo(it, max(1, targetWidth / 8), max(1, targetHeight / 8), focusX, focusY)
-                    it.recycle()
-                    cropped
-                }
-            }
-            return fromBitmap(base, map)
+            return fromBitmap(base)
         }
 
-        fun fromBitmap(base: Bitmap, motionMap: Bitmap? = null): BlurPyramid {
+        fun fromBitmap(base: Bitmap): BlurPyramid {
             val levels = ArrayList<Bitmap>(FoldShaders.PYRAMID_LEVELS)
             levels += base
             var prev = base
@@ -88,7 +70,7 @@ class BlurPyramid private constructor(
                 if (half !== levels.last()) half.recycle()
                 prev = levels.last()
             }
-            return BlurPyramid(levels, motionMap)
+            return BlurPyramid(levels)
         }
 
         private fun cropTo(src: Bitmap, w: Int, h: Int, fx: Float, fy: Float): Bitmap {

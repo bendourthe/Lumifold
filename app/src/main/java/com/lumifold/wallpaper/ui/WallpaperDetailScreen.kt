@@ -140,9 +140,9 @@ fun WallpaperDetailScreen(
 
 private fun motionCaption(item: WallpaperItem): String = when (val s = item.source) {
     is WallpaperSource.Generative -> "Animated scene rendered live at your screen's resolution."
-    is WallpaperSource.Photo -> when (s.motion.style) {
+    is WallpaperSource.Photo -> when (s.motion) {
+        MotionStyle.NONE -> "Still photograph. The fold effect still follows the hinge."
         MotionStyle.LIQUID -> "Slow, flowing liquid glass."
-        MotionStyle.NATURE -> "Natural motion: drifting sky and mist, flowing water, foliage moving in the wind."
         MotionStyle.PULSE -> "Pulses of light travel through the bright details."
     }
 }

@@ -11,25 +11,29 @@ class FoldOpticsTest {
     private fun rad(deg: Double) = deg * PI / 180.0
 
     @Test
-    fun duoSigmaMatchesPublishedReconstruction() {
-        // Empirical Health: at a 30 degree fold, sigma 48 at the free edge and 6 halfway.
-        assertEquals(48.0, FoldOptics.duoSigma(rad(30.0), 1.0, sigmaMax = 96.0), 1e-9)
-        assertEquals(6.0, FoldOptics.duoSigma(rad(30.0), 0.5, sigmaMax = 96.0), 1e-9)
+    fun duoMotionIsZeroAtEachDisplaysRestingAngle() {
+        assertEquals(0.0, FoldOptics.duoMotion(0.0, inner = false), 1e-12)
+        assertEquals(0.0, FoldOptics.duoMotion(PI, inner = true), 1e-12)
+        assertEquals(1.0, FoldOptics.duoMotion(rad(90.0), inner = false), 1e-12)
+        assertEquals(1.0, FoldOptics.duoMotion(rad(90.0), inner = true), 1e-12)
+        assertTrue(FoldOptics.duoMotion(rad(30.0), inner = false) < FoldOptics.duoMotion(rad(50.0), inner = false))
+        assertTrue(FoldOptics.duoMotion(rad(150.0), inner = true) < FoldOptics.duoMotion(rad(120.0), inner = true))
     }
 
     @Test
-    fun duoSigmaIsSharpAtHingeAndAtBothEndpoints() {
-        assertEquals(0.0, FoldOptics.duoSigma(rad(60.0), 0.0), 1e-12)
+    fun duoBlurIsSharpAtHingeAndGrowsTowardFreeEdge() {
+        assertEquals(0.0, FoldOptics.duoSigma(1.0, 0.0), 1e-12)
+        assertEquals(FoldOptics.DUO_SIGMA, FoldOptics.duoSigma(1.0, 1.0), 1e-12)
+        assertTrue(FoldOptics.duoSigma(1.0, 0.5) < 0.4 * FoldOptics.DUO_SIGMA)
         assertEquals(0.0, FoldOptics.duoSigma(0.0, 1.0), 1e-12)
-        assertEquals(0.0, FoldOptics.duoSigma(PI, 1.0), 1e-9)
     }
 
     @Test
-    fun duoSigmaPeaksAtNinetyDegrees() {
-        val peak = FoldOptics.duoSigma(rad(90.0), 1.0)
-        assertEquals(FoldOptics.SIGMA_MAX, peak, 1e-12)
-        assertTrue(FoldOptics.duoSigma(rad(85.0), 1.0) > 0.99 * peak)
-        assertTrue(FoldOptics.duoSigma(rad(45.0), 1.0) < peak)
+    fun duoFreeEdgeFallsIntoBlackAtFullMotion() {
+        assertEquals(0.0, FoldOptics.duoBrightness(1.0, 1.0), 1e-12)
+        assertEquals(1.0, FoldOptics.duoBrightness(1.0, 0.15), 1e-12)
+        assertEquals(1.0, FoldOptics.duoBrightness(0.0, 1.0), 1e-12)
+        assertTrue(FoldOptics.duoBrightness(0.5, 0.7) in 0.2..0.8)
     }
 
     @Test
@@ -59,14 +63,6 @@ class FoldOpticsTest {
         val p = FoldOptics.projectMovingPanel(1.0, 0.2, rad(45.0), h)
         assertTrue(p.second < 0.2)
         assertTrue(p.first < 1.0)
-    }
-
-    @Test
-    fun brightnessCurvesKeepEndpointsAtFullBrightness() {
-        assertEquals(1.0, FoldOptics.coverBrightness(0.0, 1.0), 1e-12)
-        assertEquals(1.0, FoldOptics.innerMovingBrightness(PI, 1.0), 1e-9)
-        assertEquals(1.0, FoldOptics.innerStationaryBrightness(PI), 1e-9)
-        assertTrue(FoldOptics.innerMovingBrightness(rad(90.0), 1.0) < FoldOptics.innerStationaryBrightness(rad(90.0)))
     }
 
     @Test

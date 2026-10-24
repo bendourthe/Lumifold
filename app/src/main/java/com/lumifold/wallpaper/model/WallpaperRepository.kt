@@ -45,15 +45,10 @@ object WallpaperRepository {
         category: WallpaperCategory,
         resId: Int,
         description: String,
-        motion: PhotoMotion = LIQUID,
+        motion: MotionStyle = MotionStyle.LIQUID,
         focusX: Float = 0.5f,
         focusY: Float = 0.5f
     ) = WallpaperItem(id, title, category, WallpaperSource.Photo(resId, motion, focusX, focusY), description)
-
-    private val LIQUID = PhotoMotion(MotionStyle.LIQUID)
-
-    private fun nature(mapResId: Int, windX: Float = 0.004f, waterX: Float = 0f, waterY: Float = 0.012f) =
-        PhotoMotion(MotionStyle.NATURE, mapResId, windX, waterX, waterY)
 
     val wallpapers: List<WallpaperItem> = listOf(
         // Abstract
@@ -127,45 +122,47 @@ object WallpaperRepository {
         ),
 
         // Landscapes
+        photo(
+            "misty_pines", "Misty Pines", WallpaperCategory.LANDSCAPES, R.drawable.wp_misty_pines,
+            "Pine forest fading into morning fog.", MotionStyle.NONE, focusY = 0.6f
+        ),
+        photo(
+            "fog_castle", "Fog Castle", WallpaperCategory.LANDSCAPES, R.drawable.wp_fog_castle,
+            "A stone castle and bridge in mist.", MotionStyle.NONE, focusY = 0.35f
+        ),
+        photo(
+            "valley_river", "Valley River", WallpaperCategory.LANDSCAPES, R.drawable.wp_valley_river,
+            "Granite valley and river at dawn.", MotionStyle.NONE
+        ),
+        photo(
+            "golden_shore", "Golden Shore", WallpaperCategory.LANDSCAPES, R.drawable.wp_golden_shore,
+            "Low sun over waves on a sandy beach.", MotionStyle.NONE
+        ),
+        photo(
+            "desert_road", "Desert Road", WallpaperCategory.LANDSCAPES, R.drawable.wp_desert_road,
+            "A yellow van on a road through red rock country.", MotionStyle.NONE, focusX = 0.3f
+        ),
+
+        // Illustrated
         gen(
-            "aurora_veil", "Aurora Veil", WallpaperCategory.LANDSCAPES, Scene.AURORA,
+            "aurora_veil", "Aurora Veil", WallpaperCategory.ILLUSTRATED, Scene.AURORA,
             Palette(0x030712, 0x0F2A3A, 0x34D399, 0xA855F7, 0x05080C),
             "Green and violet curtains over a mountain ridge."
         ),
         gen(
-            "sahara", "Sahara", WallpaperCategory.LANDSCAPES, Scene.DUNES,
+            "sahara", "Sahara", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
             Palette(0x2E3A6E, 0xF7A35C, 0xFFE8B0, 0xE59A5B, 0x7A3B2E),
             "Layered dunes under a low evening sun."
         ),
         gen(
-            "moonlit_dunes", "Moonlit Dunes", WallpaperCategory.LANDSCAPES, Scene.DUNES,
+            "moonlit_dunes", "Moonlit Dunes", WallpaperCategory.ILLUSTRATED, Scene.DUNES,
             Palette(0x050816, 0x1E2A4A, 0xE8EEF8, 0x5B6B8C, 0x141B2E),
             "Cold dunes under a full moon."
         ),
-        photo(
-            "misty_pines", "Misty Pines", WallpaperCategory.LANDSCAPES, R.drawable.wp_misty_pines,
-            "Fog drifting over a swaying pine forest.",
-            nature(R.drawable.motion_misty_pines, windX = 0.006f), focusY = 0.6f
-        ),
-        photo(
-            "fog_castle", "Fog Castle", WallpaperCategory.LANDSCAPES, R.drawable.wp_fog_castle,
-            "Mist rolling past a stone castle above a rippling pool.",
-            nature(R.drawable.motion_fog_castle, windX = 0.005f, waterX = 0.004f, waterY = 0f), focusY = 0.35f
-        ),
-        photo(
-            "valley_river", "Valley River", WallpaperCategory.LANDSCAPES, R.drawable.wp_valley_river,
-            "A river running through a granite valley at dawn.",
-            nature(R.drawable.motion_valley_river, windX = 0.003f, waterY = 0.014f)
-        ),
-        photo(
-            "golden_shore", "Golden Shore", WallpaperCategory.LANDSCAPES, R.drawable.wp_golden_shore,
-            "Waves rolling onto a beach under drifting clouds.",
-            nature(R.drawable.motion_golden_shore, windX = 0.004f, waterY = 0.02f)
-        ),
-        photo(
-            "desert_road", "Desert Road", WallpaperCategory.LANDSCAPES, R.drawable.wp_desert_road,
-            "Clouds crossing red rock country, grass bending in the wind.",
-            nature(R.drawable.motion_desert_road, windX = 0.005f), focusX = 0.3f
+        gen(
+            "still_sea", "Still Sea", WallpaperCategory.ILLUSTRATED, Scene.HORIZON,
+            Palette(0x1C2541, 0xF4A261, 0xFFF1D6, 0x14213D, 0xFFD6A5),
+            "A low sun over a calm sea."
         ),
 
         // Space
@@ -186,8 +183,7 @@ object WallpaperRepository {
         ),
         photo(
             "milky_way", "Milky Way", WallpaperCategory.SPACE, R.drawable.wp_milky_way,
-            "The Milky Way turning slowly over snowy peaks.",
-            nature(R.drawable.motion_milky_way, windX = 0.0015f)
+            "The Milky Way over snowy peaks.", MotionStyle.NONE
         ),
 
         // Textures
@@ -203,14 +199,14 @@ object WallpaperRepository {
         photo(
             "circuit_glow", "Circuit Glow", WallpaperCategory.TEXTURES, R.drawable.wp_circuit_glow,
             "Pulses of light running through circuit traces.",
-            PhotoMotion(MotionStyle.PULSE)
+            MotionStyle.PULSE
         ),
 
         // Minimal
         gen(
-            "still_sea", "Still Sea", WallpaperCategory.MINIMAL, Scene.HORIZON,
-            Palette(0x1C2541, 0xF4A261, 0xFFF1D6, 0x14213D, 0xFFD6A5),
-            "A low sun over a calm sea."
+            "pale_fog", "Pale Fog", WallpaperCategory.MINIMAL, Scene.MESH,
+            Palette(0xE4E7EB, 0xF5F6F8, 0xCDD3DA, 0xDCE3EA, 0xBFC7D0),
+            "Soft drifting greys, light and quiet."
         ),
         gen(
             "graphite", "Graphite", WallpaperCategory.MINIMAL, Scene.MESH,
