@@ -78,4 +78,8 @@
 - [x] T045 [US5] Add fold effect and live motion quick toggles in the app and as Quick Settings tiles app/src/main/java/com/lumifold/wallpaper/service/QuickTiles.kt
 - [x] T046 [US5] Pause live motion in Battery Saver or below a chosen battery level app/src/main/java/com/lumifold/wallpaper/service/MotionPolicy.kt
 - [x] T047 [US5] Hold the effect for 4 seconds at a still posture and ease it back gently app/src/main/java/com/lumifold/wallpaper/service/FoldWallpaperService.kt
-- [ ] T048 [US5] Add natural motion to landscape photos (wind, water, clouds) without the blocked video and depth tooling app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [ ] T048 [US5] Replace still landscape, city and real-scene wallpapers with real video loops downloaded on demand (procedural motion on stills was rejected as fake-looking) app/src/main/java/com/lumifold/wallpaper/service/FoldWallpaperService.kt
+- [x] T049 [US5] Add the Shattered Glass opening effect app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T050 [US5] Show six opening effects with a Show all button app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
+- [x] T051 [US5] Add rotating planets from NASA maps, live Sun scenes and drifting nebulae app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [ ] T052 [US5] Source public-domain or CC0 video loops for Landscapes, a new City category and other real scenes docs/reference/photo-credits.md
