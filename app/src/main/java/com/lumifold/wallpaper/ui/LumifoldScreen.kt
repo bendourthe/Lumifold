@@ -828,6 +828,18 @@ private fun WallpaperTile(item: WallpaperItem, selected: Boolean, onClick: () ->
             Text(item.title, style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(item.category.label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
         }
+        if (item.isStill) {
+            Text(
+                "Still",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White,
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp)
+                    .background(Color(0x99000000), RoundedCornerShape(8.dp))
+                    .padding(horizontal = 8.dp, vertical = 3.dp)
+            )
+        }
         if (selected) {
             Box(Modifier.fillMaxSize().border(2.5.dp, MaterialTheme.colorScheme.primary, shape))
             CheckBadge(Modifier.align(Alignment.TopEnd).padding(10.dp))

@@ -62,8 +62,20 @@ object WallpaperRepository {
         url: String,
         posterResId: Int,
         sizeMb: Float,
-        description: String
-    ) = WallpaperItem(id, title, category, WallpaperSource.Video(url, posterResId, sizeMb), description)
+        description: String,
+        framing: VideoFraming? = null
+    ) = WallpaperItem(id, title, category, WallpaperSource.Video(url, posterResId, sizeMb, framing = framing), description)
+
+    // Full-disk SDO frames: the disk spans about 84% of the frame. Open, the Sun is centered;
+    // folded, its left limb sits on the right of the cover with eruptions and space to the left.
+    private val SUN_FRAMING = VideoFraming(innerHeight = 1.55f, coverHeight = 2.4f, coverCenterX = 1.45f)
+
+    private fun nebula(id: String, title: String, gasResId: Int, starsResId: Int, thumbResId: Int, description: String) =
+        WallpaperItem(
+            id, title, WallpaperCategory.SPACE,
+            WallpaperSource.Photo(gasResId, MotionStyle.NEBULA, thumbResId = thumbResId, starsResId = starsResId),
+            description
+        )
 
     private fun globe(id: String, title: String, mapResId: Int, thumbResId: Int, globe: Globe, description: String) =
         WallpaperItem(
@@ -544,20 +556,46 @@ object WallpaperRepository {
         ),
 
         // Space: NASA, ESA and CC0 images, credited in docs/reference/photo-credits.md
-        gen(
-            "the_sun", "The Sun", WallpaperCategory.SPACE, Scene.SUN,
-            Palette(0x020104, 0x8A1C02, 0xF26B0F, 0xFFE9A8, 0xFF5A1F),
-            "Our star up close: churning granules, sunspots and prominences erupting from the limb."
+        video(
+            "sun_flare_304", "Solar Flare", WallpaperCategory.SPACE,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/d/dd/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_sun_flare_304, 19.7f,
+            "The Sun in extreme ultraviolet as a strong flare erupts. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
-        gen(
-            "red_dwarf", "Red Dwarf", WallpaperCategory.SPACE, Scene.SUN,
-            Palette(0x030101, 0x5A0A02, 0xC2300A, 0xFF9A5A, 0xFF3B2F),
-            "A small, cool red star flaring in the dark."
+        video(
+            "sun_corona_171", "Golden Corona", WallpaperCategory.SPACE,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c1/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm/An_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_sun_corona_171, 18.0f,
+            "Magnetic loops shimmering in the Sun's corona. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
-        gen(
-            "blue_giant", "Blue Giant", WallpaperCategory.SPACE, Scene.SUN,
-            Palette(0x010208, 0x1B2F8A, 0x5A8CFF, 0xE8F1FF, 0x9AC2FF),
-            "A blazing blue-white giant with bright plasma loops."
+        video(
+            "sun_teal_131", "Flaring Sun", WallpaperCategory.SPACE,
+            "https://upload.wikimedia.org/wikipedia/commons/transcoded/0/0a/Solar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm/Solar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm.1080p.vp9.webm",
+            R.drawable.wpv_sun_teal_131, 18.9f,
+            "The hottest flaring plasma glowing teal. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
+        ),
+        video(
+            "prominence_eruption", "Prominence Eruption", WallpaperCategory.SPACE,
+            "https://upload.wikimedia.org/wikipedia/commons/7/7b/SDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            R.drawable.wpv_prominence_eruption, 2.2f,
+            "A prominence lifting off the Sun's edge. NASA Solar Dynamics Observatory."
+        ),
+        video(
+            "solar_eruption", "Solar Eruption", WallpaperCategory.SPACE,
+            "https://upload.wikimedia.org/wikipedia/commons/d/d3/SDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
+            R.drawable.wpv_solar_eruption, 2.3f,
+            "Plasma arcing off the limb of the Sun. NASA Solar Dynamics Observatory."
+        ),
+        globe(
+            "saturn_globe", "Saturn", R.drawable.wpg_saturn, R.drawable.wpt_saturn,
+            Globe(spinSeconds = 120f, tiltDeg = -8f, inclinationDeg = 22f, atmosphere = 0x2A251C, rings = true,
+                innerRadius = 0.4f, coverRadius = 0.85f, coverEdgeX = 0.45f),
+            "Saturn turning inside its rings, colored from Cassini's natural-color view."
+        ),
+        globe(
+            "earth_night_globe", "Earth at Night", R.drawable.wpg_earth, R.drawable.wpt_earth_night,
+            Globe(spinSeconds = 160f, tiltDeg = 23f, atmosphere = 0x5A9BFF, night = true, lightX = 0.35f, lightY = 0.1f, lightZ = -0.93f),
+            "The night side of Earth turning slowly, its cities glowing. NASA city lights map."
         ),
         globe(
             "earth_globe", "Earth", R.drawable.wpg_earth, R.drawable.wpt_earth,
@@ -584,41 +622,41 @@ object WallpaperRepository {
             Globe(spinSeconds = 260f, tiltDeg = 2f),
             "Cratered Mercury turning close to the Sun. NASA MESSENGER mosaic."
         ),
-        photo(
-            "pillars_webb", "Pillars of Creation", WallpaperCategory.SPACE, R.drawable.wp_pillars_webb,
-            "The Pillars of Creation in near-infrared, James Webb Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "pillars_webb", "Pillars of Creation", R.drawable.wp_pillars_webb, R.drawable.wpn_pillars_webb, R.drawable.wpt_pillars_webb,
+            "The Pillars of Creation in near-infrared, James Webb Space Telescope."
         ),
-        photo(
-            "pillars_hubble", "Pillars, Hubble", WallpaperCategory.SPACE, R.drawable.wp_pillars_hubble,
-            "The Eagle Nebula pillars in visible light, Hubble Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "pillars_hubble", "Pillars, Hubble", R.drawable.wp_pillars_hubble, R.drawable.wpn_pillars_hubble, R.drawable.wpt_pillars_hubble,
+            "The Eagle Nebula pillars in visible light, Hubble Space Telescope."
         ),
-        photo(
-            "cosmic_cliffs", "Cosmic Cliffs", WallpaperCategory.SPACE, R.drawable.wp_cosmic_cliffs,
-            "The star-forming edge of the Carina Nebula, James Webb Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "cosmic_cliffs", "Cosmic Cliffs", R.drawable.wp_cosmic_cliffs, R.drawable.wpn_cosmic_cliffs, R.drawable.wpt_cosmic_cliffs,
+            "The star-forming edge of the Carina Nebula, James Webb Space Telescope."
         ),
-        photo(
-            "tarantula", "Tarantula Nebula", WallpaperCategory.SPACE, R.drawable.wp_tarantula,
-            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "tarantula", "Tarantula Nebula", R.drawable.wp_tarantula, R.drawable.wpn_tarantula, R.drawable.wpt_tarantula,
+            "Glowing gas and young stars in 30 Doradus, Hubble Space Telescope."
         ),
-        photo(
-            "orion_nebula", "Orion Nebula", WallpaperCategory.SPACE, R.drawable.wp_orion_nebula,
-            "The heart of the Orion Nebula, Hubble Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "orion_nebula", "Orion Nebula", R.drawable.wp_orion_nebula, R.drawable.wpn_orion_nebula, R.drawable.wpt_orion_nebula,
+            "The heart of the Orion Nebula, Hubble Space Telescope."
         ),
-        photo(
-            "helix", "Helix Nebula", WallpaperCategory.SPACE, R.drawable.wp_helix,
-            "The Helix Nebula in infrared, Spitzer Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "helix", "Helix Nebula", R.drawable.wp_helix, R.drawable.wpn_helix, R.drawable.wpt_helix,
+            "The Helix Nebula in infrared, Spitzer Space Telescope."
         ),
-        photo(
-            "ring_nebula", "Ring Nebula", WallpaperCategory.SPACE, R.drawable.wp_ring_nebula,
-            "The Ring Nebula, Messier 57, Hubble Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "ring_nebula", "Ring Nebula", R.drawable.wp_ring_nebula, R.drawable.wpn_ring_nebula, R.drawable.wpt_ring_nebula,
+            "The Ring Nebula, Messier 57, Hubble Space Telescope."
         ),
-        photo(
-            "crab_nebula", "Crab Nebula", WallpaperCategory.SPACE, R.drawable.wp_crab_nebula,
-            "The remains of a supernova seen in 1054, Hubble Space Telescope.", MotionStyle.NEBULA
+        nebula(
+            "crab_nebula", "Crab Nebula", R.drawable.wp_crab_nebula, R.drawable.wpn_crab_nebula, R.drawable.wpt_crab_nebula,
+            "The remains of a supernova seen in 1054, Hubble Space Telescope."
         ),
-        photo(
-            "cygnus_loop", "Cygnus Loop", WallpaperCategory.SPACE, R.drawable.wp_cygnus_loop,
-            "Blue filaments of a supernova remnant in ultraviolet light.", MotionStyle.NEBULA
+        nebula(
+            "cygnus_loop", "Cygnus Loop", R.drawable.wp_cygnus_loop, R.drawable.wpn_cygnus_loop, R.drawable.wpt_cygnus_loop,
+            "Blue filaments of a supernova remnant in ultraviolet light."
         ),
         photo(
             "whirlpool", "Whirlpool Galaxy", WallpaperCategory.SPACE, R.drawable.wp_whirlpool,

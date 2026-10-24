@@ -24,8 +24,7 @@ enum class Scene {
     CONTOURS,
     NEBULA,
     HORIZON,
-    IRIS,
-    SUN
+    IRIS
 }
 
 /** Five sRGB colors (0xRRGGBB) whose meaning is defined by each [Scene]. */
@@ -55,18 +54,24 @@ enum class MotionStyle(val shaderIndex: Int) {
 }
 
 /**
- * A planet or moon for [MotionStyle.GLOBE]. Position and radius are in panel widths from the hinge
- * ([centerY] is a fraction of the plane height). With [night], the texture holds the day map on top
- * and the night lights map below.
+ * A planet or moon for [MotionStyle.GLOBE], in panel widths. Open, it is centered on the inner
+ * display with [innerRadius]; folded, the cover shows its left limb, which starts at [coverEdgeX].
+ * The spin axis rolls by [tiltDeg] in the screen and leans [inclinationDeg] toward the viewer.
+ * With [night], the texture holds the day map on top and the night lights map below.
  */
 data class Globe(
-    val centerX: Float = 0.5f,
-    val centerY: Float = 0.5f,
-    val radius: Float = 0.46f,
     val spinSeconds: Float = 180f,
     val tiltDeg: Float = 10f,
+    val inclinationDeg: Float = 12f,
     val atmosphere: Int = 0x000000,
-    val night: Boolean = false
+    val night: Boolean = false,
+    val rings: Boolean = false,
+    val lightX: Float = -0.75f,
+    val lightY: Float = 0.3f,
+    val lightZ: Float = 0.6f,
+    val innerRadius: Float = 0.62f,
+    val coverRadius: Float = 1.0f,
+    val coverEdgeX: Float = 0.4f
 )
 
 sealed interface WallpaperSource {
@@ -77,7 +82,9 @@ sealed interface WallpaperSource {
         val focusY: Float = 0.5f,
         val globe: Globe? = null,
         /** Grid thumbnail, when the photo itself is not what the wallpaper looks like. */
-        @DrawableRes val thumbResId: Int = 0
+        @DrawableRes val thumbResId: Int = 0,
+        /** For [MotionStyle.NEBULA]: the star layer split from the photo; [resId] is the starless gas. */
+        @DrawableRes val starsResId: Int = 0
     ) : WallpaperSource
 
     data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource
@@ -87,9 +94,17 @@ sealed interface WallpaperSource {
         val url: String,
         @DrawableRes val posterResId: Int,
         val sizeMb: Float,
-        val focusX: Float = 0.5f
+        val focusX: Float = 0.5f,
+        val framing: VideoFraming? = null
     ) : WallpaperSource
 }
+
+/**
+ * Places a clip per display instead of filling the shared image plane: open, the frame is centered
+ * on the inner display, [innerHeight] panel widths tall; folded, it is [coverHeight] tall, centered
+ * at [coverCenterX] panel widths from the hinge. Outside the frame is black space.
+ */
+data class VideoFraming(val innerHeight: Float, val coverHeight: Float, val coverCenterX: Float)
 
 data class WallpaperItem(
     val id: String,
@@ -99,4 +114,7 @@ data class WallpaperItem(
     val description: String
 ) {
     val isLive: Boolean get() = source is WallpaperSource.Generative || source is WallpaperSource.Video
+
+    /** A still photograph: no live motion, only the opening effect. */
+    val isStill: Boolean get() = (source as? WallpaperSource.Photo)?.motion == MotionStyle.NONE
 }

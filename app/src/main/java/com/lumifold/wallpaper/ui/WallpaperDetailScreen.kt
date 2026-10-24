@@ -136,10 +136,16 @@ fun WallpaperDetailScreen(
 
             Spacer(Modifier.height(14.dp))
             SegmentedToggle(listOf("Live view", "Opening"), view) { view = it }
-            Spacer(Modifier.height(10.dp))
-            SegmentedToggle(listOf("Dynamic", "Static"), if (dynamic) 0 else 1) { dynamic = it == 0 }
+            if (!item.isStill) {
+                Spacer(Modifier.height(10.dp))
+                SegmentedToggle(listOf("Dynamic", "Static"), if (dynamic) 0 else 1) { dynamic = it == 0 }
+            }
             Text(
-                if (dynamic) motionCaption(item) else "Still image. The fold effect still follows the hinge.",
+                when {
+                    item.isStill -> "Still image: this wallpaper has no live motion. The opening effect still follows the hinge."
+                    dynamic -> motionCaption(item)
+                    else -> "Still image. The fold effect still follows the hinge."
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp, start = 4.dp, end = 4.dp)

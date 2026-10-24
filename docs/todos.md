@@ -82,4 +82,11 @@
 - [x] T049 [US5] Add the Shattered Glass opening effect app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
 - [x] T050 [US5] Show six opening effects with a Show all button app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
 - [x] T051 [US5] Add rotating planets from NASA maps, live Sun scenes and drifting nebulae app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
-- [ ] T052 [US5] Source public-domain or CC0 video loops for Landscapes, a new City category and other real scenes docs/reference/photo-credits.md
+- [x] T052 [US5] Source public-domain or CC0 video loops: 15 Landscapes, 8 City, 9 Scenes docs/reference/photo-credits.md
+- [ ] T053 [US5] Grow City past 8 clips (no public-domain neon, rain-street or light-trail footage on Commons yet) docs/reference/photo-credits.md
+- [x] T054 [US5] Rebuild Shattered Glass with hairline cracks, polygonal ring breaks and per-shard refraction app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T055 [US5] Label still wallpapers in the grid and detail page app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
+- [x] T056 [US5] Replace the generated suns with real NASA SDO footage, framed per display app/src/main/java/com/lumifold/wallpaper/model/WallpaperRepository.kt
+- [x] T057 [US5] Frame planets per display (centered open, left limb on the cover) and add Saturn with rings and Earth at Night app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T058 [US5] Split nebula photos into gas and star layers for parallax and twinkle instead of warping tools/nebula_layers.py
+- [ ] T059 [US5] Check the Sun and planet cover framing on the phone's real cover display (verified in the in-app cover preview only)

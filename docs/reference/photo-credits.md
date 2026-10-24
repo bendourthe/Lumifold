@@ -104,6 +104,7 @@ Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 
 | `mars_globe` | [Mars Viking MDIM21 ClrMosaic 1km.jpg](https://commons.wikimedia.org/wiki/File%3AMars_Viking_MDIM21_ClrMosaic_1km.jpg) | NASA / Jet Propulsion Lab / USGS | Public domain |
 | `jupiter_globe` | [Jupiter Cylindrical Map - Dec 2000 PIA07782.jpg](https://commons.wikimedia.org/wiki/File%3AJupiter_Cylindrical_Map_-_Dec_2000_PIA07782.jpg) | NASA/JPL/Space Science Institute | Public domain |
 | `mercury_globe` | [Mercury MESSENGER MDIS Basemap BDR Mosaic Global 32ppd.jpg](https://commons.wikimedia.org/wiki/File%3AMercury_MESSENGER_MDIS_Basemap_BDR_Mosaic_Global_32ppd.jpg) | Planetary Data System, Applied Coherent Technology Corporation | Public domain |
+| `saturn_globe` | Built by `tools/globe_assets.py` from the band colors of [Saturn from Cassini Orbiter (2004-10-06).jpg](https://commons.wikimedia.org/wiki/File:Saturn_from_Cassini_Orbiter_(2004-10-06).jpg); rings drawn in the shader from published ring radii | NASA/JPL/Space Science Institute | Public domain |
 
 ## Video Loops
 
@@ -143,3 +144,8 @@ Clips are downloaded from Wikimedia Commons when a video wallpaper is first appl
 | `candle` | Scenes | [Corona.Candle.webm](https://commons.wikimedia.org/wiki/File:Corona.Candle.webm) | Bautsch | CC0 |
 | `embers` | Scenes | [Fire آتش 04.ogv](https://commons.wikimedia.org/wiki/File:Fire_%D8%A2%D8%AA%D8%B4_04.ogv) | Mostafameraji | CC0 |
 | `campfire` | Scenes | [Fire آتش 10.ogv](https://commons.wikimedia.org/wiki/File:Fire_%D8%A2%D8%AA%D8%B4_10.ogv) | Mostafameraji | CC0 |
+| `sun_flare_304` | Space | [An X1 0 Class Solar Flare - January 10, 2023 (SVS5066 - 20230110 AR13186X10 AIA304 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3AAn_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA304_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
+| `sun_corona_171` | Space | [An X1 0 Class Solar Flare - January 10, 2023 (SVS5066 - 20230110 AR13186X10 AIA171 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3AAn_X1_0_Class_Solar_Flare_-_January_10%2C_2023_%28SVS5066_-_20230110_AR13186X10_AIA171_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
+| `sun_teal_131` | Space | [Solar X-Flare - April 20, 2022 (X2 2 class) (SVS4999 - 20220420 AR12992X22 AIA131 PSF 2048p30).webm](https://commons.wikimedia.org/wiki/File%3ASolar_X-Flare_-_April_20%2C_2022_%28X2_2_class%29_%28SVS4999_-_20220420_AR12992X22_AIA131_PSF_2048p30%29.webm) | NASA/Goddard/SDO | Public domain |
+| `prominence_eruption` | Space | [SDO Video Toolkit (SVS14126 - 171-304-June 21 PE).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_171-304-June_21_PE%29.webm) | NASA/Goddard/SDO | Public domain |
+| `solar_eruption` | Space | [SDO Video Toolkit (SVS14126 - Oct2 Eruption 2).webm](https://commons.wikimedia.org/wiki/File%3ASDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm) | NASA/Goddard/SDO | Public domain |

@@ -53,7 +53,12 @@ class WallpaperShader private constructor(
             filterMode = BitmapShader.FILTER_MODE_LINEAR
         })
         shader.setFloatUniform("uVidSize", frame.width.toFloat(), frame.height.toFloat())
-        shader.setFloatUniform("uFocusX", (item.source as WallpaperSource.Video).focusX)
+        val video = item.source as WallpaperSource.Video
+        shader.setFloatUniform("uFocusX", video.focusX)
+        val f = video.framing
+        shader.setFloatUniform(
+            "uFrame", f?.innerHeight ?: 0f, f?.coverHeight ?: 0f, f?.coverCenterX ?: 0f, if (f != null) 1f else 0f
+        )
     }
 
     fun attachPyramid(p: BlurPyramid) {
@@ -72,9 +77,15 @@ class WallpaperShader private constructor(
             shader.setInputShader("L$k", bs)
         }
         shader.setFloatUniform("uTexSize", base.width.toFloat(), base.height.toFloat())
+        shader.setInputShader("uStars", BitmapShader(p.aux ?: NO_STARS, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
+            filterMode = BitmapShader.FILTER_MODE_LINEAR
+            if (p.aux == null) setLocalMatrix(Matrix().apply { setScale(base.width.toFloat(), base.height.toFloat()) })
+        })
         shader.setFloatUniform("uStyle", photo.motion.shaderIndex.toFloat())
         val g = photo.globe ?: Globe()
-        shader.setFloatUniform("uGlobe", g.centerX, g.centerY, g.radius, (2.0 * PI / g.spinSeconds).toFloat())
+        shader.setFloatUniform(
+            "uGlobe", g.coverEdgeX + g.coverRadius, g.coverRadius, g.innerRadius, (2.0 * PI / g.spinSeconds).toFloat()
+        )
         shader.setFloatUniform(
             "uGlobe2",
             (g.tiltDeg * PI / 180.0).toFloat(),
@@ -82,7 +93,10 @@ class WallpaperShader private constructor(
             ((g.atmosphere shr 8) and 0xFF) / 255f,
             (g.atmosphere and 0xFF) / 255f
         )
-        shader.setFloatUniform("uNight", if (g.night) 1f else 0f)
+        shader.setFloatUniform(
+            "uGlobe3", (g.inclinationDeg * PI / 180.0).toFloat(), if (g.rings) 1f else 0f, if (g.night) 1f else 0f, 0f
+        )
+        shader.setFloatUniform("uLight", g.lightX, g.lightY, g.lightZ)
     }
 
     /** A second instance with its own uniforms, sharing the compiled effect and pyramid. */
@@ -137,10 +151,14 @@ class WallpaperShader private constructor(
         /** Effect index the shader treats as "fold effect off". */
         private const val NO_FOLD_INDEX = 99f
 
+        private val NO_STARS: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF000000.toInt()) }
+
         /** Decodes a photo into a pyramid of [width] x [height]. Call off the main thread. */
         fun buildPyramid(resources: Resources, photo: WallpaperSource.Photo, width: Int, height: Int): BlurPyramid {
             if (photo.globe == null) {
-                return BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY)
+                return BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY).also {
+                    if (photo.starsResId != 0) it.attachAux(resources, photo.starsResId, photo.focusX, photo.focusY)
+                }
             }
             // Globe maps keep their own size and aspect: the shader samples them by longitude and latitude.
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

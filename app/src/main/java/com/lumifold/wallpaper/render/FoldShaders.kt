@@ -24,10 +24,21 @@ object FoldShaders {
 uniform shader uVideo;
 uniform float2 uVidSize;
 uniform float uFocusX;
+uniform float4 uFrame;
 
 half4 vtap(float2 st) {
     float planeAsp = 2.0 / uPlaneH;
     float vidAsp = uVidSize.x / uVidSize.y;
+    if (uFrame.w > 0.5) {
+        bool iv = uInner > 0.5;
+        float hgt = iv ? uFrame.x : uFrame.y;
+        float2 ctr = float2(iv ? 0.0 : uFrame.z, uPlaneH * 0.5);
+        float2 fuv = (float2(st.x * 2.0 - 1.0, st.y * uPlaneH) - ctr) / (hgt * float2(vidAsp, 1.0)) + 0.5;
+        if (fuv.x < 0.0 || fuv.y < 0.0 || fuv.x > 1.0 || fuv.y > 1.0) { return half4(0.0, 0.0, 0.0, 1.0); }
+        float2 edge = smoothstep(0.0, 0.08, min(fuv, 1.0 - fuv));
+        half3 fc = max(uVideo.eval(fuv * uVidSize).rgb - 0.025, 0.0) / 0.975;
+        return half4(fc * half(edge.x * edge.y), 1.0);
+    }
     float2 uv = st;
     if (vidAsp > planeAsp) {
         float k = planeAsp / vidAsp;
@@ -89,12 +100,14 @@ uniform shader L5;
 uniform shader L6;
 uniform shader L7;
 uniform shader L8;
+uniform shader uStars;
 uniform float2 uTexSize;
 uniform float uMotion;
 uniform float uStyle;
 uniform float4 uGlobe;
 uniform float4 uGlobe2;
-uniform float uNight;
+uniform float4 uGlobe3;
+uniform float3 uLight;
 
 half4 levels(float2 st, float sigma) {
     float2 p = st * uTexSize;
@@ -143,62 +156,107 @@ half4 cosmos(float2 st, float sigma, float t) {
     return c;
 }
 
-// Globe: the texture is an equirectangular map (day above night when uNight is set) wrapped on a
-// sphere lit from the upper right, spinning at uGlobe.w rad/s, with an atmosphere rim and halo.
+// Globe: the texture is an equirectangular map (day above night with uGlobe3.z) wrapped on a sphere
+// lit along uLight. Open, the sphere is centered on the inner display; folded, the cover shows its
+// left limb. The spin axis rolls by uGlobe2.x and leans uGlobe3.x toward the viewer; uGlobe3.y
+// adds Saturn-like rings (radii in planet radii) with shadows both ways.
+float4 ringAt(float rr) {
+    if (rr < 1.24 || rr > 2.27) { return float4(0.0); }
+    float fine = 0.82 + 0.36 * vnoise(float2(rr * 420.0, 0.5));
+    float a = 0.0;
+    float3 c = float3(0.8, 0.74, 0.62);
+    if (rr < 1.53) { a = 0.22; c = float3(0.55, 0.5, 0.45); }
+    else if (rr < 1.95) { a = 0.92; c = float3(0.86, 0.79, 0.64); }
+    else if (rr < 2.03) { a = 0.06; }
+    else if (abs(rr - 2.214) > 0.006) { a = 0.62; c = float3(0.76, 0.71, 0.6); }
+    return float4(c, clamp(a * fine, 0.0, 1.0));
+}
+
 half4 globe(float2 st, float sigma, float t) {
     float b = sigma / uPlaneH;
+    bool innerView = uInner > 0.5;
+    float R = innerView ? uGlobe.z : uGlobe.y;
+    float2 c = float2(innerView ? 0.0 : uGlobe.x, uPlaneH * 0.5);
     float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
-    float2 d = (p - float2(uGlobe.x, uGlobe.y * uPlaneH)) / uGlobe.z;
+    float2 d = (p - c) / R;
     float rd = length(d);
     float3 atm = uGlobe2.yzw;
-    float3 light = normalize(float3(0.8, 0.25, 0.45));
+    float3 light = normalize(uLight);
     float3 col = float3(0.9, 0.95, 1.0) * stars(float2(st.x * 2.0 / uPlaneH, st.y), b, t, 0.93) * 0.8;
     float side = 0.5 + 0.5 * dot(normalize(d + 0.0001), normalize(float2(light.x, -light.y)));
     col += atm * exp(-max(rd - 1.0, 0.0) * 18.0) * 0.6 * (0.3 + 0.7 * side);
+
+    float roll = uGlobe2.x;
+    float incl = uGlobe3.x;
+    float3 axis = normalize(float3(-sin(roll) * cos(incl), cos(roll) * cos(incl), sin(incl)));
+    float3 e2 = normalize(float3(0.0, 0.0, 1.0) - axis * axis.z);
+    float3 e1 = cross(axis, e2);
+    float3 pos = float3(d.x, -d.y, 0.0);
+    float zs = sqrt(max(1.0 - rd * rd, 0.0));
+    float e = 0.004 / R + b * 4.0;
+    float cover = 1.0 - smoothstep(1.0 - e, 1.0 + e, rd);
+
     if (rd < 1.02) {
-        float3 n = float3(d.x, -d.y, sqrt(max(1.0 - rd * rd, 0.0)));
-        float ct = cos(uGlobe2.x);
-        float sn = sin(uGlobe2.x);
-        float3 m = float3(ct * n.x - sn * n.y, sn * n.x + ct * n.y, n.z);
-        float lon = atan(m.x, m.z) + t * uGlobe.w;
-        float lat = asin(clamp(m.y, -1.0, 1.0));
+        float3 n = float3(d.x, -d.y, zs);
+        float lon = atan(dot(n, e1), dot(n, e2)) + t * uGlobe.w;
+        float lat = asin(clamp(dot(n, axis), -1.0, 1.0));
         float2 uv = float2(fract(lon / (2.0 * PI) + 0.5), 0.5 - lat / PI);
         float sg = sigma + (1.0 - n.z) * 0.002;
-        float vScale = uNight > 0.5 ? 0.5 : 1.0;
-        float3 surf = float3(levels(float2(uv.x, uv.y * vScale), sg).rgb);
+        bool night = uGlobe3.z > 0.5;
+        float3 surf = float3(levels(float2(uv.x, uv.y * (night ? 0.5 : 1.0)), sg).rgb);
         float lam = dot(n, light);
         float lit = smoothstep(-0.08, 0.25, lam);
+        if (uGlobe3.y > 0.5) {
+            float s = -dot(n, axis) / dot(light, axis);
+            if (s > 0.0) {
+                float4 shadow = ringAt(length(n + light * s));
+                lit *= 1.0 - shadow.a * 0.85;
+            }
+        }
         surf *= (0.03 + 0.97 * lit) * (0.75 + 0.25 * n.z);
-        if (uNight > 0.5) {
+        if (night) {
             float3 city = float3(levels(float2(uv.x, 0.5 + uv.y * 0.5), sg).rgb);
-            surf += city * float3(1.0, 0.85, 0.6) * (1.0 - smoothstep(-0.12, 0.06, lam)) * 1.3;
+            surf += city * float3(1.0, 0.85, 0.6) * (1.0 - smoothstep(-0.12, 0.06, lam)) * 1.4;
         }
         surf += atm * pow(1.0 - n.z, 3.0) * (0.3 + 0.9 * lit);
-        float e = 0.004 / uGlobe.z + b * 4.0;
-        col = mix(col, surf, 1.0 - smoothstep(1.0 - e, 1.0 + e, rd));
+        col = mix(col, surf, cover);
+    }
+
+    if (uGlobe3.y > 0.5 && abs(axis.z) > 0.01) {
+        float z = -(pos.x * axis.x + pos.y * axis.y) / axis.z;
+        float3 rp = float3(pos.xy, z);
+        float4 ring = ringAt(length(rp));
+        if (ring.a > 0.0 && (rd >= 1.0 || z > zs)) {
+            float tc = dot(-rp, light);
+            float3 nearest = rp + light * tc;
+            float shade = (tc > 0.0 && dot(nearest, nearest) < 1.0) ? 0.06 : 0.35 + 0.65 * abs(dot(light, axis));
+            col = mix(col, ring.rgb * shade, ring.a * clamp(1.0 - b * 30.0, 0.0, 1.0));
+        }
     }
     return half4(half3(col), 1.0);
 }
 
-// Nebula: the soft, large-scale gas sways slowly while all fine detail (stars, thin filaments)
-// stays where it is, so at rest the photo is unchanged. Stars twinkle.
-half4 nebula(float2 st, float sigma, float t) {
-    float2 s2 = (st - 0.5) / 1.02 + 0.5;
-    float soft = max(sigma, 0.005);
-    float2 o = 0.006 * float2(vnoise(s2 * 2.2 + float2(t * 0.025, 0.0)) - 0.5,
-                              vnoise(s2 * 2.2 + float2(5.0, t * 0.02)) - 0.5);
-    half4 gas = levels(s2 + o, soft);
-    half4 still = levels(s2, sigma);
-    half4 around = levels(s2, soft);
-    float3 detail = float3(still.rgb - around.rgb);
-    float2 cell = floor(s2 * uTexSize / 5.0);
-    float h = hash12(cell);
-    float tw = 0.5 * sin(t * (1.0 + 3.0 * h) + h * 40.0);
-    return half4(half3(float3(gas.rgb) + detail + max(detail, float3(0.0)) * tw), 1.0);
+// Nebula, rebuilt as layers: the photo is split offline into starless gas (the pyramid) and stars
+// (uStars). The gas is the far layer and only drifts very slightly; the stars are nearer, so a slow
+// camera move separates the two in depth. Stars twinkle. At rest, gas plus stars is the photo.
+half4 nebula(float2 st, float sigma, float t, float amt) {
+    float2 cam = 0.006 * float2(sin(t * 0.021), sin(t * 0.016 + 1.3));
+    float z = 1.0 + 0.012 * (0.5 - 0.5 * cos(t * 0.03));
+    float2 base = (st - 0.5) / 1.02 + 0.5;
+    float2 gst = (base - 0.5) / z + 0.5 + cam * 0.45;
+    float2 o = 0.0025 * amt * float2(vnoise(gst * 2.0 + float2(t * 0.02, 0.0)) - 0.5,
+                                     vnoise(gst * 2.0 + float2(5.0, t * 0.017)) - 0.5);
+    half4 gas = levels(gst + o, sigma);
+    float2 sst = (base - 0.5) / (z * z) + 0.5 + cam;
+    float3 star = float3(uStars.eval(sst * uTexSize).rgb);
+    float h = hash12(floor(sst * uTexSize / 4.0));
+    float tw = 1.0 + 0.45 * amt * sin(t * (0.9 + 2.6 * h) + h * 40.0);
+    float fade = 1.0 - smoothstep(0.002, 0.02, sigma);
+    return half4(half3(float3(gas.rgb) + star * tw * fade), 1.0);
 }
 
 half4 content(float2 st, float sigma) {
-    if (uStyle > 4.5) { return uMotion > 0.5 ? nebula(st, sigma, uTime) : levels(st, sigma); }
+    if (uStyle > 4.5) { return nebula(st, sigma, uMotion > 0.5 ? uTime : 0.0, uMotion); }
     if (uStyle > 3.5) { return globe(st, sigma, uMotion > 0.5 ? uTime : 0.0); }
     if (uMotion < 0.5 || uStyle < 0.5) { return levels(st, sigma); }
     float t = uTime;
@@ -532,139 +590,7 @@ half4 scene(float2 st, float b, float t) {
 }
 """
 
-    // Palette: c0 space, c1 cool limb, c2 photosphere, c3 hot granule core, c4 prominence.
-    private const val SCENE_SUN = """
-float hash31(float3 p) {
-    p = fract(p * 0.1031);
-    p += dot(p, p.zyx + 31.32);
-    return fract((p.x + p.y) * p.z);
-}
-
-float vnoise3(float3 p) {
-    float3 i = floor(p);
-    float3 f = fract(p);
-    float3 u = f * f * (3.0 - 2.0 * f);
-    float a = mix(hash31(i), hash31(i + float3(1.0, 0.0, 0.0)), u.x);
-    float b2 = mix(hash31(i + float3(0.0, 1.0, 0.0)), hash31(i + float3(1.0, 1.0, 0.0)), u.x);
-    float c = mix(hash31(i + float3(0.0, 0.0, 1.0)), hash31(i + float3(1.0, 0.0, 1.0)), u.x);
-    float d = mix(hash31(i + float3(0.0, 1.0, 1.0)), hash31(i + float3(1.0, 1.0, 1.0)), u.x);
-    return mix(mix(a, b2, u.y), mix(c, d, u.y), u.z);
-}
-
-float fbm3(float3 p, float b) {
-    float sum = 0.0;
-    float amp = 0.5;
-    float f = 1.0;
-    for (int i = 0; i < 4; i++) {
-        float keep = clamp(1.0 - b * f * 12.0, 0.0, 1.0);
-        sum += amp * mix(0.5, vnoise3(p * f), keep);
-        f *= 2.0;
-        amp *= 0.5;
-    }
-    return sum / 0.9375;
-}
-
-// Distances to the nearest and second-nearest animated cell centers: bright granules, dark lanes.
-float2 worley3(float3 p, float t) {
-    float3 i = floor(p);
-    float3 f = fract(p);
-    float f1 = 9.0;
-    float f2 = 9.0;
-    for (int z = -1; z <= 1; z++) {
-        for (int y = -1; y <= 1; y++) {
-            for (int x = -1; x <= 1; x++) {
-                float3 g = float3(float(x), float(y), float(z));
-                float3 o = float3(hash31(i + g), hash31(i + g + 17.1), hash31(i + g + 31.7));
-                o = 0.5 + 0.42 * sin(t * 0.25 + 6.283 * o);
-                float3 rv = g + o - f;
-                float dd = dot(rv, rv);
-                if (dd < f1) { f2 = f1; f1 = dd; } else if (dd < f2) { f2 = dd; }
-            }
-        }
-    }
-    return sqrt(float2(f1, f2));
-}
-
-half4 scene(float2 st, float b, float t) {
-    float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
-    float R = 0.66;
-    float2 d = (p - float2(0.45, uPlaneH * 0.52)) / R;
-    float r = length(d);
-    float e = 0.004 / R + b * 3.0;
-    float3 col = uC0 + float3(0.9, 0.95, 1.0) * stars(float2(st.x * 2.0 / uPlaneH, st.y), b, t, 0.95) * 0.5;
-    float h = max(r - 1.0, 0.0);
-    col += uC2 * 0.45 * exp(-h * 7.0) + uC1 * 0.3 * exp(-h * 1.8);
-
-    if (r > 0.97 && r < 1.7) {
-        float2 dir = d / r;
-        float ang = atan(dir.y, dir.x);
-        // A fringe of small flames (spicules) all around the limb.
-        float spic = smoothstep(0.55, 0.85, vnoise3(float3(dir * 45.0, h * 5.0 - t * 0.35))) * exp(-h * 45.0);
-        // Plasma arches anchored on the limb, drifting slowly with the rotation.
-        float arcs = 0.0;
-        for (int i = 0; i < 4; i++) {
-            float fi = float(i);
-            float a0 = hash11(fi * 4.3 + 0.7) * 6.283 + t * 0.004;
-            float da = atan(sin(ang - a0), cos(ang - a0));
-            float span = 0.1 + 0.12 * hash11(fi * 2.9 + 5.0);
-            float ht = (0.1 + 0.16 * hash11(fi * 1.7 + 9.0)) * (0.9 + 0.1 * sin(t * 0.11 + fi * 2.0));
-            float ring = length(float2(da / span, h / ht)) - 1.0;
-            float thick = 0.22 + 0.14 * vnoise3(float3(dir * 9.0, t * 0.04 + fi));
-            float strand = smoothstep(0.25, 0.85, fbm3(float3(dir * 26.0, h * 14.0 - t * 0.2 + fi * 7.0), b));
-            float feet = 0.55 + 0.45 * (1.0 - clamp(h / ht, 0.0, 1.0));
-            arcs += exp(-ring * ring / (thick * thick)) * strand * feet;
-        }
-        // An eruption: a plume rises from one region, fades, and returns somewhere else.
-        float cycle = t / 45.0;
-        float ph = fract(cycle);
-        float a1 = hash11(floor(cycle) * 3.7 + 1.0) * 6.283;
-        float da1 = atan(sin(ang - a1), cos(ang - a1));
-        float reach = 0.15 + 0.55 * ph;
-        float cone = 1.0 - smoothstep(0.03 + h * 0.35, 0.06 + h * 0.5, abs(da1));
-        float plume = cone * (1.0 - smoothstep(reach * 0.7, reach, h))
-            * smoothstep(0.35, 0.75, fbm3(float3(dir * 16.0, h * 6.0 - t * 0.5), b))
-            * smoothstep(0.0, 0.1, ph) * (1.0 - smoothstep(0.65, 1.0, ph));
-        col += uC4 * (arcs * 1.3 + spic * 0.9 + plume * 1.6) * smoothstep(0.97, 1.0, r);
-    }
-
-    if (r < 1.0 + e) {
-        float3 n = float3(d.x, -d.y, sqrt(max(1.0 - r * r, 0.0)));
-        float spin = t * 0.012;
-        float3 m = float3(n.x * cos(spin) + n.z * sin(spin), n.y, n.z * cos(spin) - n.x * sin(spin));
-        float keep = clamp(1.0 - b * 140.0, 0.0, 1.0);
-        float2 w = worley3(m * 42.0, t);
-        float cells = smoothstep(0.02, 0.32, w.y - w.x) * (1.1 - 0.4 * w.x);
-        float sup = fbm3(m * 5.0 + float3(t * 0.01), b);
-        float spots = 0.0;
-        float pen = 0.0;
-        for (int i = 0; i < 5; i++) {
-            float fi = float(i);
-            float lat = (hash11(fi * 3.1 + 1.0) - 0.5) * 0.9;
-            float lon = hash11(fi * 7.3 + 2.0) * 6.283;
-            float3 c = float3(cos(lat) * sin(lon), sin(lat), cos(lat) * cos(lon));
-            float sz = 0.025 + 0.035 * hash11(fi * 5.7 + 3.0);
-            float dd = length(m - c);
-            spots = max(spots, 1.0 - smoothstep(sz * 0.4, sz * 0.55, dd));
-            pen = max(pen, 1.0 - smoothstep(sz * 0.8, sz * 1.1, dd));
-        }
-        float mu = n.z;
-        float limb = 0.3 + 0.7 * pow(mu, 0.5);
-        float heat = clamp(limb * (0.62 + 0.3 * mix(0.6, cells, keep)) + 0.18 * (sup - 0.5), 0.0, 1.0);
-        float3 s = mix(uC1, uC2, smoothstep(0.1, 0.5, heat));
-        s = mix(s, uC3, smoothstep(0.5, 0.95, heat));
-        s *= 1.0 - 0.5 * pen - 0.4 * spots;
-        s += uC3 * 0.08 * smoothstep(0.6, 0.8, sup) * (1.0 - mu) * (1.0 - mu);
-        float flare = pow(max(0.0, sin(t * 0.17 + 1.0)), 24.0) * smoothstep(0.82, 0.95, vnoise3(m * 7.0 + 5.0));
-        s += uC3 * flare * 0.7;
-        col = mix(col, s * 1.2, 1.0 - smoothstep(1.0 - e, 1.0 + e, r));
-    }
-    col = 1.0 - exp(-col * 1.5);
-    return half4(half3(col), 1.0);
-}
-"""
-
     private fun sceneBody(scene: Scene): String = when (scene) {
-        Scene.SUN -> SCENE_SUN
         Scene.RIBBONS -> SCENE_RIBBONS
         Scene.AURORA -> SCENE_AURORA
         Scene.MESH -> SCENE_MESH
@@ -851,40 +777,51 @@ half4 main(float2 fragCoord) {
         zoomC = inner ? float2(0.0, uPlaneH * 0.5) : float2(0.5, uPlaneH * 0.5);
         dark = 0.2 * s;
     } else if (fx == 12) {
-        // Shattered Glass: the moving glass cracks from an impact as it lifts. Radial cracks and
-        // partial rings cut it into shards that shift, tilt and catch light, then mend on settling.
+        // Shattered Glass: hairline cracks radiate from an impact and wander; concentric breaks
+        // only close to it. Each shard refracts the picture by its own small offset, so the cracks
+        // read as breaks in the image rather than drawn lines. They mend as the hinge settles.
         float prog = inner ? clamp((PI - a) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
         float m = smoothstep(0.0, 0.8, prog);
         q = mix(qFlat, qPersp, 0.5);
         if (moving && m > 0.001) {
+            float px = 1.0 / unit;
             float2 p = float2(u, yPlane) - float2(0.62, uPlaneH * 0.42);
             float r = length(p);
-            float N = 13.0;
-            float A = (atan(p.y, p.x) + PI) / (2.0 * PI) * N;
-            A += 0.45 * (vnoise(float2(r * 4.0, A * 0.9)) - 0.5);
+            float N = 17.0;
+            float ang = atan(p.y, p.x);
+            float2 around = float2(cos(ang), sin(ang));
+            float A = (ang + PI) / (2.0 * PI) * N;
+            A += 0.5 * (vnoise(around * 1.3 + float2(r * 3.0, 7.0)) - 0.5)
+                + 0.06 * (vnoise(around * 4.0 + float2(r * 45.0, 3.0)) - 0.5);
             float sector = mod(floor(A), N);
             float hs = hash11(sector + 1.7);
-            float reach = 1.7 * m * (0.6 + 0.6 * hs);
+            float reach = 1.8 * m * (0.5 + 0.7 * hs);
             float fa = fract(A);
             float dRad = min(fa, 1.0 - fa) * (2.0 * PI / N) * r;
-            float rg = log(r * 9.0 + 1.0) * 3.2 + hs * 0.9;
-            float ring = floor(rg);
-            float fr = fract(rg);
-            float dRing = min(fr, 1.0 - fr) * (r * 9.0 + 1.0) / 28.8;
+            // Concentric breaks are straight chords between neighboring radial cracks, each wedge
+            // breaking at its own distances, which makes the web irregular and polygonal.
+            float ca = (floor(A) + 0.5) / N * 2.0 * PI - PI;
+            float proj = dot(p, float2(cos(ca), sin(ca)));
+            float k = floor(log(max(proj, 0.001) / 0.03) / log(1.6));
+            float r0 = 0.03 * pow(1.6, k) * (1.0 + 0.35 * (hash12(float2(sector, k)) - 0.5));
+            float r1 = 0.03 * pow(1.6, k + 1.0) * (1.0 + 0.35 * (hash12(float2(sector, k + 1.0)) - 0.5));
+            float ring = proj < r0 ? k - 1.0 : (proj < r1 ? k : k + 1.0);
+            float dRing = min(abs(proj - r0), abs(proj - r1));
             float inside = step(r, reach);
-            float ringOn = step(0.35, hash12(float2(sector, ring))) * step(r, reach * 0.75);
+            float chord = abs(proj - r0) < abs(proj - r1) ? k : k + 1.0;
+            float ringOn = step(0.4, hash12(float2(sector, chord + 0.5))) * step(r, min(reach, 0.45));
             float dist = min(mix(9.0, dRad, inside), mix(9.0, dRing, ringOn));
-            float wid = 0.0025 + 0.004 * exp(-r * 5.0);
-            float line = 1.0 - smoothstep(0.0, wid, dist);
-            float halo = 1.0 - smoothstep(0.0, wid * 4.0, dist);
-            float2 sid = float2(sector, ring);
+            float tip = mix(0.3, 1.0, 1.0 - smoothstep(reach * 0.6, reach, r));
+            float line = (1.0 - smoothstep(0.3 * px, 1.3 * px, dist)) * tip;
+            float shade = (1.0 - smoothstep(px, 4.0 * px, dist)) * tip;
+            float2 sid = float2(sector, ring * step(r, 0.45));
             float2 dir = float2(hash12(sid + 3.1), hash12(sid + 7.9)) - 0.5;
-            q += dir * 0.03 * I * m * inside * (0.4 + hash12(sid + 1.3));
-            float crush = exp(-r * r / 0.0016);
-            sigma = SIGMA_MAX * 0.25 * I * m * exp(-r * 7.0);
-            dark = (hash12(sid + 5.5) - 0.5) * 0.35 * m * inside + (halo - line) * 0.55 * m + 0.15 * m * d;
-            edge = (line * 7.0 + crush * 6.0) * m * min(I, 1.2);
-            disp = halo * 0.012 * I * m;
+            q += dir * 0.012 * I * m * inside;
+            float crush = 1.0 - smoothstep(0.0, 0.05, r);
+            sigma = SIGMA_MAX * 0.18 * I * m * crush;
+            dark = (hash12(sid + 5.5) - 0.5) * 0.12 * m * inside + shade * 0.18 * m + 0.12 * m * d;
+            edge = line * 3.0 * m;
+            disp = line * 0.004 * I * m;
         } else {
             dark = 0.1 * m;
         }
