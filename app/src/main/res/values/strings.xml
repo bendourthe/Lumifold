@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">DuoBlur</string>
-    <string name="wallpaper_service_label">DuoBlur Live Wallpaper</string>
-    <string name="wallpaper_service_description">iPhone Duo style frosted-glass fold effect and live designs for book-style foldables.</string>
+    <string name="app_name">Lumifold</string>
+    <string name="wallpaper_service_label">Lumifold Live Wallpaper</string>
+    <string name="wallpaper_service_description">Frosted-glass fold effects and living wallpapers for book-style foldables.</string>
 </resources>

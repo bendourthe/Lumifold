@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Six more opening effects: Ripple, Mosaic, Crystal, Color Bloom, Zoom Burst, Silk Wave (12 in total), shown as a grid with rendered previews.
+- Living motion for photos: liquid-glass flow for abstract photos, motion maps for landscapes (drifting sky and mist, flowing water, swaying foliage), light pulses for the circuit texture.
+- Wallpaper detail page with live and opening previews, Dynamic or Static choice, back and apply buttons, and predictive back.
+- Critically damped spring for hinge smoothing.
+- `tools/make_motion_maps.py` to regenerate landscape motion maps.
 - Duo Frost effect modeled on the iPhone Duo reconstruction: shared image plane with inverse perspective, `sin(angle) * d^3` edge blur, separate brightness curves per panel.
 - Five more opening effects: Fluted Glass, Aperture, Dawn, Window, Prism Edge, plus a strength setting.
 - Cover display keep-awake while opening (Android 16 BookStyleDeviceStatePolicy) through a bounded screen wake lock, with an in-app switch.
@@ -18,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - New app icon from the supplied artwork, with a themed monochrome layer.
 
 ### Changed
+- Renamed the app and repository to Lumifold; application ID and packages are now `com.lumifold.wallpaper`.
+- Generative scenes move visibly faster (10 to 30 second cycles); ribbons flow along their length, dunes gain blowing sand and clouds, the sea gains rolling swell.
+- App thumbnails are rendered once into cached bitmaps instead of re-running shaders on every frame.
+- The preview angle readout moved out of the animation area.
 - App UI rebuilt in Jetpack Compose with a 3D book-fold preview that renders the real shader, effect cards, category chips without emoji, and a two-pane layout on wide screens.
 - Minimum SDK raised from 31 to 33 (AGSL).
 - Photo catalog renamed to match the actual image content.

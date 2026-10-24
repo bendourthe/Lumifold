@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "ambient-fold-wallpaper"
+rootProject.name = "lumifold"
 include(":app")

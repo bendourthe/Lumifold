@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.ambientfold.wallpaper"
+    namespace = "com.lumifold.wallpaper"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.ambientfold.wallpaper"
+        applicationId = "com.lumifold.wallpaper"
         minSdk = 33 // AGSL RuntimeShader; every Pixel Fold model ships Android 13 or later
         targetSdk = 35
         versionCode = 5

@@ -1,4 +1,4 @@
-# Ambient Fold Wallpaper -- Progress Dashboard
+# Lumifold -- Progress Dashboard
 
 **Branch:** `feature/duo-fold-effect-overhaul` (from `develop`)
 
@@ -8,10 +8,10 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 31 | 33 | -2 |
+| Tasks Completed | 39 | 40 | -1 |
 | Wallpaper Designs | 32 (20 generative, 12 photos) | 32 | Met |
-| Opening Effects | 6 | 6 | Met |
-| Unit Tests | 27 | 27 | Met |
+| Opening Effects | 12 | 12 | Met |
+| Unit Tests | 33 | 33 | Met |
 | Min SDK Target | 33 (Android 13) | 33 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
 
@@ -63,4 +63,11 @@
 - [x] T030 [US5] Verify on an Android 16 foldable emulator: preview sweep, all effects, live engine, settle, cover path docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
 - [x] T031 [US5] Update README, architecture handbook, changelog and known gaps docs/handbooks/architecture.md
 - [ ] T032 [US5] Verify cover keep-awake and display-switch diagnostics on a physical Pixel foldable docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md
-- [ ] T033 [US5] Decide the final app and repository name and apply it README.md
+- [x] T033 [US5] Rename the app, packages and repository to Lumifold README.md
+- [x] T034 [US5] Move the preview angle readout out of the animation area app/src/main/java/com/lumifold/wallpaper/ui/LumifoldScreen.kt
+- [x] T035 [US5] Add the wallpaper detail page with Dynamic or Static, back, apply and predictive back app/src/main/java/com/lumifold/wallpaper/ui/WallpaperDetailScreen.kt
+- [x] T036 [US5] Add liquid, nature and pulse photo motion with landscape motion maps app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T037 [US5] Speed up generative scene motion and add clouds, sand and swell app/src/main/java/com/lumifold/wallpaper/render/FoldShaders.kt
+- [x] T038 [US5] Add six opening effects and an effect grid with rendered previews app/src/main/java/com/lumifold/wallpaper/model/OpeningEffect.kt
+- [x] T039 [US5] Smooth the hinge with a critically damped spring app/src/main/java/com/lumifold/wallpaper/service/HingeTracker.kt
+- [x] T040 [US5] Cache thumbnails as bitmaps to remove the per-frame shader redraw that caused an ANR app/src/main/java/com/lumifold/wallpaper/render/ShaderSnapshots.kt
