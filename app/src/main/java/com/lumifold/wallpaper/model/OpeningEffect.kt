@@ -92,8 +92,8 @@ enum class OpeningEffect(
     companion object {
         val DEFAULT = DUO_FROST
 
-        /** Effects shown before "Show all". */
-        const val FEATURED_COUNT = 6
+        /** Effects shown on the home page before "Show all". */
+        const val FEATURED_COUNT = 3
 
         /** Unknown and pre-0.5 ids (duo_blur, crease_bloom, ...) fall back to [DEFAULT]. */
         fun fromId(id: String?): OpeningEffect = entries.firstOrNull { it.id == id } ?: DEFAULT

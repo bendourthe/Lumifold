@@ -7,9 +7,11 @@ enum class WallpaperCategory(val label: String) {
     GRADIENTS("Gradients"),
     LANDSCAPES("Landscapes"),
     CITY("City"),
+    LANDMARKS("Landmarks"),
     SCENES("Scenes"),
     ILLUSTRATED("Illustrated"),
     SPACE("Space"),
+    WILDLIFE("Wildlife"),
     TEXTURES("Textures"),
     MINIMAL("Minimal")
 }
@@ -22,7 +24,12 @@ enum class Scene {
     CONTOURS,
     IRIS,
     BLACK_HOLE,
-    GALAXY
+    GALAXY,
+    HILLS,
+    AURORA,
+    SEA,
+    SNOW_FOREST,
+    SWIRL
 }
 
 /** Five sRGB colors (0xRRGGBB) whose meaning is defined by each [Scene]. */
@@ -75,6 +82,14 @@ data class Globe(
     val coverEdgeX: Float = 0.4f
 )
 
+/** Where a wide picture sits on each screen. The cover's right edge cuts through [coverEdgeU]. */
+data class ScreenPlace(
+    val coverEdgeU: Float,
+    val coverSpanU: Float,
+    val innerCenterU: Float,
+    val innerSpanU: Float
+)
+
 sealed interface WallpaperSource {
     data class Photo(
         @DrawableRes val resId: Int,
@@ -87,7 +102,10 @@ sealed interface WallpaperSource {
         /** For [MotionStyle.NEBULA]: the star layer split from the photo; [resId] is the starless gas. */
         @DrawableRes val starsResId: Int = 0,
         /** For [MotionStyle.NEBULA] and [MotionStyle.DEPTH]: grayscale depth, white is near. */
-        @DrawableRes val depthResId: Int = 0
+        @DrawableRes val depthResId: Int = 0,
+        /** Show the whole picture, with bars, instead of filling and cropping to the screen. */
+        val fit: Boolean = false,
+        val place: ScreenPlace? = null
     ) : WallpaperSource
 
     data class Generative(val scene: Scene, val palette: Palette) : WallpaperSource
@@ -98,6 +116,7 @@ sealed interface WallpaperSource {
         @DrawableRes val posterResId: Int,
         val sizeMb: Float,
         val focusX: Float = 0.5f,
+        val focusY: Float = 0.5f,
         val framing: VideoFraming? = null
     ) : WallpaperSource
 }
@@ -116,8 +135,14 @@ data class WallpaperItem(
     val source: WallpaperSource,
     val description: String
 ) {
-    val isLive: Boolean get() = source is WallpaperSource.Generative || source is WallpaperSource.Video
+    /**
+     * A moving picture: a video, a drawn scene, or a planet turning on its axis. A photograph is
+     * still, even with a slight depth drift.
+     */
+    val isLive: Boolean
+        get() = source is WallpaperSource.Generative || source is WallpaperSource.Video ||
+            (source as? WallpaperSource.Photo)?.motion == MotionStyle.GLOBE
 
-    /** A still photograph: no live motion, only the opening effect. */
-    val isStill: Boolean get() = (source as? WallpaperSource.Photo)?.motion == MotionStyle.NONE
+    /** A photograph. Depth and nebula drift are not counted as a live wallpaper. */
+    val isStill: Boolean get() = !isLive
 }

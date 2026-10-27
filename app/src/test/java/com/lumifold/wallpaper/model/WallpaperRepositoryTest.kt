@@ -36,7 +36,8 @@ class WallpaperRepositoryTest {
                 is WallpaperSource.Video -> {
                     assertTrue(
                         s.url.startsWith("https://upload.wikimedia.org/") ||
-                            s.url.startsWith("https://github.com/bendourthe/lumifold/releases/download/")
+                            s.url.startsWith("https://github.com/bendourthe/lumifold/releases/download/") ||
+                            s.url.startsWith("https://svs.gsfc.nasa.gov/")
                     )
                     assertTrue(s.posterResId != 0 && s.sizeMb > 0f)
                 }
@@ -46,16 +47,65 @@ class WallpaperRepositoryTest {
 
     @Test
     fun everyCategoryHasAtLeastThreeDesigns() {
+        val all = WallpaperRepository.wallpapers
+        assertEquals(all.map { it.id }.toSet(), WallpaperRepository.getWallpapersByCategory(null).map { it.id }.toSet())
+        assertTrue(liveBeforeStill(WallpaperRepository.getWallpapersByCategory(null)))
         for (c in WallpaperCategory.entries) {
-            assertTrue("$c", WallpaperRepository.getWallpapersByCategory(c).size >= 3)
+            val items = WallpaperRepository.getWallpapersByCategory(c)
+            assertTrue("$c", items.size >= 3)
+            assertTrue("$c live first", liveBeforeStill(items))
         }
-        assertEquals(WallpaperRepository.wallpapers, WallpaperRepository.getWallpapersByCategory(null))
+    }
+
+    @Test
+    fun everyCategoryHasTenLiveAndTenStillDesigns() {
+        val qualitySplit = setOf(WallpaperCategory.CITY, WallpaperCategory.LANDMARKS)
+        for (c in WallpaperCategory.entries) {
+            if (c in qualitySplit) continue
+            val items = WallpaperRepository.getWallpapersByCategory(c)
+            val live = items.count { it.isLive }
+            assertTrue("$c has $live live", live >= 10)
+            assertTrue("$c has ${items.size - live} still", items.size - live >= 10)
+        }
+    }
+
+    @Test
+    fun cityIsSkylinesAndLandmarksAreSites() {
+        val city = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.CITY)
+        val landmarks = WallpaperRepository.getWallpapersByCategory(WallpaperCategory.LANDMARKS)
+        val skylineIds = setOf(
+            "chicago_day_night", "la_night", "london_waterloo", "shanghai_lujiazui",
+            "hong_kong_sunset", "toronto_skyline_live", "toronto_night", "san_francisco",
+            "london_skyline", "manhattan_skyline", "toronto_day"
+        )
+        assertEquals(skylineIds, city.map { it.id }.toSet())
+        assertTrue(city.none { it.id == "paris_from_eiffel" || it.id == "colosseum" || it.id == "eiffel_sunset" })
+        assertTrue(landmarks.any { it.id == "taj_mahal" })
+        assertTrue(landmarks.any { it.id == "golden_gate" })
+        assertTrue(landmarks.any { it.id == "great_wall" })
+        assertTrue(landmarks.count { it.isLive } >= 6)
+        assertTrue(landmarks.count { !it.isLive } >= 8)
+        val liveOnly = WallpaperRepository.getWallpapersByCategory(null, live = true)
+        val stillOnly = WallpaperRepository.getWallpapersByCategory(null, live = false)
+        assertTrue(liveOnly.all { it.isLive })
+        assertTrue(stillOnly.all { it.isStill })
+        assertEquals(WallpaperRepository.wallpapers.size, liveOnly.size + stillOnly.size)
+    }
+
+    @Test
+    fun everyVideoHasABundledLoop() {
+        val raw = java.io.File("src/main/res/raw")
+        for (item in WallpaperRepository.wallpapers.filter { it.source is WallpaperSource.Video }) {
+            assertTrue("${item.id} has no loop", java.io.File(raw, "wpl_${item.id}.mp4").isFile)
+        }
     }
 
     @Test
     fun everySceneIsUsed() {
         val used = WallpaperRepository.wallpapers.mapNotNull { (it.source as? WallpaperSource.Generative)?.scene }.toSet()
-        assertEquals(Scene.entries.toSet(), used)
+        // Black hole and galaxy are NASA footage now. The procedural scenes remain in the renderer.
+        val replaced = setOf(Scene.BLACK_HOLE, Scene.GALAXY)
+        assertEquals(Scene.entries.toSet() - replaced, used)
     }
 
     @Test
@@ -66,7 +116,8 @@ class WallpaperRepositoryTest {
         assertTrue(illustrated.isNotEmpty())
         assertTrue(illustrated.all {
             val photo = it.source as? WallpaperSource.Photo
-            photo != null && photo.motion == MotionStyle.DEPTH && photo.depthResId != 0
+            it.source is WallpaperSource.Generative ||
+                (photo != null && photo.motion == MotionStyle.DEPTH && photo.depthResId != 0)
         })
     }
 
@@ -87,4 +138,10 @@ class WallpaperRepositoryTest {
     @Test
     fun effectShaderIndicesAreUniqueAndContiguous() {
         assertEquals(OpeningEffect.entries.indices.toList(), OpeningEffect.entries.map { it.shaderIndex }.sorted())
-    }}
+    }
+}
+
+private fun liveBeforeStill(items: List<WallpaperItem>): Boolean {
+    val firstStill = items.indexOfFirst { !it.isLive }
+    return firstStill < 0 || items.drop(firstStill).none { it.isLive }
+}

@@ -17,24 +17,30 @@ object VideoCache {
     // cached from the old source is replaced instead of reused.
     fun file(context: Context, item: WallpaperItem): File {
         val url = (item.source as? WallpaperSource.Video)?.url.orEmpty()
-        val suffix = if (url.contains("upload.wikimedia.org")) "" else "-" + url.hashCode().toUInt().toString(16)
-        return File(File(context.filesDir, "videos"), "${item.id}$suffix.webm")
+        // A 1080p Commons clip keeps its original name. Anything sharper, or hosted elsewhere,
+        // is named from the URL so a replaced clip is downloaded again.
+        val suffix = if (url.contains("1080p.vp9.webm")) "" else "-" + url.hashCode().toUInt().toString(16)
+        val ext = if (url.substringBefore('?').endsWith(".mp4", ignoreCase = true)) "mp4" else "webm"
+        return File(File(context.filesDir, "videos"), "${item.id}$suffix.$ext")
     }
 
     fun isCached(context: Context, item: WallpaperItem): Boolean =
         item.source !is WallpaperSource.Video || file(context, item).length() > 0
 
+    private val gate = Any()
+
     /**
      * Downloads [item]'s clip, reporting progress from 0 to 1. Blocking: call off the main thread.
-     * Returns false on failure or cancellation (when [isCancelled] turns true); never leaves a
-     * partial file in place of the clip.
+     * One download runs at a time. Returns false on failure or cancellation (when [isCancelled]
+     * turns true); never leaves a partial file in place of the clip.
      */
     fun download(
         context: Context,
         item: WallpaperItem,
         isCancelled: () -> Boolean = { false },
         onProgress: (Float) -> Unit
-    ): Boolean {
+    ): Boolean = synchronized(gate) {
+        if (isCached(context, item)) return true
         val video = item.source as? WallpaperSource.Video ?: return true
         val target = file(context, item)
         target.parentFile?.mkdirs()
@@ -64,7 +70,7 @@ object VideoCache {
                 }
                 (read > 0 && part.renameTo(target)).also { ok ->
                     if (ok) target.parentFile?.listFiles()?.forEach { f ->
-                        if (f != target && (f.name == "${item.id}.webm" || f.name.startsWith("${item.id}-"))) f.delete()
+                        if (f != target && (f.name == "${item.id}.webm" || f.name == "${item.id}.mp4" || f.name.startsWith("${item.id}-"))) f.delete()
                     }
                 }
             } finally {

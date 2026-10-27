@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import android.content.Intent
+import android.accessibilityservice.AccessibilityServiceInfo
+import android.view.accessibility.AccessibilityManager
+import android.net.Uri
 import android.provider.Settings
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -35,11 +38,14 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridScope
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -51,6 +57,7 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
@@ -60,6 +67,7 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -72,6 +80,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -83,6 +92,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -100,8 +112,11 @@ import androidx.compose.ui.unit.IntSize
 import com.lumifold.wallpaper.render.ShaderSnapshots
 import com.lumifold.wallpaper.render.SurfaceSpec
 import com.lumifold.wallpaper.render.WallpaperShader
+import com.lumifold.wallpaper.render.VideoPreviewSlots
 import com.lumifold.wallpaper.service.FoldWallpaperService
+import com.lumifold.wallpaper.service.FoldAccessibilityService
 import com.lumifold.wallpaper.service.MotionPolicy
+import com.lumifold.wallpaper.service.VideoCache
 import androidx.compose.ui.draw.alpha
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
@@ -128,48 +143,44 @@ fun LumifoldScreen(
     // Re-read on resume: the Quick Settings tiles can change these while the app is away.
     var motion by remember(refreshKey) { mutableStateOf(WallpaperRepository.isDynamicMotionEnabled(context)) }
     var foldEffect by remember(refreshKey) { mutableStateOf(WallpaperRepository.isFoldEffectEnabled(context)) }
-    var coverAwake by remember { mutableStateOf(WallpaperRepository.isCoverAwakeEnabled(context)) }
+    var coverAwake by remember(refreshKey) { mutableStateOf(WallpaperRepository.isCoverAwakeEnabled(context)) }
     var pauseOnSaver by remember { mutableStateOf(WallpaperRepository.isPauseOnSaver(context)) }
     var pauseBelow by remember { mutableStateOf(WallpaperRepository.isPauseBelowLevel(context)) }
     var pauseLevel by remember { mutableFloatStateOf(WallpaperRepository.getPauseLevel(context).toFloat()) }
     val pause = remember(refreshKey, pauseOnSaver, pauseBelow, pauseLevel.roundToInt()) {
         MotionPolicy.currentPause(context)
     }
+    val gridState = rememberLazyGridState()
+    LaunchedEffect(gridState.isScrollInProgress) {
+        VideoPreviewSlots.setScrolling(gridState.isScrollInProgress)
+    }
+    DisposableEffect(gridState) {
+        onDispose { VideoPreviewSlots.setScrolling(false) }
+    }
     var category by rememberSaveable { mutableStateOf<WallpaperCategory?>(null) }
+    var liveOnly by rememberSaveable { mutableStateOf<Boolean?>(null) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
     var detailId by rememberSaveable { mutableStateOf<String?>(null) }
     var lastDetailId by remember { mutableStateOf<String?>(null) }
     var backProgress by remember { mutableFloatStateOf(0f) }
-    // Updated every animation frame; read only by the small composables that display it.
-    val previewAngle = remember { mutableFloatStateOf(0f) }
-    var autoPlay by remember { mutableStateOf(true) }
-    var followHinge by remember { mutableStateOf(false) }
-    var previewView by remember { mutableStateOf<FoldPreviewView?>(null) }
 
     val measured = remember(refreshKey) {
         WallpaperRepository.getMeasuredOpenSwitch(context) to WallpaperRepository.getMeasuredCloseSwitch(context)
     }
     val active = WallpaperRepository.resolveWallpaper(activeId)
-    val items = WallpaperRepository.getWallpapersByCategory(category)
+    val items = WallpaperRepository.getWallpapersByCategory(category, liveOnly)
     val handoff = if (coverAwake) COVER_AWAKE_HANDOFF else STOCK_HANDOFF
     if (detailId != null) lastDetailId = detailId
 
-    LaunchedEffect(followHinge, previewView) {
-        if (!followHinge) return@LaunchedEffect
-        snapshotFlow { hingeAngle.floatValue }.collect { a ->
-            if (!a.isNaN()) previewView?.setAngleManually(a)
-        }
-    }
-
-    PredictiveBackHandler(enabled = detailId != null) { events: Flow<BackEventCompat> ->
+    PredictiveBackHandler(enabled = detailId != null || showSettings) { events: Flow<BackEventCompat> ->
         try {
             events.collect { backProgress = it.progress }
-            detailId = null
+            if (detailId != null) detailId = null else showSettings = false
         } catch (e: CancellationException) {
             backProgress = 0f
         }
     }
     LaunchedEffect(detailId) { if (detailId == null) backProgress = 0f }
-
     val preview: @Composable (Modifier) -> Unit = { modifier ->
         PreviewCard(
             modifier = modifier,
@@ -178,40 +189,26 @@ fun LumifoldScreen(
             intensity = intensity,
             motion = motion,
             foldEffect = foldEffect,
-            handoff = handoff,
-            visible = detailId == null,
-            angle = previewAngle,
-            autoPlay = autoPlay,
-            followHinge = followHinge,
-            canFollowHinge = hasHingeSensor,
-            onViewCreated = { view ->
-                previewView = view
-                view.onAngleChanged = { previewAngle.floatValue = it }
-                view.onAutoPlayChanged = { autoPlay = it }
-            },
-            onScrub = { followHinge = false; previewView?.setAngleManually(it) },
-            onTogglePlay = {
-                followHinge = false
-                previewView?.setAutoPlay(!autoPlay)
-            },
-            onToggleFollow = { followHinge = !followHinge }
+            visible = detailId == null
         )
     }
 
     val quickToggles: @Composable () -> Unit = {
-        QuickToggles(
-            foldEffect = foldEffect,
-            onFoldEffect = {
-                foldEffect = it
-                WallpaperRepository.setFoldEffectEnabled(context, it)
-            },
-            motion = motion,
-            onMotion = {
-                motion = it
-                WallpaperRepository.setDynamicMotionEnabled(context, it)
-            },
-            pause = pause
-        )
+        Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            QuickToggles(
+                foldEffect = foldEffect,
+                onFoldEffect = {
+                    foldEffect = it
+                    WallpaperRepository.setFoldEffectEnabled(context, it)
+                },
+                motion = motion,
+                onMotion = {
+                    motion = it
+                    WallpaperRepository.setDynamicMotionEnabled(context, it)
+                },
+                pause = pause
+            )
+        }
     }
 
     val controls: LazyGridScope.(effectColumns: Int) -> Unit = { effectColumns ->
@@ -235,40 +232,13 @@ fun LumifoldScreen(
             }
         }
         fullSpan {
-            TuningCard(
-                effect = effect,
-                intensity = intensity,
-                onIntensity = { intensity = it },
-                onIntensityDone = { WallpaperRepository.setIntensity(context, intensity) },
-                pauseOnSaver = pauseOnSaver,
-                onPauseOnSaver = {
-                    pauseOnSaver = it
-                    WallpaperRepository.setPauseOnSaver(context, it)
-                },
-                pauseBelow = pauseBelow,
-                onPauseBelow = {
-                    pauseBelow = it
-                    WallpaperRepository.setPauseBelowLevel(context, it)
-                },
-                pauseLevel = pauseLevel,
-                onPauseLevel = { pauseLevel = it },
-                onPauseLevelDone = { WallpaperRepository.setPauseLevel(context, pauseLevel.roundToInt()) },
-                coverAwake = coverAwake,
-                onCoverAwake = {
-                    coverAwake = it
-                    WallpaperRepository.setCoverAwakeEnabled(context, it)
-                },
-                hingeAngle = hingeAngle,
-                hasHingeSensor = hasHingeSensor,
-                measuredOpen = measured.first,
-                measuredClose = measured.second
-            )
-        }
-        fullSpan {
-            SectionTitle("Wallpapers", "${WallpaperRepository.wallpapers.size} designs. Tap one to preview it.")
+            SectionTitle("Wallpapers", "${items.size} designs. Tap one to preview it.")
         }
         fullSpan {
             CategoryChips(category) { category = it }
+        }
+        fullSpan {
+            KindChips(liveOnly) { liveOnly = it }
         }
         items(items, key = { it.id }) { item ->
             WallpaperTile(item = item, selected = item.id == activeId, onClick = { detailId = item.id })
@@ -284,7 +254,7 @@ fun LumifoldScreen(
                     Column(
                         Modifier.weight(0.46f).fillMaxHeight().padding(start = 20.dp, top = 12.dp, bottom = 16.dp)
                     ) {
-                        Header(hingeAngle, hasHingeSensor)
+                        Header(hingeAngle, hasHingeSensor) { showSettings = true }
                         Spacer(Modifier.height(12.dp))
                         quickToggles()
                         Spacer(Modifier.height(12.dp))
@@ -293,6 +263,7 @@ fun LumifoldScreen(
                         ApplyBar(wallpaperActive, onOpenPicker)
                     }
                     LazyVerticalGrid(
+                        state = gridState,
                         columns = GridCells.Adaptive(150.dp),
                         modifier = Modifier.weight(0.54f).fillMaxHeight(),
                         contentPadding = PaddingValues(20.dp),
@@ -303,19 +274,56 @@ fun LumifoldScreen(
             } else {
                 Column(Modifier.fillMaxSize()) {
                     LazyVerticalGrid(
+                        state = gridState,
                         columns = GridCells.Adaptive(150.dp),
                         modifier = Modifier.weight(1f),
                         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 16.dp),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        fullSpan { Header(hingeAngle, hasHingeSensor) }
+                        fullSpan { Header(hingeAngle, hasHingeSensor) { showSettings = true } }
                         fullSpan { quickToggles() }
                         fullSpan { preview(Modifier.fillMaxWidth().height(460.dp)) }
                         controls(3)
                     }
                     ApplyBar(wallpaperActive, onOpenPicker, Modifier.padding(horizontal = 16.dp, vertical = 12.dp))
                 }
+            }
+
+            AnimatedVisibility(
+                visible = showSettings && detailId == null,
+                enter = slideInHorizontally { it / 3 } + fadeIn(),
+                exit = slideOutHorizontally { it / 3 } + fadeOut()
+            ) {
+                SettingsPage(
+                    onBack = { showSettings = false },
+                    effect = effect,
+                    intensity = intensity,
+                    onIntensity = { intensity = it },
+                    onIntensityDone = { WallpaperRepository.setIntensity(context, intensity) },
+                    pauseOnSaver = pauseOnSaver,
+                    onPauseOnSaver = {
+                        pauseOnSaver = it
+                        WallpaperRepository.setPauseOnSaver(context, it)
+                    },
+                    pauseBelow = pauseBelow,
+                    onPauseBelow = {
+                        pauseBelow = it
+                        WallpaperRepository.setPauseBelowLevel(context, it)
+                    },
+                    pauseLevel = pauseLevel,
+                    onPauseLevel = { pauseLevel = it },
+                    onPauseLevelDone = { WallpaperRepository.setPauseLevel(context, pauseLevel.roundToInt()) },
+                    coverAwake = coverAwake,
+                    onCoverAwake = {
+                        coverAwake = it
+                        WallpaperRepository.setCoverAwakeEnabled(context, it)
+                    },
+                    hingeAngle = hingeAngle,
+                    hasHingeSensor = hasHingeSensor,
+                    measuredOpen = measured.first,
+                    measuredClose = measured.second
+                )
             }
 
             AnimatedVisibility(
@@ -330,7 +338,7 @@ fun LumifoldScreen(
                     effect = effect,
                     intensity = intensity,
                     foldEffect = foldEffect,
-                    handoff = handoff,
+                    hingeAngle = hingeAngle,
                     isApplied = wallpaperActive && item.id == activeId,
                     backProgress = backProgress,
                     onBack = { detailId = null },
@@ -357,7 +365,7 @@ private fun LazyGridScope.fullSpan(content: @Composable () -> Unit) {
 }
 
 @Composable
-private fun Header(hingeAngle: FloatState, hasHingeSensor: Boolean) {
+private fun Header(hingeAngle: FloatState, hasHingeSensor: Boolean, onSettings: () -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
         Image(
             painter = painterResource(R.drawable.app_icon_art),
@@ -371,6 +379,9 @@ private fun Header(hingeAngle: FloatState, hasHingeSensor: Boolean) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+        }
+        IconButton(onClick = onSettings) {
+            Icon(painterResource(R.drawable.ic_settings_gear), contentDescription = "Settings")
         }
         if (hasHingeSensor) HingePill(hingeAngle)
     }
@@ -393,6 +404,9 @@ private fun HingePill(hingeAngle: FloatState) {
     }
 }
 
+/**
+ * The opening model, playing the selected effect open and closed.
+ */
 @Composable
 private fun PreviewCard(
     modifier: Modifier,
@@ -401,16 +415,7 @@ private fun PreviewCard(
     intensity: Float,
     motion: Boolean,
     foldEffect: Boolean,
-    handoff: Float,
-    visible: Boolean,
-    angle: FloatState,
-    autoPlay: Boolean,
-    followHinge: Boolean,
-    canFollowHinge: Boolean,
-    onViewCreated: (FoldPreviewView) -> Unit,
-    onScrub: (Float) -> Unit,
-    onTogglePlay: () -> Unit,
-    onToggleFollow: () -> Unit
+    visible: Boolean
 ) {
     Surface(
         modifier = modifier,
@@ -418,37 +423,29 @@ private fun PreviewCard(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
     ) {
-        Column {
-            AngleReadout(angle, handoff, Modifier.fillMaxWidth().padding(start = 18.dp, end = 18.dp, top = 14.dp, bottom = 4.dp))
-            Box(
-                Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(Brush.radialGradient(listOf(Color(0xFF1A2036), Color(0xFF0C0E14)), radius = 900f))
-            ) {
-                AndroidView(
-                    factory = { ctx -> FoldPreviewView(ctx).also(onViewCreated) },
-                    update = { view ->
-                        view.setWallpaper(item)
-                        view.setEffect(effect, intensity, motion, foldEffect)
-                        view.handoffAngle = handoff
-                        view.visibility = if (visible) android.view.View.VISIBLE else android.view.View.INVISIBLE
-                    },
-                    modifier = Modifier.fillMaxSize()
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 16.dp, top = 6.dp, bottom = 10.dp)
-            ) {
-                FilledTonalIconButton(onClick = onTogglePlay) {
-                    Icon(if (autoPlay) PauseIcon else PlayIcon, contentDescription = if (autoPlay) "Pause" else "Play")
-                }
-                AngleSlider(angle, onScrub, Modifier.weight(1f).padding(horizontal = 8.dp))
-                if (canFollowHinge) {
-                    FilterChip(selected = followHinge, onClick = onToggleFollow, label = { Text("Follow hinge") })
-                }
-            }
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(Brush.radialGradient(listOf(Color(0xFF1A2036), Color(0xFF0C0E14)), radius = 900f))
+        ) {
+            AndroidView(
+                factory = { ctx ->
+                    FoldPreviewView(ctx).apply {
+                        flat = false
+                        handleTouches = false
+                        setAutoPlay(true)
+                    }
+                },
+                update = { view ->
+                    view.flat = false
+                    view.handleTouches = false
+                    if (!view.isAutoPlaying) view.setAutoPlay(true)
+                    view.setWallpaper(item)
+                    view.setEffect(effect, intensity, motion, foldEffect)
+                    view.visibility = if (visible) android.view.View.VISIBLE else android.view.View.INVISIBLE
+                },
+                modifier = Modifier.fillMaxSize()
+            )
         }
     }
 }
@@ -483,6 +480,49 @@ internal fun phaseLabel(angle: Float, handoff: Float): String = when {
     angle < handoff -> "Opening \u00B7 cover display"
     angle < 179f -> "Opening \u00B7 inner display"
     else -> "Open \u00B7 inner display"
+}
+
+@Composable
+private fun SettingsPage(
+    onBack: () -> Unit,
+    effect: OpeningEffect,
+    intensity: Float,
+    onIntensity: (Float) -> Unit,
+    onIntensityDone: () -> Unit,
+    pauseOnSaver: Boolean,
+    onPauseOnSaver: (Boolean) -> Unit,
+    pauseBelow: Boolean,
+    onPauseBelow: (Boolean) -> Unit,
+    pauseLevel: Float,
+    onPauseLevel: (Float) -> Unit,
+    onPauseLevelDone: () -> Unit,
+    coverAwake: Boolean,
+    onCoverAwake: (Boolean) -> Unit,
+    hingeAngle: FloatState,
+    hasHingeSensor: Boolean,
+    measuredOpen: Float,
+    measuredClose: Float
+) {
+    Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
+        Column(
+            Modifier
+                .fillMaxSize()
+                .windowInsetsPadding(WindowInsets.safeDrawing)
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onBack, contentPadding = PaddingValues(horizontal = 0.dp)) { Text("Back") }
+                Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
+            }
+            TuningCard(
+                effect, intensity, onIntensity, onIntensityDone,
+                pauseOnSaver, onPauseOnSaver, pauseBelow, onPauseBelow, pauseLevel, onPauseLevel, onPauseLevelDone,
+                coverAwake, onCoverAwake, hingeAngle, hasHingeSensor, measuredOpen, measuredClose
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
 }
 
 @Composable
@@ -640,7 +680,6 @@ private fun QuickToggles(
 @Composable
 private fun QuickToggle(title: String, status: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier) {
     Surface(
-        onClick = { onChange(!checked) },
         shape = RoundedCornerShape(20.dp),
         color = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant),
@@ -735,10 +774,12 @@ private fun TuningCard(
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
             SwitchRow(
                 title = "Keep cover on while opening",
-                body = "On Android 16 and later, keeps the cover display awake until about 90\u00B0 so the effect plays on it. Never holds the screen longer than your screen timeout.",
+                body = "The cover stays lit while you open, until Android switches to the inner screen around 90 degrees. The phone cannot light both panels through the whole fold, so this does not turn the inner screen on early.",
                 checked = coverAwake,
                 onChange = onCoverAwake
             )
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
+            AppGlassRow()
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
             FoldSettingRow()
             Spacer(Modifier.height(10.dp))
@@ -759,9 +800,9 @@ private fun TuningCard(
 private fun FoldSettingRow() {
     val context = LocalContext.current
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-        Text("Closing on the cover", style = MaterialTheme.typography.titleSmall)
+        Text("Android fold settings", style = MaterialTheme.typography.titleSmall)
         Text(
-            "Android decides whether the cover lights up as you fold. For the closing effect to finish on the cover, open Display settings and set \u201CContinue using apps on fold\u201D to Always. Apps cannot change this setting themselves.",
+            "Set Continue using apps on fold to Always. That turns the cover on as you close, instead of waiting behind the lock screen. The angle where Android swaps panels is fixed at about 90 degrees.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -771,6 +812,60 @@ private fun FoldSettingRow() {
             },
             contentPadding = PaddingValues(horizontal = 0.dp)
         ) { Text("Open Display settings") }
+    }
+}
+
+@Composable
+private fun AppGlassRow() {
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    fun accessibilityEnabled(): Boolean = context.getSystemService(AccessibilityManager::class.java)
+        ?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+        ?.any { it.resolveInfo.serviceInfo.name == FoldAccessibilityService::class.java.name &&
+            it.resolveInfo.serviceInfo.packageName == context.packageName } == true
+    var allowed by remember(context) { mutableStateOf(Settings.canDrawOverlays(context)) }
+    var accessible by remember(context) { mutableStateOf(accessibilityEnabled()) }
+    DisposableEffect(lifecycle, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                allowed = Settings.canDrawOverlays(context)
+                accessible = accessibilityEnabled()
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    fun openSettings(primary: Intent, fallback: Intent) {
+        // Per-app routes are available on Pixel; retain public routes for other Android builds.
+        runCatching { context.startActivity(primary.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .recoverCatching { context.startActivity(fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+            .onFailure { Toast.makeText(context, "Open Android Settings to manage this permission.", Toast.LENGTH_LONG).show() }
+    }
+    Column(Modifier.fillMaxWidth()) {
+        SwitchRow(
+            title = "Allow display over other apps",
+            body = if (allowed) {
+                "Allowed. Draw the fold effect over an open app. Tap to manage this permission in Android settings."
+            } else {
+                "Not allowed. Tap to allow the fold effect over an open app in Android settings."
+            },
+            checked = allowed,
+            onChange = {
+                val appUri = Uri.parse("package:${context.packageName}")
+                openSettings(Intent("android.settings.MANAGE_APP_OVERLAY_PERMISSION", appUri),
+                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, appUri))
+            }
+        )
+        SwitchRow(
+            title = "Lumifold accessibility",
+            body = if (accessible) "Enabled. Tap, then select Lumifold in Android Accessibility to manage this service."
+                else "Disabled. Tap, then select Lumifold in Android Accessibility to enable effects over apps.",
+            checked = accessible,
+            onChange = {
+                runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+                    .onFailure { Toast.makeText(context, "Open Android Settings, then Accessibility and Lumifold.", Toast.LENGTH_LONG).show() }
+            }
+        )
     }
 }
 
@@ -817,6 +912,38 @@ private fun SwitchRow(title: String, body: String, checked: Boolean, onChange: (
 }
 
 @Composable
+private fun KindChips(liveOnly: Boolean?, onSelect: (Boolean?) -> Unit) {
+    val options = listOf(null to "All", true to "Live", false to "Still")
+    Surface(
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+    ) {
+        Row(Modifier.padding(4.dp)) {
+            options.forEach { (value, label) ->
+                val selected = liveOnly == value
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (selected) MaterialTheme.colorScheme.inverseSurface else Color.Transparent)
+                        .clickable { onSelect(value) }
+                        .padding(vertical = 8.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        label,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = if (selected) MaterialTheme.colorScheme.inverseOnSurface
+                        else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun CategoryChips(selected: WallpaperCategory?, onSelect: (WallpaperCategory?) -> Unit) {
     val options = listOf<WallpaperCategory?>(null) + WallpaperCategory.entries
     LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -840,7 +967,7 @@ private fun WallpaperTile(item: WallpaperItem, selected: Boolean, onClick: () ->
     val shape = RoundedCornerShape(20.dp)
     Box(
         Modifier
-            .aspectRatio(0.72f)
+            .aspectRatio(0.9f)
             .clip(shape)
             .background(MaterialTheme.colorScheme.surfaceContainer)
             .clickable(onClick = onClick)
@@ -851,18 +978,16 @@ private fun WallpaperTile(item: WallpaperItem, selected: Boolean, onClick: () ->
             Text(item.title, style = MaterialTheme.typography.titleSmall, color = Color.White, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(item.category.label, style = MaterialTheme.typography.labelSmall, color = Color.White.copy(alpha = 0.7f))
         }
-        if (item.isStill) {
-            Text(
-                "Still",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White,
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(10.dp)
-                    .background(Color(0x99000000), RoundedCornerShape(8.dp))
-                    .padding(horizontal = 8.dp, vertical = 3.dp)
-            )
-        }
+        Text(
+            if (item.isLive) "Live" else "Still",
+            style = MaterialTheme.typography.labelSmall,
+            color = Color.White,
+            modifier = Modifier
+                .align(Alignment.TopStart)
+                .padding(10.dp)
+                .background(Color(0x99000000), RoundedCornerShape(8.dp))
+                .padding(horizontal = 8.dp, vertical = 3.dp)
+        )
         if (selected) {
             Box(Modifier.fillMaxSize().border(2.5.dp, MaterialTheme.colorScheme.primary, shape))
             CheckBadge(Modifier.align(Alignment.TopEnd).padding(10.dp))
@@ -882,36 +1007,23 @@ private fun CheckBadge(modifier: Modifier) {
 
 @Composable
 internal fun WallpaperThumbnail(item: WallpaperItem, modifier: Modifier) {
-    when (val source = item.source) {
-        is WallpaperSource.Generative -> GenerativeThumbnail(item, modifier)
-        is WallpaperSource.Photo -> PhotoThumbnail(if (source.thumbResId != 0) source.thumbResId else source.resId, modifier)
-        is WallpaperSource.Video -> PhotoThumbnail(source.posterResId, modifier)
-    }
-}
-
-@Composable
-private fun GenerativeThumbnail(item: WallpaperItem, modifier: Modifier) {
-    ShaderImage("wallpaper:${item.id}", modifier) { w, h ->
-        boundShader(item, w, h, 180f, OpeningEffect.WINDOW, 1f)
-    }
-}
-
-@Composable
-private fun PhotoThumbnail(resId: Int, modifier: Modifier) {
-    val context = LocalContext.current
-    val bitmap by produceState<ImageBitmap?>(null, resId) {
-        value = withContext(Dispatchers.IO) {
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            BitmapFactory.decodeResource(context.resources, resId, bounds)
-            var sample = 1
-            while (bounds.outWidth / (sample * 2) >= 480) sample *= 2
-            val opts = BitmapFactory.Options().apply { inSampleSize = sample }
-            BitmapFactory.decodeResource(context.resources, resId, opts)?.asImageBitmap()
-        }
-    }
-    bitmap?.let {
-        Image(it, contentDescription = null, contentScale = ContentScale.Crop, modifier = modifier)
-    }
+    AndroidView(
+        factory = {
+            FoldPreviewView(it).apply {
+                flat = true
+                handleTouches = false
+            }
+        },
+        update = { view ->
+            view.flat = true
+            view.handleTouches = false
+            view.setAutoPlay(false)
+            view.setWallpaper(item)
+            view.setEffect(OpeningEffect.WINDOW, 1f, item.isLive, foldEffect = false)
+            view.refreshVideo()
+        },
+        modifier = modifier
+    )
 }
 
 @Composable

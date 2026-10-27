@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.FloatState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -56,14 +57,13 @@ fun WallpaperDetailScreen(
     effect: OpeningEffect,
     intensity: Float,
     foldEffect: Boolean,
-    handoff: Float,
+    hingeAngle: FloatState,
     isApplied: Boolean,
     backProgress: Float,
     onBack: () -> Unit,
     onApply: (dynamic: Boolean) -> Unit
 ) {
     var dynamic by remember(item.id) { mutableStateOf(initialMotion) }
-    var view by remember(item.id) { mutableIntStateOf(0) }
     val context = LocalContext.current
     val clip = item.source as? WallpaperSource.Video
     var cached by remember(item.id) { mutableStateOf(VideoCache.isCached(context, item)) }
@@ -103,7 +103,7 @@ fun WallpaperDetailScreen(
             Column(Modifier.padding(top = 12.dp, bottom = 10.dp)) {
                 Text(item.title, style = MaterialTheme.typography.headlineSmall)
                 Text(
-                    item.category.label,
+                    if (item.isLive) "${item.category.label} · Live" else "${item.category.label} · Still",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -120,24 +120,23 @@ fun WallpaperDetailScreen(
                         .fillMaxSize()
                         .background(Brush.radialGradient(listOf(Color(0xFF1A2036), Color(0xFF0C0E14)), radius = 1100f))
                 ) {
+                    val hinge = hingeAngle.floatValue
                     AndroidView(
-                        factory = { ctx -> FoldPreviewView(ctx) },
+                        factory = { ctx -> FoldPreviewView(ctx).apply { flat = true; handleTouches = false } },
                         update = { v ->
                             v.setWallpaper(item)
                             v.setEffect(effect, intensity, dynamic, foldEffect)
-                            v.handoffAngle = handoff
-                            v.flat = view == 0
-                            if (cached) v.refreshVideo()
+                            v.hingeDegrees = hinge
+                            v.contentDescription = if (cached) "${item.title}, full clip" else item.title
+                            v.refreshVideo()
                         },
                         modifier = Modifier.fillMaxSize()
                     )
                 }
             }
 
-            Spacer(Modifier.height(14.dp))
-            SegmentedToggle(listOf("Live view", "Opening"), view) { view = it }
             if (!item.isStill) {
-                Spacer(Modifier.height(10.dp))
+                Spacer(Modifier.height(14.dp))
                 SegmentedToggle(listOf("Dynamic", "Static"), if (dynamic) 0 else 1) { dynamic = it == 0 }
             }
             Text(
@@ -191,7 +190,7 @@ fun WallpaperDetailScreen(
 
 private fun motionCaption(item: WallpaperItem): String = when (val s = item.source) {
     is WallpaperSource.Generative -> "Animated scene rendered live at your screen's resolution."
-    is WallpaperSource.Video -> "Real footage on a silent loop. Downloads once, then plays offline."
+    is WallpaperSource.Video -> "Real footage, slowed down and looping without a cut."
     is WallpaperSource.Photo -> when (s.motion) {
         MotionStyle.NONE -> "Still photograph. The fold effect still follows the hinge."
         MotionStyle.LIQUID -> "Slow, flowing liquid glass."

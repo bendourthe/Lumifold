@@ -18,17 +18,28 @@ object FoldShaders {
 
     fun videoSource(): String = COMMON + NOISE + VIDEO_CONTENT + EFFECT_MAIN
 
+    /** Turn the selected effect rendered over white into a transparent shade over live content. */
+    fun shadingMaskSource(): String = """
+uniform shader effect;
+half4 main(float2 p) {
+    half3 light = effect.eval(p).rgb;
+    half alpha = clamp(1.0 - dot(light, half3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
+    return half4(0.0, 0.0, 0.0, alpha);
+}
+"""
+
     // A video frame has no blur pyramid: frost comes from a 16-tap spiral with a per-pixel
     // rotation, which the effect stage's grain hides.
     private const val VIDEO_CONTENT = """
 uniform shader uVideo;
 uniform float2 uVidSize;
-uniform float uFocusX;
+uniform float2 uFocus;
 uniform float4 uFrame;
 
+// One crop per display, filled edge to edge and held on the subject. The cover only sees the
+// right half of the shared plane, so a single center crop puts a centered subject on the hinge.
 half4 vtap(float2 st) {
-    float planeAsp = 2.0 / uPlaneH;
-    float vidAsp = uVidSize.x / uVidSize.y;
+    float vidAsp = uVidSize.x / max(uVidSize.y, 1.0);
     if (uFrame.w > 0.5) {
         bool iv = uInner > 0.5;
         float hgt = iv ? uFrame.x : uFrame.y;
@@ -39,18 +50,28 @@ half4 vtap(float2 st) {
         half3 fc = max(uVideo.eval(fuv * uVidSize).rgb - 0.025, 0.0) / 0.975;
         return half4(fc * half(edge.x * edge.y), 1.0);
     }
-    float2 uv = st;
-    if (vidAsp > planeAsp) {
-        float k = planeAsp / vidAsp;
-        uv.x = (st.x - 0.5) * k + 0.5 + (uFocusX - 0.5) * (1.0 - k);
-    } else {
-        uv.y = (st.y - 0.5) * vidAsp / planeAsp + 0.5;
-    }
+    bool iv = uInner > 0.5;
+    float x0 = iv ? -1.0 : 0.0;
+    float winW = 1.0 - x0;
+    float winAsp = winW / max(uPlaneH, 0.5);
+    float cropW = vidAsp > winAsp ? winAsp / vidAsp : 1.0;
+    float cropH = vidAsp > winAsp ? 1.0 : vidAsp / max(winAsp, 0.01);
+    float cx = clamp(uFocus.x, cropW * 0.5, 1.0 - cropW * 0.5);
+    float cy = clamp(uFocus.y, cropH * 0.5, 1.0 - cropH * 0.5);
+    float nx = (st.x * 2.0 - 1.0 - x0) / winW;
+    float2 uv = float2(cx, cy) + (float2(nx, st.y) - 0.5) * float2(cropW, cropH);
     return uVideo.eval(clamp(uv, float2(0.0), float2(1.0)) * uVidSize);
 }
 
 half4 content(float2 st, float sigma) {
-    if (sigma < 0.0015) { return vtap(st); }
+    if (sigma < 0.0015) {
+        half4 c = vtap(st);
+        float2 px = float2(0.5, uPlaneH * 0.5) / max(uSize, float2(1.0));
+        half3 nb = vtap(st + float2(px.x, 0.0)).rgb + vtap(st - float2(px.x, 0.0)).rgb
+            + vtap(st + float2(0.0, px.y)).rgb + vtap(st - float2(0.0, px.y)).rgb;
+        c.rgb += (c.rgb - nb * 0.25) * 0.4;
+        return c;
+    }
     float2 rad = float2(sigma * 0.5, sigma / uPlaneH) * 1.8;
     float rot = hash12(st * 917.0) * 6.283;
     half4 acc = half4(0.0);
@@ -109,6 +130,42 @@ uniform float4 uGlobe;
 uniform float4 uGlobe2;
 uniform float4 uGlobe3;
 uniform float3 uLight;
+uniform float2 uFocus;
+uniform float uFit;
+uniform float4 uPlace;
+
+// uPlace, when its w is set, puts one part of the picture on the cover and another on the inner
+// screen. Cover: uPlace.x is the image position at the cover's right edge and uPlace.y is how much
+// of the image width the cover shows, so the subject can be cut in half. Inner: centered on
+// uPlace.z with width uPlace.w.
+float2 subjectUv(float2 st) {
+    float imgAsp = uTexSize.x / max(uTexSize.y, 1.0);
+    bool iv = uInner > 0.5;
+    float x0 = iv ? -1.0 : 0.0;
+    float winW = 1.0 - x0;
+    float winAsp = winW / max(uPlaneH, 0.5);
+    float nx = (st.x * 2.0 - 1.0 - x0) / winW;
+    if (uPlace.w > 0.01) {
+        float du = iv ? uPlace.w : uPlace.y;
+        float dv = du * imgAsp / max(winAsp, 0.01);
+        float u = iv ? uPlace.z + (nx - 0.5) * du : uPlace.x - (1.0 - nx) * du;
+        float v = uFocus.y + (st.y - 0.5) * dv;
+        if (u < 0.0 || v < 0.0 || u > 1.0 || v > 1.0) return float2(-1.0, -1.0);
+        return float2(u, v);
+    }
+    if (uFit > 0.5) {
+        float boxW = imgAsp > winAsp ? 1.0 : imgAsp / max(winAsp, 0.01);
+        float boxH = imgAsp > winAsp ? winAsp / max(imgAsp, 0.01) : 1.0;
+        float2 local = (float2(nx, st.y) - 0.5) / float2(boxW, boxH) + 0.5;
+        if (local.x < 0.0 || local.y < 0.0 || local.x > 1.0 || local.y > 1.0) return float2(-1.0, -1.0);
+        return local;
+    }
+    float cropW = imgAsp > winAsp ? winAsp / imgAsp : 1.0;
+    float cropH = imgAsp > winAsp ? 1.0 : imgAsp / max(winAsp, 0.01);
+    float cx = clamp(uFocus.x, cropW * 0.5, 1.0 - cropW * 0.5);
+    float cy = clamp(uFocus.y, cropH * 0.5, 1.0 - cropH * 0.5);
+    return clamp(float2(cx, cy) + (float2(nx, st.y) - 0.5) * float2(cropW, cropH), float2(0.0), float2(1.0));
+}
 
 half4 levels(float2 st, float sigma) {
     float2 p = st * uTexSize;
@@ -161,16 +218,20 @@ half4 cosmos(float2 st, float sigma, float t) {
 // lit along uLight. Open, the sphere is centered on the inner display; folded, the cover shows its
 // left limb. The spin axis rolls by uGlobe2.x and leans uGlobe3.x toward the viewer; uGlobe3.y
 // adds Saturn-like rings (radii in planet radii) with shadows both ways.
-float4 ringAt(float rr) {
-    if (rr < 1.24 || rr > 2.27) { return float4(0.0); }
-    float fine = 0.82 + 0.36 * vnoise(float2(rr * 420.0, 0.5));
+float4 ringAt(float rr, float ang) {
+    if (rr < 1.11 || rr > 2.27) { return float4(0.0); }
+    float fine = 0.62 + 0.38 * vnoise(float2(rr * 1400.0, ang * 3.0));
+    float grain = 0.78 + 0.22 * vnoise(float2(ang * 14.0, rr * 280.0));
     float a = 0.0;
-    float3 c = float3(0.8, 0.74, 0.62);
-    if (rr < 1.53) { a = 0.22; c = float3(0.55, 0.5, 0.45); }
-    else if (rr < 1.95) { a = 0.92; c = float3(0.86, 0.79, 0.64); }
-    else if (rr < 2.03) { a = 0.06; }
-    else if (abs(rr - 2.214) > 0.006) { a = 0.62; c = float3(0.76, 0.71, 0.6); }
-    return float4(c, clamp(a * fine, 0.0, 1.0));
+    float3 c = float3(0.82, 0.74, 0.58);
+    if (rr < 1.24) { a = 0.08; c = float3(0.45, 0.42, 0.4); }
+    else if (rr < 1.53) { a = 0.28 + 0.12 * fine; c = float3(0.58, 0.52, 0.44); }
+    else if (rr < 1.95) { a = 0.94; c = float3(0.9, 0.82, 0.64); }
+    else if (rr < 2.03) { a = 0.05; }
+    else if (abs(rr - 2.214) < 0.012 || abs(rr - 2.263) < 0.006) { a = 0.04; }
+    else { a = 0.7; c = float3(0.8, 0.74, 0.58); }
+    c *= 0.82 + 0.18 * fine;
+    return float4(c, clamp(a * grain, 0.0, 1.0));
 }
 
 half4 globe(float2 st, float sigma, float t) {
@@ -210,11 +271,27 @@ half4 globe(float2 st, float sigma, float t) {
         if (uGlobe3.y > 0.5) {
             float s = -dot(n, axis) / dot(light, axis);
             if (s > 0.0) {
-                float4 shadow = ringAt(length(n + light * s));
+                float4 shadow = ringAt(length(n + light * s), 0.0);
                 lit *= 1.0 - shadow.a * 0.85;
             }
         }
-        surf *= (0.03 + 0.97 * lit) * (0.75 + 0.25 * n.z);
+        float mu = clamp(n.z, 0.0, 1.0);
+        // Saturn's map is a smooth color field. The belts, ovals and polar hexagon are drawn
+        // here so they stay sharp on the phone instead of coming from that soft texture.
+        if (uGlobe3.y > 0.5) {
+            float belt = 0.5 + 0.5 * sin(lat * 70.0 + 2.2 * sin(lat * 18.0 + lon * 3.0));
+            float thread = 0.5 + 0.5 * sin(fract(lat * 7.0) * 6.28318 + 0.6 * sin(lon * 6.0));
+            float oval = smoothstep(0.78, 0.93, vnoise(float2(lon * 1.7 + 2.0, lat * 4.0)));
+            float hexEdge = abs(abs(lat) - (1.38 - 0.045 * cos(lon * 6.0)));
+            float hex = exp(-pow(hexEdge * 55.0, 2.0)) * smoothstep(1.15, 1.32, abs(lat));
+            surf *= 0.78 + 0.22 * belt;
+            surf *= 0.88 + 0.12 * thread;
+            surf += float3(0.16, 0.09, 0.03) * oval * smoothstep(0.4, 0.9, abs(lat));
+            surf += float3(0.22, 0.18, 0.1) * hex;
+        }
+        surf *= (0.015 + 0.985 * lit) * pow(mu, 0.42);
+        float3 halfv = normalize(light + float3(0.0, 0.0, 1.0));
+        surf += pow(clamp(dot(n, halfv), 0.0, 1.0), 48.0) * lit * 0.12;
         if (night) {
             float3 city = float3(levels(float2(uv.x, 0.5 + uv.y * 0.5), sg).rgb);
             surf += city * float3(1.0, 0.85, 0.6) * (1.0 - smoothstep(-0.12, 0.06, lam)) * 1.4;
@@ -226,12 +303,15 @@ half4 globe(float2 st, float sigma, float t) {
     if (uGlobe3.y > 0.5 && abs(axis.z) > 0.01) {
         float z = -(pos.x * axis.x + pos.y * axis.y) / axis.z;
         float3 rp = float3(pos.xy, z);
-        float4 ring = ringAt(length(rp));
+        float ang = atan(rp.y, rp.x);
+        float4 ring = ringAt(length(rp), ang);
         if (ring.a > 0.0 && (rd >= 1.0 || z > zs)) {
             float tc = dot(-rp, light);
             float3 nearest = rp + light * tc;
-            float shade = (tc > 0.0 && dot(nearest, nearest) < 1.0) ? 0.06 : 0.35 + 0.65 * abs(dot(light, axis));
-            col = mix(col, ring.rgb * shade, ring.a * clamp(1.0 - b * 30.0, 0.0, 1.0));
+            float inShadow = (tc > 0.0 && dot(nearest, nearest) < 1.0) ? 0.05 : 1.0;
+            float ansa = 0.55 + 0.45 * abs(sin(ang));
+            float shade = inShadow * (0.25 + 0.75 * abs(dot(light, axis))) * (0.7 + 0.5 * ansa);
+            col = mix(col, ring.rgb * shade, ring.a * clamp(1.0 - b * 40.0, 0.0, 1.0));
         }
     }
     return half4(half3(col), 1.0);
@@ -280,9 +360,11 @@ half4 nebula(float2 st, float sigma, float t, float amt) {
 }
 
 half4 content(float2 st, float sigma) {
+    if (uStyle > 3.5 && uStyle < 4.5) { return globe(st, sigma, uMotion > 0.5 ? uTime : 0.0); }
+    st = subjectUv(st);
+    if (st.x < 0.0) { return half4(0.0, 0.0, 0.0, 1.0); }
     if (uStyle > 5.5) { return depthView(st, sigma, uMotion > 0.5 ? uTime : 0.0, uMotion); }
     if (uStyle > 4.5) { return nebula(st, sigma, uMotion > 0.5 ? uTime : 0.0, uMotion); }
-    if (uStyle > 3.5) { return globe(st, sigma, uMotion > 0.5 ? uTime : 0.0); }
     if (uMotion < 0.5 || uStyle < 0.5) { return levels(st, sigma); }
     float t = uTime;
     if (uStyle > 2.5) { return cosmos(st, sigma, t); }
@@ -353,17 +435,25 @@ float fbm4(float2 p, float b) {
     return sum / 0.9375;
 }
 
-float stars(float2 p, float b, float t, float threshold) {
-    float2 g = p * 70.0;
+float starLayer(float2 p, float cells, float cutoff, float radius, float gain, float b, float t) {
+    float2 g = p * cells;
     float2 cell = floor(g);
     float h = hash21(cell);
-    if (h < threshold) { return 0.0; }
-    float2 sp = cell + 0.5 + 0.7 * float2(hash21(cell + 3.1) - 0.5, hash21(cell + 7.7) - 0.5);
-    float dd = length(g - sp) / 70.0;
-    float r = 0.0008 + 0.0012 * hash21(cell + 1.3);
+    if (h < cutoff) { return 0.0; }
+    float2 sp = cell + 0.5 + 0.94 * float2(hash21(cell + 3.1) - 0.5, hash21(cell + 7.7) - 0.5);
+    float dd = length(g - sp) / cells;
+    float mag = hash21(cell + 1.3);
+    mag = mag * mag;
+    float r = radius * (0.35 + mag);
     float re2 = r * r + b * b;
-    float tw = 0.75 + 0.25 * sin(t * (0.6 + h) + h * 40.0);
-    return exp(-dd * dd / re2) * (r * r) / re2 * tw;
+    float tw = 0.72 + 0.28 * sin(t * (0.35 + 1.8 * mag) + h * 40.0);
+    return exp(-dd * dd / re2) * (r * r) / re2 * tw * (0.25 + gain * mag);
+}
+
+// Two grids at unrelated scales, so the gaps are not a lattice. Bright stars are rare.
+float stars(float2 p, float b, float t, float threshold) {
+    return starLayer(p, 120.0, threshold, 0.0016, 1.6, b, t)
+        + starLayer(p + 19.7, 230.0, 0.62, 0.00045, 0.35, b, t);
 }
 """
 
@@ -539,8 +629,8 @@ float diskNoise(float r, float th, float t, float br, float seed) {
 half4 scene(float2 st, float bl, float t) {
     bool iv = uInner > 0.5;
     float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
-    float scale = iv ? 0.082 : 0.12;
-    float2 c = float2(iv ? 0.0 : 1.12, uPlaneH * 0.5);
+    float scale = iv ? 0.17 : 0.21;
+    float2 c = float2(iv ? 0.0 : 0.84, uPlaneH * 0.5);
     float2 q = (p - c) / scale;
     q.y = -q.y;
     float bb = length(q);
@@ -564,6 +654,7 @@ half4 scene(float2 st, float bl, float t) {
         float s = stars(sp, bl * 0.5, t, 0.86) + 0.6 * stars(sp * 1.7 + 3.0, bl * 0.5, t, 0.9);
         float band = exp(-pow((lat - 0.25 * lon) * 3.0, 2.0)) * fbm4(float2(lon, lat) * 3.0, bl);
         col = uC4 * s * 1.3 + uC0 * (0.6 + 0.8 * band * band);
+        if (bb < 2.55) { col *= 1.0 - smoothstep(2.15, 2.55, bb); }
     }
 
     float phi0 = atan(-n.z, dot(n, e));
@@ -583,7 +674,9 @@ half4 scene(float2 st, float bl, float t) {
             float g = sqrt(1.0 - 1.5 / r) / (1.0 - 0.75 * v * dot(vdir, kdir));
             float I = pow(3.0 / r, 1.8) * smoothstep(3.0, 3.25, r) * (1.0 - smoothstep(8.0, 12.0, r));
             float nz = diskNoise(r, th, t, br, k * 13.0);
-            float rings = 0.75 + 0.5 * vnoise(float2(r * 5.0, k));
+            float streak = 0.55 + 0.45 * vnoise(float2(th * 4.0 - log(r) * 8.0, r * 12.0));
+            float filament = pow(0.5 + 0.5 * sin(th * 22.0 - log(r) * 36.0 + nz * 9.0), 5.0);
+            float rings = (0.5 + 0.7 * vnoise(float2(r * 14.0, k))) * streak * (0.55 + 0.9 * filament);
             float lum = I * (0.55 + 1.0 * nz * rings) * pow(g, 2.5) * 1.5;
             float3 tint = mix(uC3, uC2, smoothstep(0.1, 0.6, lum));
             tint = mix(tint, uC1, smoothstep(0.7, 1.6, lum));
@@ -591,7 +684,9 @@ half4 scene(float2 st, float bl, float t) {
             col = col * (1.0 - a) + tint * lum * 1.6;
         }
     }
-    col += uC2 * 0.12 * exp(-pow((bb - 2.6) * 2.2, 2.0));
+    float ring = exp(-pow((bb - 2.60) * 26.0, 2.0));
+    float glow = exp(-pow((bb - 2.60) * 6.5, 2.0));
+    col += uC1 * ring * 2.4 + uC2 * glow * 0.45;
     col = col / (1.0 + col * 0.35);
     return half4(half3(col), 1.0);
 }
@@ -610,12 +705,12 @@ float galaxyField(float r, float ap, float br, float seed) {
 
 // Resolved stars in the disk, denser where [dens] is high; they orbit with the texture.
 float diskStars(float r, float ap, float br, float dens, float seed) {
-    float2 pos = r * float2(cos(ap), sin(ap)) * 9.0 + seed;
-    float2 cell = floor(pos * 28.0);
+    float2 pos = r * float2(cos(ap), sin(ap)) * 36.0 + seed;
+    float2 cell = floor(pos);
     float h = hash21(cell);
     if (h > dens) { return 0.0; }
     float2 sp = cell + 0.5 + 0.6 * float2(hash21(cell + 2.3) - 0.5, hash21(cell + 5.1) - 0.5);
-    float d = length(pos * 28.0 - sp);
+    float d = length(pos - sp);
     float s = 0.18 + 0.25 * hash21(cell + 9.7);
     float e2 = s * s + br * br * 600.0;
     return exp(-d * d / e2) * (s * s) / e2;
@@ -624,8 +719,8 @@ float diskStars(float r, float ap, float br, float dens, float seed) {
 half4 scene(float2 st, float bl, float t) {
     bool iv = uInner > 0.5;
     float2 p = float2(st.x * 2.0 - 1.0, st.y * uPlaneH);
-    float R = iv ? 1.25 : 1.6;
-    float2 c = float2(iv ? 0.0 : 1.1, uPlaneH * 0.5);
+    float R = iv ? 1.35 : 1.5;
+    float2 c = float2(iv ? 0.0 : 0.78, uPlaneH * 0.5);
     float2 q = (p - c) / R;
     float cr = cos(0.45);
     float sr = sin(0.45);
@@ -637,11 +732,12 @@ half4 scene(float2 st, float bl, float t) {
 
     float pattern = 0.025 * t;
     float lr = log(max(r, 0.012));
-    float armPh = 2.0 * (a - pattern - lr * 3.4);
-    float arm = pow(0.5 + 0.5 * cos(armPh), 3.0);
-    float spur = pow(0.5 + 0.5 * cos(2.0 * armPh + 1.3), 6.0) * 0.35;
-    float armAll = clamp(arm + spur, 0.0, 1.0);
-    float lane = pow(0.5 + 0.5 * cos(armPh + 0.6), 14.0);
+    float armPh = 2.0 * (a - pattern - lr * 3.2 + 0.22 * sin(3.0 * lr + a) + 0.07 * sin(8.0 * a - lr * 4.0));
+    float arm = pow(0.5 + 0.5 * cos(armPh), 2.2);
+    float spur = pow(0.5 + 0.5 * cos(2.0 * armPh + 1.3), 5.0) * 0.4;
+    float clump = 0.4 + 0.6 * vnoise(float2(a * 6.0 + pattern * 2.0, lr * 10.0));
+    float armAll = clamp((arm + spur) * clump, 0.0, 1.0);
+    float lane = pow(0.5 + 0.5 * cos(armPh + 0.55), 16.0);
 
     float per = 40.0;
     float ph0 = fract(t / per);
@@ -653,10 +749,11 @@ half4 scene(float2 st, float bl, float t) {
     float tex = mix(galaxyField(r, a0, br, 0.0), galaxyField(r, a1, br, 19.0), w);
     float fine = mix(galaxyField(r * 3.0, a0, br * 3.0, 7.0), galaxyField(r * 3.0, a1, br * 3.0, 31.0), w);
 
-    float disk = exp(-r / 0.3) * smoothstep(1.2, 0.55, r);
-    float bulge = exp(-r * r / 0.006) * 2.0 + exp(-r / 0.085) * 0.8;
-    float3 col = uC0 + float3(0.9, 0.95, 1.0) * stars(st * float2(2.0 / uPlaneH, 1.0), bl, t, 0.95) * 0.55;
-    col += uC1 * disk * (0.25 + 0.35 * tex);
+    float disk = exp(-r / 0.27) * smoothstep(1.15, 0.45, r);
+    float bulge = exp(-r * r / 0.004) * 2.6 + exp(-r / 0.065) * 1.05;
+    float bar = exp(-pow(q.y * 8.0, 2.0)) * exp(-r * r / 0.07);
+    float3 col = uC0 + float3(0.9, 0.95, 1.0) * stars(st * float2(2.0 / uPlaneH, 1.0), bl, t, 0.94) * 0.7;
+    col += uC1 * (disk * (0.16 + 0.42 * tex) + bar * 0.7);
     float armLight = armAll * (0.5 + 0.9 * tex) * disk * 2.2;
     col += uC2 * armLight * (0.55 + 0.7 * fine);
 
@@ -684,7 +781,223 @@ half4 scene(float2 st, float bl, float t) {
         Scene.IRIS -> SCENE_IRIS
         Scene.BLACK_HOLE -> SCENE_BLACK_HOLE
         Scene.GALAXY -> SCENE_GALAXY
+        Scene.HILLS -> SCENE_HILLS
+        Scene.AURORA -> SCENE_AURORA
+        Scene.SEA -> SCENE_SEA
+        Scene.SNOW_FOREST -> SCENE_SNOW_FOREST
+        Scene.SWIRL -> SCENE_SWIRL
     }
+
+    // Illustrated scenes. Each keeps its focal point (sun, moon, brightest aurora) right of center,
+    // so it sits on the folded cover as well as on the open inner screen.
+
+    // Layered ridges drifting at different speeds. Palette: c0 sky top, c1 horizon, c2 far ridge,
+    // c3 near ridge, c4 sun or moon.
+    private const val SCENE_HILLS = """
+half4 scene(float2 st, float b, float t) {
+    float asp = 2.0 / uPlaneH;
+    float x = st.x * asp;
+    float y = st.y;
+    float3 col = mix(uC0, uC1, smoothstep(0.0, 0.62, y));
+    float night = 1.0 - smoothstep(0.08, 0.35, dot(uC0, float3(0.299, 0.587, 0.114)));
+    col += float3(0.9, 0.92, 1.0) * stars(float2(x, y), b, t * 4.0, 0.9) * night * (1.0 - smoothstep(0.2, 0.55, y));
+    float2 sc = float2(0.72 * asp, 0.36);
+    float sd = length(float2(x, y) - sc);
+    float sr = 0.055;
+    col = mix(col, uC4, 1.0 - smoothstep(sr - b - 0.002, sr + b + 0.002, sd));
+    col += uC4 * 0.35 * exp(-sd * 9.0);
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float cy = 0.17 + fi * 0.1;
+        float cx = x * (2.0 + fi) + t * (0.1 + 0.05 * fi) + fi * 7.0;
+        float band = smoothstep(0.55, 0.75, fbm4(float2(cx, cy * 6.0 + fi), b * 4.0)) * exp(-pow((y - cy) / 0.035, 2.0));
+        col = mix(col, mix(uC1, float3(1.0), 0.35), band * 0.55);
+    }
+    for (int k = 0; k < 5; k++) {
+        float fk = float(k);
+        float depth = fk / 4.0;
+        float freq = 1.6 + fk * 0.7;
+        float h = 0.50 + 0.085 * fk - (0.10 - 0.012 * fk) * fbm4(float2(x * freq + t * (0.013 + 0.042 * fk) + fk * 13.0, fk), b);
+        float edge = b + 0.0015;
+        float m = smoothstep(h - edge, h + edge, y);
+        float3 ridge = mix(mix(uC2, uC1, 0.45), uC3, depth);
+        ridge = mix(ridge, uC1, (1.0 - depth) * 0.35 * smoothstep(h, h + 0.12, y));
+        col = mix(col, ridge, m);
+    }
+    return half4(half3(col), 1.0);
+}
+"""
+
+    // Aurora curtains over mountains, mirrored in a still lake. Palette: c0 sky, c1 aurora low,
+    // c2 aurora high, c3 mountains, c4 lake tint.
+    private const val SCENE_AURORA = """
+half4 scene(float2 st, float b, float t) {
+    float asp = 2.0 / uPlaneH;
+    float x = st.x * asp;
+    float y = st.y;
+    float horizon = 0.70;
+    bool water = y > horizon;
+    float ry = water ? 2.0 * horizon - y + 0.004 * sin(x * 90.0 + t * 1.2) * (y - horizon) * 8.0 : y;
+    float3 col = mix(uC0 * 0.6, uC0, smoothstep(0.0, horizon, ry));
+    col += float3(0.9, 0.95, 1.0) * stars(float2(x, ry), b, t * 4.0, 0.9);
+    for (int i = 0; i < 3; i++) {
+        float fi = float(i);
+        float line = 0.30 + 0.08 * fi + 0.06 * sin(x * (2.2 + fi) + t * (0.25 + 0.1 * fi) + fi * 2.0)
+            + 0.03 * sin(x * 5.3 - t * 0.31 + fi);
+        float above = line - ry;
+        float curtain = above > 0.0 ? exp(-above / (0.12 + 0.05 * fi)) : exp(-pow(above / 0.015, 2.0));
+        float rays = 0.55 + 0.45 * vnoise(float2(x * 60.0 + fi * 11.0, t * 0.6 + fi));
+        float3 c = mix(uC1, uC2, clamp(smoothstep(0.0, 0.18, above) * 0.8 + 0.1 * fi, 0.0, 1.0));
+        float focus = 0.6 + 0.4 * exp(-pow((x - 0.7 * asp) / (0.5 * asp), 2.0));
+        col += c * curtain * rays * (0.55 - 0.12 * fi) * focus;
+    }
+    float ridge = horizon - 0.06 - 0.07 * fbm4(float2(x * 2.6 + 3.0, 1.0), b) - 0.04 * fbm4(float2(x * 7.0, 2.0), b);
+    float edge = b + 0.0015;
+    col = mix(col, uC3, smoothstep(ridge - edge, ridge + edge, ry));
+    if (water) {
+        col = mix(col, uC4, 0.45) * 0.75;
+    }
+    col = 1.0 - exp(-col * 1.25);
+    return half4(half3(col), 1.0);
+}
+"""
+
+    // A low sun over the sea, waves rolling toward the viewer and a glitter path.
+    // Palette: c0 sky top, c1 horizon, c2 sun, c3 far sea, c4 near sea.
+    private const val SCENE_SEA = """
+half4 scene(float2 st, float b, float t) {
+    float asp = 2.0 / uPlaneH;
+    float x = st.x * asp;
+    float y = st.y;
+    float horizon = 0.56;
+    float3 col = mix(uC0, uC1, smoothstep(0.05, horizon, y));
+    float2 sc = float2(0.70 * asp, horizon - 0.07);
+    float sd = length(float2(x, y) - sc);
+    float sr = 0.06;
+    col = mix(col, uC2, 1.0 - smoothstep(sr - b - 0.002, sr + b + 0.002, sd));
+    col += uC2 * 0.4 * exp(-sd * 7.0);
+    for (int i = 0; i < 2; i++) {
+        float fi = float(i);
+        float cy = 0.22 + 0.12 * fi;
+        float s = smoothstep(0.5, 0.75, fbm4(float2(x * 1.5 + t * 0.06 * (1.0 + fi) + fi * 9.0, fi * 3.0), b * 3.0));
+        col = mix(col, mix(uC1, uC2, 0.3), s * exp(-pow((y - cy) / 0.03, 2.0)) * 0.6);
+    }
+    if (y > horizon) {
+        float dz = (y - horizon) / (1.0 - horizon);
+        float3 sea = mix(uC3, uC4, dz);
+        float persp = 1.0 / (0.04 + dz);
+        float wv = 0.0;
+        for (int k = 0; k < 3; k++) {
+            float fk = float(k);
+            wv += sin(x * persp * (2.0 + fk * 1.7) * 0.6 + t * (0.6 + 0.3 * fk) + fk * 1.3 + y * persp * 0.9) / (1.0 + fk);
+        }
+        float near = smoothstep(0.0, 0.2, dz);
+        float crest = smoothstep(0.9, 1.4, wv) * clamp(1.0 - b * 30.0, 0.0, 1.0) * near;
+        sea = mix(sea, mix(uC4, float3(1.0), 0.5), crest * (0.25 + 0.4 * dz));
+        float path = exp(-pow((x - sc.x) / (0.02 + 0.12 * dz), 2.0));
+        float glint = smoothstep(0.6, 1.0, 0.5 + 0.5 * sin(x * persp * 3.0 + t * 1.1 + y * persp * 2.0));
+        sea += uC2 * path * (0.3 + 0.7 * mix(0.5, glint, near)) * (0.6 - 0.3 * dz);
+        col = sea;
+    }
+    return half4(half3(col), 1.0);
+}
+"""
+
+    // Pines in three layers with snow falling at three depths. Palette: c0 sky top, c1 sky low,
+    // c2 far pines, c3 near pines, c4 snow.
+    private const val SCENE_SNOW_FOREST = """
+float pineCover(float x, float y, float base, float cellW, float hmax, float seed, float ae) {
+    float cx = x / cellW;
+    float ci = floor(cx);
+    float u = (fract(cx) - 0.5 - (hash11(ci * 3.1 + seed) - 0.5) * 0.3) * cellW;
+    float h = hmax * (0.55 + 0.45 * hash11(ci * 1.7 + seed));
+    float top = base - h;
+    float rel = clamp((y - top) / h, 0.0, 1.0);
+    float tier = fract(rel * 4.0);
+    float halfw = cellW * (0.04 + 0.34 * rel) * (0.7 + 0.3 * tier);
+    float side = 1.0 - smoothstep(halfw - ae, halfw + ae, abs(u));
+    return side * smoothstep(top - ae, top + ae, y) * (1.0 - smoothstep(base - ae, base + ae, y));
+}
+
+float flakes(float2 p, float density, float speed, float size, float t, float seed, float b) {
+    float2 q = float2(p.x * density + 0.4 * sin(p.y * 3.0 + t * 0.4 + seed), p.y * density - t * speed);
+    float2 cell = floor(q);
+    float2 f = fract(q) - 0.5;
+    float h = hash21(cell + seed);
+    float2 r = float2(hash21(cell + seed + 3.1), hash21(cell + seed + 7.3)) - 0.5;
+    float d = length(f - r * 0.6) / density;
+    float rad = size * (0.5 + h);
+    float re2 = rad * rad + b * b;
+    return step(0.35, h) * exp(-d * d / re2) * (rad * rad) / re2;
+}
+
+half4 scene(float2 st, float b, float t) {
+    float asp = 2.0 / uPlaneH;
+    float2 p = float2(st.x * asp, st.y);
+    float3 col = mix(uC0, uC1, smoothstep(0.0, 0.75, p.y));
+    float2 mc = float2(0.72 * asp, 0.22);
+    float md = length(p - mc);
+    col = mix(col, mix(uC4, uC1, 0.15), 1.0 - smoothstep(0.045 - b - 0.002, 0.045 + b + 0.002, md));
+    col += uC4 * 0.18 * exp(-md * 8.0);
+    float ae = b + 0.0015;
+    col += uC4 * flakes(p, 46.0, 2.6, 0.0012, t * 4.0, 1.0, b) * 0.5;
+    float far = pineCover(p.x + 0.3, p.y, 0.70, 0.07, 0.16, 2.0, ae);
+    col = mix(col, mix(uC2, uC1, 0.35), far);
+    col = mix(col, mix(uC2, uC4, 0.55), smoothstep(0.70 - ae, 0.70 + ae, p.y));
+    col += uC4 * flakes(p, 26.0, 1.8, 0.0018, t * 4.0, 5.0, b) * 0.7;
+    float mid = pineCover(p.x + 1.7, p.y, 0.84, 0.12, 0.30, 9.0, ae);
+    col = mix(col, uC2, mid);
+    col = mix(col, mix(uC3, uC4, 0.7), smoothstep(0.84 - ae, 0.84 + ae, p.y));
+    float near = pineCover(p.x + 4.2, p.y, 1.02, 0.22, 0.55, 17.0, ae);
+    col = mix(col, uC3, near);
+    col += uC4 * flakes(p, 12.0, 1.1, 0.003, t * 4.0, 11.0, b);
+    return half4(half3(col), 1.0);
+}
+"""
+
+    // Swirling brush-stroke sky with a glowing moon and haloed stars over dark hills, after the
+    // night paintings of the 1880s. Palette: c0 deep sky, c1 mid sky, c2 strokes, c3 moon and
+    // stars, c4 hills.
+    private const val SCENE_SWIRL = """
+half4 scene(float2 st, float b, float t) {
+    float asp = 2.0 / uPlaneH;
+    float2 p = float2(st.x * asp, st.y);
+    float2 q = p;
+    for (int i = 0; i < 2; i++) {
+        float2 c = i == 0 ? float2(0.30 * asp, 0.32) : float2(0.66 * asp, 0.30);
+        float2 d = q - c;
+        float r = length(d);
+        float ang = 2.2 * exp(-r * 7.0) * (1.0 + 0.15 * sin(t * 0.3 + float(i)));
+        float cs = cos(ang);
+        float sn = sin(ang);
+        q = c + float2(cs * d.x - sn * d.y, sn * d.x + cs * d.y);
+    }
+    q += 0.03 * float2(sin(q.y * 9.0 + t * 0.25), cos(q.x * 8.0 - t * 0.2));
+    float flow = q.y * 14.0 + 1.6 * sin(q.x * 6.0 + t * 0.15);
+    float keep = clamp(1.0 - b * 40.0, 0.0, 1.0);
+    float strokes = 0.5 + 0.5 * sin(flow * 3.0 + vnoise(q * 40.0) * 3.0);
+    float3 col = mix(uC0, uC1, 0.5 + 0.5 * sin(flow));
+    col = mix(col, uC2, smoothstep(0.55, 1.0, strokes) * 0.55 * keep + 0.12);
+    float2 m = float2(0.80 * asp, 0.16);
+    float md = length(p - m);
+    col = mix(col, uC3, 1.0 - smoothstep(0.045 - b, 0.05 + b, md));
+    col += uC3 * 0.5 * exp(-md * 10.0) * (0.85 + 0.15 * sin(md * 120.0 - t * 0.6));
+    for (int s = 0; s < 9; s++) {
+        float fs = float(s);
+        float2 sp = float2(hash11(fs * 2.3 + 1.0) * asp, 0.05 + 0.45 * hash11(fs * 5.1 + 2.0));
+        float d = length(p - sp);
+        float pulse = 0.8 + 0.2 * sin(t * (0.4 + 0.3 * hash11(fs)) + fs);
+        col = mix(col, uC3, (1.0 - smoothstep(0.010 - b, 0.012 + b, d)) * 0.9);
+        col += uC3 * 0.35 * pulse * exp(-d * 30.0) * (0.7 + 0.3 * sin(d * 260.0 - t * 0.8));
+    }
+    float hill = 0.80 - 0.05 * sin(p.x * 4.0 + 1.0) - 0.025 * sin(p.x * 11.0);
+    float edge = b + 0.0015;
+    float land = smoothstep(hill - edge, hill + edge, p.y);
+    float3 landCol = mix(uC4, uC1 * 0.4, (0.5 + 0.5 * sin(p.y * 40.0 + p.x * 10.0 + vnoise(p * 30.0) * 2.0)) * keep * 0.6);
+    col = mix(col, landCol, land);
+    return half4(half3(col), 1.0);
+}
+"""
 
     /**
      * Fold effect stage. Maps each surface pixel to the shared image plane along the ray from
@@ -754,11 +1067,14 @@ half4 main(float2 fragCoord) {
         // Fold effect off: the wallpaper as a flat picture.
         s = 0.0;
     } else if (fx == 0) {
-        // Duo Frost, after Apple's model: the glass lifts away from a fixed picture, so blur and
-        // shade grow toward the free edge until it falls into black at full fold.
-        float prog = inner ? clamp((PI - a) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
+        // Duo Frost. The picture stays on the glass and both edges stay on the panel. A ray that
+        // missed the picture was leaving the cover's right side and the inner screen's left side blank.
+        float span = 0.5 * PI;
+        float prog = inner ? clamp((PI - a) / span, 0.0, 1.0) : clamp(a / span, 0.0, 1.0);
         float motion = smoothstep(0.0, 0.75, prog);
-        q = mix(qFlat, qPersp, clamp(I, 0.0, 1.0));
+        float pinch = 1.0 - abs(c);
+        float u2 = pow(clamp(u, 0.0, 1.0), 1.0 + 1.6 * pinch);
+        q = moving ? float2(inner ? -u2 : u2, yPlane) : qFlat;
         if (moving) {
             sigma = DUO_SIGMA * I * motion * pow(d, 1.5);
             float dg = clamp((d - 0.2) / 0.8, 0.0, 1.0);

@@ -17,15 +17,20 @@ import android.view.MotionEvent
 import android.view.View
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
+import com.lumifold.wallpaper.model.WallpaperRepository
 import com.lumifold.wallpaper.model.WallpaperSource
+import com.lumifold.wallpaper.render.FoldOptics
 import com.lumifold.wallpaper.render.SurfaceSpec
+import com.lumifold.wallpaper.render.ClipSource
 import com.lumifold.wallpaper.render.VideoFrames
+import com.lumifold.wallpaper.render.VideoPreviewSlots
 import com.lumifold.wallpaper.render.WallpaperShader
 import com.lumifold.wallpaper.service.FoldWallpaperService
 import com.lumifold.wallpaper.service.VideoCache
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import kotlin.math.cos
+import kotlin.math.exp
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.sin
@@ -55,6 +60,13 @@ class FoldPreviewView(context: Context) : View(context) {
     var flat = false
         set(value) { field = value; invalidate() }
 
+    /** Thumbnails leave touches to the card around them. The opening model keeps them. */
+    var handleTouches = true
+
+    /** Real hinge angle for the flat view's opening effect; NaN draws the screen at rest. */
+    var hingeDegrees = Float.NaN
+        set(value) { field = value; invalidate() }
+
     private var item: WallpaperItem? = null
     private var effect = OpeningEffect.DEFAULT
     private var intensity = 1f
@@ -66,6 +78,11 @@ class FoldPreviewView(context: Context) : View(context) {
     private var loadingId: String? = null
     private var video: VideoFrames? = null
     private var videoId: String? = null
+    private var photoLoadedEdge = -1
+    private var videoSource: ClipSource? = null
+    private var holdsSlot = false
+    private var slotRetry = false
+    private var videoToken = 0
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private val startMs = SystemClock.uptimeMillis()
@@ -87,43 +104,45 @@ class FoldPreviewView(context: Context) : View(context) {
     private var eyeWorld = Vec(0.5f, 0f, 6f)
 
     fun setWallpaper(next: WallpaperItem) {
-        if (item?.id == next.id) return
-        item = next
-        stopVideo()
-        val cover = WallpaperShader.create(next)
-        val clip = next.source as? WallpaperSource.Video
-        if (clip != null) {
-            loadingId = next.id
-            loader.execute {
-                val poster = runCatching { WallpaperShader.decodePoster(resources, clip) }.getOrNull()
-                mainHandler.post {
-                    if (loadingId != next.id) return@post
-                    loadingId = null
-                    poster?.let { cover.setVideoFrame(it) }
-                    install(cover)
-                    refreshVideo()
-                }
+        val edge = photoEdge()
+        if (item?.id == next.id) {
+            val photoNeedsReload = next.source is WallpaperSource.Photo &&
+                coverShader != null && photoLoadedEdge != edge
+            if (!photoNeedsReload) {
+                refreshVideo()
+                return
             }
-            return
         }
-        val photo = next.source as? WallpaperSource.Photo
-        if (photo == null) {
-            install(cover)
-            return
-        }
+        item = next
+        photoLoadedEdge = edge
+        stopVideo()
         loadingId = next.id
+        // Compiling a shader and decoding a photo take tens of milliseconds; doing them here made
+        // the grid stutter while scrolling.
         loader.execute {
-            val pyramid = runCatching {
-                WallpaperShader.buildPyramid(resources, photo, TEX_W, (TEX_W * PLANE_H / 2f).toInt())
-            }.getOrNull()
+            val cover = runCatching { WallpaperShader.create(next) }.getOrNull() ?: return@execute
+            var pyramid: com.lumifold.wallpaper.render.BlurPyramid? = null
+            when (val source = next.source) {
+                is WallpaperSource.Video ->
+                    runCatching { WallpaperShader.decodePoster(resources, source) }.getOrNull()?.let { cover.setVideoFrame(it) }
+                is WallpaperSource.Photo -> {
+                    pyramid = runCatching {
+                        val plane = measuredPlane()
+                        val texW = min(1600, measuredInnerWidth())
+                        WallpaperShader.buildPyramid(resources, source, texW, (texW * plane / 2f).toInt(), edge)
+                    }.getOrNull() ?: return@execute
+                    cover.attachPyramid(pyramid)
+                }
+                is WallpaperSource.Generative -> Unit
+            }
             mainHandler.post {
-                if (loadingId != next.id || pyramid == null) {
+                if (loadingId != next.id) {
                     pyramid?.recycle()
                     return@post
                 }
                 loadingId = null
-                cover.attachPyramid(pyramid)
                 install(cover)
+                refreshVideo()
             }
         }
     }
@@ -131,7 +150,8 @@ class FoldPreviewView(context: Context) : View(context) {
     private fun install(cover: WallpaperShader) {
         val oldPyramid = coverShader?.pyramid
         coverShader = cover
-        innerShader = cover.duplicate()
+        // The flat view draws one screen, so it needs only one shader.
+        innerShader = if (flat) cover else cover.duplicate()
         if (oldPyramid != null && oldPyramid !== cover.pyramid) oldPyramid.recycle()
         invalidate()
     }
@@ -145,42 +165,116 @@ class FoldPreviewView(context: Context) : View(context) {
         invalidate()
     }
 
-    /** Starts the current video wallpaper's clip once it has been downloaded. */
+    /**
+     * Plays the current video wallpaper. Grid tiles play the bundled loop; the large preview plays
+     * the full clip once it is on the phone, the same footage the wallpaper uses.
+     */
     fun refreshVideo() {
         val current = item ?: return
         if (current.source !is WallpaperSource.Video || !isAttachedToWindow || coverShader?.item?.id != current.id) return
-        if (videoId == current.id && video != null) return
-        if (!VideoCache.isCached(context, current)) return
+        val edge = previewEdge()
+        if (edge == 0) return
+        val needsSlot = edge <= 640
+        val source = (if (needsSlot) ClipSource.light(context, current) else ClipSource.best(context, current)) ?: return
+        if (videoId == current.id && videoSource == source) return
         stopVideo()
-        video = runCatching {
-            VideoFrames(VideoCache.file(context, current), mainHandler) { frame ->
-                if (item?.id == current.id) {
-                    coverShader?.setVideoFrame(frame)
-                    innerShader?.setVideoFrame(frame)
-                    invalidate()
+        if (needsSlot) {
+            if (!VideoPreviewSlots.tryAcquire()) {
+                if (!slotRetry) {
+                    slotRetry = true
+                    mainHandler.postDelayed({
+                        slotRetry = false
+                        refreshVideo()
+                    }, 500)
                 }
+                return
             }
-        }.getOrNull()
+            holdsSlot = true
+        }
+        videoSource = source
         videoId = current.id
-        updateVideoPlayback()
+        val token = ++videoToken
+        // Opening the file and reading its size blocks for a moment; keep it off the main thread.
+        videoLoader.execute {
+            val frames = runCatching {
+                VideoFrames(context, source, mainHandler, edge, onError = { retryVideoSoon() }) { frame ->
+                    if (item?.id == current.id) {
+                        coverShader?.setVideoFrame(frame)
+                        if (innerShader !== coverShader) innerShader?.setVideoFrame(frame)
+                        invalidate()
+                    }
+                }
+            }.getOrNull()
+            mainHandler.post {
+                if (token != videoToken) {
+                    frames?.close()
+                    return@post
+                }
+                if (frames == null) {
+                    stopVideo()
+                    return@post
+                }
+                video = frames
+                updateVideoPlayback()
+            }
+        }
+    }
+
+    private fun runsOnClock(): Boolean = when (val s = item?.source) {
+        is WallpaperSource.Generative -> true
+        is WallpaperSource.Photo -> s.motion != com.lumifold.wallpaper.model.MotionStyle.NONE
+        else -> false
+    }
+
+    /** A decoder can be refused while many tiles start at once; try again shortly. */
+    private fun retryVideoSoon() {
+        mainHandler.post {
+            stopVideo()
+            mainHandler.postDelayed({ refreshVideo() }, 900L + (Math.random() * 1200).toLong())
+        }
+    }
+
+    private fun previewEdge(): Int = when {
+        width <= 0 -> 0
+        width < 900 -> 640
+        else -> 1920
+    }
+
+    private fun photoEdge(): Int = when {
+        width <= 0 -> 960
+        width < 900 -> 960
+        else -> 1920
     }
 
     private fun stopVideo() {
+        videoToken++
         video?.close()
         video = null
         videoId = null
+        videoSource = null
+        if (holdsSlot) {
+            holdsSlot = false
+            VideoPreviewSlots.release()
+        }
+    }
+
+    private val slotListener = {
+        updateVideoPlayback()
+        if (!VideoPreviewSlots.scrolling) refreshVideo()
     }
 
     private fun updateVideoPlayback() {
-        if (motion) video?.play() else video?.pause()
+        if (motion && !VideoPreviewSlots.scrolling) video?.play() else video?.pause()
     }
 
     override fun onAttachedToWindow() {
         super.onAttachedToWindow()
+        VideoPreviewSlots.addListener(slotListener)
         refreshVideo()
     }
 
     override fun onDetachedFromWindow() {
+        VideoPreviewSlots.removeListener(slotListener)
         stopVideo()
         super.onDetachedFromWindow()
     }
@@ -207,7 +301,13 @@ class FoldPreviewView(context: Context) : View(context) {
         invalidate()
     }
 
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        item?.let { setWallpaper(it) }
+    }
+
     override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!handleTouches) return false
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> {
                 parent?.requestDisallowInterceptTouchEvent(true)
@@ -229,10 +329,13 @@ class FoldPreviewView(context: Context) : View(context) {
         super.onDraw(canvas)
         if (flat) {
             drawFlat(canvas)
-            if (motion && item != null) postInvalidateOnAnimation()
+            // Video frames redraw as they arrive; only drawn and drifting scenes need a clock.
+            if (motion && runsOnClock() && !VideoPreviewSlots.scrolling) {
+                if (width < 900) postInvalidateDelayed(THUMB_FRAME_MS) else postInvalidateOnAnimation()
+            }
             return
         }
-        if (isAutoPlaying) updateAngle(timelineAngle(SystemClock.uptimeMillis() - playStartMs))
+        if (isAutoPlaying && !VideoPreviewSlots.scrolling) updateAngle(timelineAngle(SystemClock.uptimeMillis() - playStartMs))
 
         val a = Math.toRadians(angle.toDouble()).toFloat()
         val open = smooth(angle / 180f)
@@ -242,23 +345,75 @@ class FoldPreviewView(context: Context) : View(context) {
         drawShadow(canvas, cam, a)
         drawBackLeaf(canvas, cam)
         drawMovingLeaf(canvas, cam, a)
+        drawCrease(canvas, cam, a)
 
-        if (isAutoPlaying || (motion && item != null)) postInvalidateOnAnimation()
+        if (!VideoPreviewSlots.scrolling && (isAutoPlaying || (motion && item != null))) postInvalidateOnAnimation()
+    }
+
+    private fun prefs() =
+        context.getSharedPreferences(WallpaperRepository.PREFS_NAME, Context.MODE_PRIVATE)
+
+    private fun measuredInnerWidth(): Int =
+        prefs().getInt(WallpaperRepository.KEY_INNER_W, WallpaperRepository.DEFAULT_INNER_W)
+
+    /** Plane height from the sizes the wallpaper has measured on this phone. */
+    private fun measuredPlane(): Float {
+        val p = prefs()
+        return FoldOptics.planeHeight(
+            p.getInt(WallpaperRepository.KEY_INNER_W, WallpaperRepository.DEFAULT_INNER_W),
+            p.getInt(WallpaperRepository.KEY_INNER_H, WallpaperRepository.DEFAULT_INNER_H),
+            p.getInt(WallpaperRepository.KEY_COVER_W, WallpaperRepository.DEFAULT_COVER_W),
+            p.getInt(WallpaperRepository.KEY_COVER_H, WallpaperRepository.DEFAULT_COVER_H)
+        )
+    }
+
+    private fun innerSpec() = INNER_SPEC.copy(planeHeight = measuredPlane())
+
+    private fun coverSpec() = COVER_SPEC.copy(planeHeight = measuredPlane())
+
+    /**
+     * The display the app is open on. A tall cover uses the cover crop; the near-square inner
+     * display uses the inner crop. Both use the measured plane, so this matches the wallpaper.
+     */
+    private fun liveSpec(): SurfaceSpec {
+        val p = prefs()
+        val iw = p.getInt(WallpaperRepository.KEY_INNER_W, WallpaperRepository.DEFAULT_INNER_W)
+        val ih = p.getInt(WallpaperRepository.KEY_INNER_H, WallpaperRepository.DEFAULT_INNER_H)
+        val cw = p.getInt(WallpaperRepository.KEY_COVER_W, WallpaperRepository.DEFAULT_COVER_W)
+        val ch = p.getInt(WallpaperRepository.KEY_COVER_H, WallpaperRepository.DEFAULT_COVER_H)
+        val plane = FoldOptics.planeHeight(iw, ih, cw, ch)
+        val dm = resources.displayMetrics
+        return if (FoldOptics.isInnerDisplay(dm.widthPixels, dm.heightPixels)) {
+            SurfaceSpec(iw, ih, 0, true, ih.toFloat() / (iw * 0.5f), plane)
+        } else {
+            SurfaceSpec(cw, ch, 0, false, ch.toFloat() / cw.toFloat(), plane)
+        }
     }
 
     private fun drawFlat(canvas: Canvas) {
-        val scale = min(width / INNER_W, height / INNER_H) * 0.96f
-        val w = INNER_W * scale
-        val h = INNER_H * scale
+        val spec = liveSpec()
+        val sw = spec.width.toFloat()
+        val sh = spec.height.toFloat()
+        val scale = min(width / sw, height / sh) * 0.96f
+        val w = sw * scale
+        val h = sh * scale
         canvas.save()
         canvas.translate((width - w) * 0.5f, (height - h) * 0.5f)
         canvas.scale(scale, scale)
-        rect.set(0f, 0f, INNER_W, INNER_H)
+        rect.set(0f, 0f, sw, sh)
         val radius = 26f * resources.displayMetrics.density / scale
         val ws = innerShader
         if (ws != null && ws.isReady) {
             val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
-            ws.bind(INNER_SPEC, Math.PI.toFloat(), t, effect, intensity, motion)
+            val rest = if (spec.isInner) 180f else 0f
+            val raw = hingeDegrees.takeUnless { it.isNaN() } ?: rest
+            // Same resting snap as the wallpaper, so a phone held open or shut shows a sharp picture.
+            val shown = when {
+                raw >= 165f -> 180f
+                raw <= 15f -> 0f
+                else -> raw
+            }.let { if (spec.isInner) it.coerceAtLeast(90f) else it.coerceAtMost(90f) }
+            ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect)
             screenPaint.shader = ws.shader
             path.reset()
             path.addRoundRect(rect, radius, radius, Path.Direction.CW)
@@ -286,7 +441,7 @@ class FoldPreviewView(context: Context) : View(context) {
     /** Pinhole camera in front of and slightly above the phone, tracking toward the hinge. */
     private inner class Camera3(val w: Float, val h: Float, open: Float) {
         val target = Vec(lerp(0.5f, 0f, open), 0f, 0f)
-        val eye = target + Vec(0.15f, 2.1f, 6.0f)
+        val eye = target + Vec(2.1f, 1.65f, 8.2f)
         private val f = (target - eye).norm()
         private val r = f.cross(Vec(0f, 1f, 0f)).norm()
         private val u = r.cross(f)
@@ -296,8 +451,8 @@ class FoldPreviewView(context: Context) : View(context) {
 
         init {
             val dist = sqrt((eye - target).dot(eye - target))
-            val byHeight = h * 0.80f * dist / BODY_H
-            val byWidth = w * 0.88f * dist / lerp(1.15f, 2.15f, open)
+            val byHeight = h * 0.76f * dist / BODY_H
+            val byWidth = w * 0.82f * dist / lerp(1.15f, 2.15f, open)
             focal = min(byHeight, byWidth)
         }
 
@@ -312,7 +467,7 @@ class FoldPreviewView(context: Context) : View(context) {
     }
 
     private fun movingCenter(u: Float, y: Float, a: Float) =
-        Vec(u * cos(a), y, THICK * 0.5f * cos(a) + u * sin(a))
+        Vec(u * cos(a) - THICK * 0.5f * sin(a), y, THICK * 0.5f * cos(a) + u * sin(a))
 
     private fun outerNormal(a: Float) = Vec(-sin(a), 0f, cos(a))
 
@@ -340,14 +495,84 @@ class FoldPreviewView(context: Context) : View(context) {
         canvas.drawPath(path, paint)
     }
 
-    private fun shade(normal: Vec, base: Int): Int {
-        val light = Vec(-0.35f, 0.75f, 0.55f).norm()
-        val k = 0.55f + 0.45f * max(0f, normal.dot(light))
-        return Color.rgb(
-            (Color.red(base) * k).toInt().coerceIn(0, 255),
-            (Color.green(base) * k).toInt().coerceIn(0, 255),
-            (Color.blue(base) * k).toInt().coerceIn(0, 255)
-        )
+    /** Broad studio cards reflected by a satin metal edge, in the same world as the camera. */
+    private fun metal(normal: Vec, point: Vec): Int {
+        val view = (eyeWorld - point).norm()
+        val reflected = normal * (2f * normal.dot(view)) - view
+        val key = Vec(-0.55f, 0.65f, 0.8f).norm()
+        val strip = exp(-((reflected.x + 0.45f) * (reflected.x + 0.45f)) / 0.045f) *
+            (0.6f + 0.4f * max(0f, reflected.y))
+        val fill = exp(-((reflected.x - 0.8f) * (reflected.x - 0.8f)) / 0.12f)
+        val light = 29f + 24f * max(0f, normal.dot(key)) + 92f * strip + 28f * fill
+        return Color.rgb(light.toInt(), (light * 1.015f).toInt(), (light * 1.025f).toInt())
+    }
+
+    /** Rounded perimeter rings form the sidewall and both chamfers, including the corners. */
+    private fun drawChassis(canvas: Canvas, cam: Camera3, a: Float, moving: Boolean) {
+        fun world(x: Float, y: Float, z: Float): Vec = if (moving) {
+            Vec(x * cos(a) - z * sin(a), y, x * sin(a) + z * cos(a))
+        } else Vec(x, y, z - THICK)
+        val rings = listOf(0.007f to 0f, 0f to 0.009f, 0f to THICK - 0.009f, 0.007f to THICK)
+        val contours = rings.map { (inset, z) ->
+            List(52) { i ->
+                val corner = i / 13
+                val outer = corner == 0 || corner == 3
+                val cornerRadius = if (outer) CORNER else HINGE_CORNER
+                val radius = cornerRadius - inset
+                val theta = Math.toRadians((corner * 90 + (i % 13) * 7.5).toDouble()).toFloat()
+                val cx = if (outer) 1f - cornerRadius else cornerRadius
+                val cy = if (corner < 2) BODY_H * 0.5f - cornerRadius else -BODY_H * 0.5f + cornerRadius
+                world(cx + radius * cos(theta), cy + radius * sin(theta), z)
+            }
+        }
+        data class Facet(val points: Array<Vec>, val normal: Vec, val center: Vec)
+        val faces = ArrayList<Facet>(156)
+        for (ring in 0..2) {
+            for (i in contours[ring].indices) {
+                val j = (i + 1) % contours[ring].size
+                val p = arrayOf(contours[ring][i], contours[ring][j], contours[ring + 1][j], contours[ring + 1][i])
+                val normal = (p[1] - p[0]).cross(p[3] - p[0]).norm()
+                val center = (p[0] + p[1] + p[2] + p[3]) * 0.25f
+                if (cam.facing(normal, center)) faces.add(Facet(p, normal, center))
+            }
+        }
+        // Far faces first. The screen is a separate glass surface on top of this solid body.
+        faces.sortByDescending { (it.center - eyeWorld).dot(it.center - eyeWorld) }
+        edgePaint.shader = null
+        edgePaint.style = Paint.Style.FILL
+        for (face in faces) {
+            edgePaint.color = metal(face.normal, face.center)
+            fillQuad(canvas, cam, edgePaint, *face.points)
+        }
+    }
+
+    private fun drawHinge(canvas: Canvas, cam: Camera3) {
+        edgePaint.shader = null
+        for (i in 0 until 18) {
+            val a = Math.PI.toFloat() * (0.5f + i / 18f)
+            val b = Math.PI.toFloat() * (0.5f + (i + 1) / 18f)
+            val radius = THICK * 0.48f
+            val normal = Vec(cos((a + b) * 0.5f), 0f, sin((a + b) * 0.5f))
+            val point = Vec(-0.002f, 0f, 0f)
+            if (!cam.facing(normal, point)) continue
+            edgePaint.color = metal(normal, point)
+            val top = BODY_H * 0.5f - 0.055f
+            fillQuad(canvas, cam, edgePaint,
+                Vec(radius * cos(a), top, radius * sin(a)), Vec(radius * cos(b), top, radius * sin(b)),
+                Vec(radius * cos(b), -top, radius * sin(b)), Vec(radius * cos(a), -top, radius * sin(a)))
+        }
+    }
+
+    private fun drawRim(canvas: Canvas, r: RectF, left: Float, right: Float) {
+        bodyPaint.shader = LinearGradient(r.left, r.top, r.right, r.bottom,
+            intArrayOf(Color.rgb(97, 101, 104), Color.rgb(28, 30, 32), Color.rgb(66, 70, 73)),
+            floatArrayOf(0f, 0.45f, 1f), Shader.TileMode.CLAMP)
+        drawRounded(canvas, r, left, right, bodyPaint)
+        bodyPaint.shader = null
+        bodyPaint.color = Color.rgb(8, 9, 10)
+        val inset = r.height() * 0.0018f
+        val glass = RectF(r).apply { inset(inset, inset) }
+        drawRounded(canvas, glass, max(0f, left - inset), max(0f, right - inset), bodyPaint)
     }
 
     // endregion
@@ -373,13 +598,8 @@ class FoldPreviewView(context: Context) : View(context) {
 
     private fun drawBackLeaf(canvas: Canvas, cam: Camera3) {
         val top = BODY_H * 0.5f
-        val bot = -top
-        edgePaint.color = shade(Vec(0f, 1f, 0f), EDGE_COLOR)
-        fillQuad(canvas, cam, edgePaint, Vec(0f, top, 0f), Vec(1f, top, 0f), Vec(1f, top, -THICK), Vec(0f, top, -THICK))
-        if (cam.facing(Vec(1f, 0f, 0f), Vec(1f, 0f, 0f))) {
-            edgePaint.color = shade(Vec(1f, 0f, 0f), EDGE_COLOR)
-            fillQuad(canvas, cam, edgePaint, Vec(1f, top, 0f), Vec(1f, bot, 0f), Vec(1f, bot, -THICK), Vec(1f, top, -THICK))
-        }
+        drawChassis(canvas, cam, 0f, false)
+        drawHinge(canvas, cam)
 
         // Inner display, right half, on the back leaf (plane z = 0).
         val hw = 1f - BEZEL
@@ -392,41 +612,33 @@ class FoldPreviewView(context: Context) : View(context) {
         canvas.concat(m)
         val k = INNER_W / (2f * hw)
         rect.set(INNER_W * 0.5f, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f + k, (INNER_WH * 0.5f + top) * k)
-        bodyPaint.color = shade(Vec(0f, 0f, 1f), BODY_COLOR)
-        drawRounded(canvas, rect, 0f, CORNER * k, bodyPaint)
+        drawRim(canvas, rect, HINGE_CORNER * k, CORNER * k)
         rect.set(INNER_W * 0.5f, 0f, INNER_W, INNER_H)
-        drawScreen(canvas, rect, 0f, SCREEN_CORNER * k, innerOn(), innerShader, INNER_SPEC)
+        drawScreen(canvas, rect, 0f, SCREEN_CORNER * k, true, innerShader, innerSpec())
+        drawCamera(canvas, INNER_W - 42f, 34f, 7f)
         canvas.restore()
     }
 
     private fun drawMovingLeaf(canvas: Canvas, cam: Camera3, a: Float) {
         val top = BODY_H * 0.5f
-        val bot = -top
-
-        edgePaint.color = shade(Vec(0f, 1f, 0f), EDGE_COLOR)
-        fillQuad(canvas, cam, edgePaint, outerFace(0f, top, a), outerFace(1f, top, a), innerFace(1f, top, a), innerFace(0f, top, a))
-        val edgeNormal = Vec(cos(a), 0f, sin(a))
-        if (cam.facing(edgeNormal, movingCenter(1f, 0f, a))) {
-            edgePaint.color = shade(edgeNormal, EDGE_COLOR)
-            fillQuad(canvas, cam, edgePaint, outerFace(1f, top, a), outerFace(1f, bot, a), innerFace(1f, bot, a), innerFace(1f, top, a))
-        }
+        drawChassis(canvas, cam, a, true)
 
         val n = outerNormal(a)
         if (cam.facing(n, outerFace(0.5f, 0f, a))) {
             // Cover display: hinge on its left edge when seen from outside.
             val m = mapRect(
                 cam, COVER_W, COVER_H,
-                outerFace(BEZEL, COVER_WH * 0.5f, a), outerFace(1f - BEZEL, COVER_WH * 0.5f, a),
-                outerFace(1f - BEZEL, -COVER_WH * 0.5f, a), outerFace(BEZEL, -COVER_WH * 0.5f, a)
+                outerFace(COVER_INSET, COVER_WH * 0.5f, a), outerFace(1f - COVER_INSET, COVER_WH * 0.5f, a),
+                outerFace(1f - COVER_INSET, -COVER_WH * 0.5f, a), outerFace(COVER_INSET, -COVER_WH * 0.5f, a)
             )
             canvas.save()
             canvas.concat(m)
-            val k = COVER_W / (1f - 2f * BEZEL)
-            rect.set(-BEZEL * k, (COVER_WH * 0.5f - top) * k, (1f - BEZEL) * k, (COVER_WH * 0.5f + top) * k)
-            bodyPaint.color = shade(n, BODY_COLOR)
-            drawRounded(canvas, rect, CORNER * k, CORNER * k, bodyPaint)
+            val k = COVER_W / (1f - 2f * COVER_INSET)
+            rect.set(-COVER_INSET * k, (COVER_WH * 0.5f - top) * k, (1f - COVER_INSET) * k, (COVER_WH * 0.5f + top) * k)
+            drawRim(canvas, rect, HINGE_CORNER * k, CORNER * k)
             rect.set(0f, 0f, COVER_W, COVER_H)
-            drawScreen(canvas, rect, SCREEN_CORNER * k, SCREEN_CORNER * k, !innerOn(), coverShader, COVER_SPEC)
+            drawScreen(canvas, rect, HINGE_CORNER * k, SCREEN_CORNER * k, true, coverShader, coverSpec())
+            drawCamera(canvas, COVER_W * 0.5f, 27f, 8f)
             canvas.restore()
         } else if (cam.facing(n * -1f, innerFace(0.5f, 0f, a))) {
             // Inner display, left half, on the moving leaf.
@@ -440,15 +652,51 @@ class FoldPreviewView(context: Context) : View(context) {
             canvas.concat(m)
             val k = INNER_W / (2f * hw)
             rect.set(INNER_W * 0.5f - k, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f, (INNER_WH * 0.5f + top) * k)
-            bodyPaint.color = shade(n * -1f, BODY_COLOR)
-            drawRounded(canvas, rect, CORNER * k, 0f, bodyPaint)
+            drawRim(canvas, rect, CORNER * k, HINGE_CORNER * k)
             rect.set(0f, 0f, INNER_W * 0.5f + CREASE_OVERLAP, INNER_H)
-            drawScreen(canvas, rect, SCREEN_CORNER * k, 0f, innerOn(), innerShader, INNER_SPEC)
+            drawScreen(canvas, rect, SCREEN_CORNER * k, 0f, true, innerShader, innerSpec())
             canvas.restore()
         }
     }
 
-    private fun innerOn() = angle >= handoffAngle
+    private fun drawCamera(canvas: Canvas, x: Float, y: Float, radius: Float) {
+        offPaint.shader = null
+        offPaint.color = Color.rgb(34, 37, 40)
+        canvas.drawCircle(x, y, radius + 1.3f, offPaint)
+        offPaint.color = Color.rgb(2, 3, 5)
+        canvas.drawCircle(x, y, radius, offPaint)
+        offPaint.color = Color.rgb(21, 30, 41)
+        canvas.drawCircle(x - radius * 0.2f, y - radius * 0.25f, radius * 0.28f, offPaint)
+    }
+
+    /** The flexible display is continuous over the hinge, with a small curved bend radius. */
+    private fun drawCrease(canvas: Canvas, cam: Camera3, a: Float) {
+        if (!cam.facing(outerNormal(a) * -1f, innerFace(0.5f, 0f, a))) return
+        val bend = 0.025f
+        val halfHeight = INNER_WH * 0.5f
+        val k = INNER_W / (2f * (1f - BEZEL))
+        fun point(t: Float, y: Float): Vec {
+            val left = innerFace(bend, y, a)
+            val right = Vec(bend, y, 0f)
+            val middle = Vec(0f, y, 0f)
+            return left * ((1f - t) * (1f - t)) + middle * (2f * t * (1f - t)) + right * (t * t)
+        }
+        // Use the same UVs and glass reflection as both adjacent flat portions.
+        for (i in 0 until 16) {
+            val t0 = i / 16f
+            val t1 = (i + 1) / 16f
+            val x0 = INNER_W * 0.5f + (2f * t0 - 1f) * bend * k
+            val x1 = INNER_W * 0.5f + (2f * t1 - 1f) * bend * k
+            val mapped = mapRect(cam, x1 - x0, INNER_H,
+                point(t0, halfHeight), point(t1, halfHeight), point(t1, -halfHeight), point(t0, -halfHeight))
+            canvas.save()
+            canvas.concat(mapped)
+            canvas.translate(-x0, 0f)
+            rect.set(x0 - 0.5f, 0f, x1 + 0.5f, INNER_H)
+            drawScreen(canvas, rect, 0f, 0f, true, innerShader, innerSpec())
+            canvas.restore()
+        }
+    }
 
     /** Rounded rectangle with separate left and right corner radii. */
     private fun drawRounded(canvas: Canvas, r: RectF, left: Float, right: Float, paint: Paint) {
@@ -467,13 +715,8 @@ class FoldPreviewView(context: Context) : View(context) {
         canvas.clipPath(path)
         if (on && ws != null && ws.isReady) {
             val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
-            // The shader traces rays from this camera, in units of the surface's panel width.
-            val unit = if (spec.isInner) 1f - BEZEL else 1f - 2f * BEZEL
             ws.bind(
-                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
-                eyeX = eyeWorld.x / unit,
-                eyeY = spec.planeHeight * 0.5f - eyeWorld.y / unit,
-                eyeZ = eyeWorld.z / unit
+                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect
             )
             screenPaint.shader = ws.shader
             canvas.drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), screenPaint)
@@ -484,6 +727,11 @@ class FoldPreviewView(context: Context) : View(context) {
             )
             canvas.drawRect(r, offPaint)
         }
+        // A broad softbox reflection sits on the glass, independent of the wallpaper lighting.
+        offPaint.shader = LinearGradient(0f, 0f, spec.width.toFloat(), spec.height.toFloat(),
+            intArrayOf(Color.argb(19, 230, 237, 243), Color.TRANSPARENT, Color.argb(5, 230, 237, 243)),
+            floatArrayOf(0f, 0.48f, 1f), Shader.TileMode.CLAMP)
+        canvas.drawRect(r, offPaint)
         canvas.restore()
     }
 
@@ -494,10 +742,10 @@ class FoldPreviewView(context: Context) : View(context) {
     private fun timelineAngle(elapsedMs: Long): Float {
         val t = (elapsedMs % PERIOD_MS) / 1000f
         return when {
-            t < 0.9f -> 0f
-            t < 4.1f -> 180f * smooth((t - 0.9f) / 3.2f)
-            t < 5.5f -> 180f
-            else -> 180f * (1f - smooth((t - 5.5f) / 2.3f))
+            t < 0.3f -> 0f
+            t < 3.5f -> 180f * smooth((t - 0.3f) / 3.2f)
+            t < 4.4f -> 180f
+            else -> 180f * (1f - smooth((t - 4.4f) / 2.6f))
         }
     }
 
@@ -515,37 +763,46 @@ class FoldPreviewView(context: Context) : View(context) {
     // endregion
 
     private companion object {
+        /** Grid thumbnails redraw at about 20 frames a second; the main preview keeps the display rate. */
+        const val THUMB_FRAME_MS = 50L
+
         /** Shared so a view that Compose detaches and reattaches can still load photos. */
-        val loader: ExecutorService = Executors.newSingleThreadExecutor()
+        val loader: ExecutorService = Executors.newFixedThreadPool(2)
+
+        /** Opens video files for tiles without blocking the main thread or the shader loader. */
+        val videoLoader: ExecutorService = Executors.newSingleThreadExecutor()
 
         const val PERIOD_MS = 7_800L
         const val TEX_W = 1024
 
-        const val BEZEL = 0.04f
-        const val THICK = 0.068f
-        const val CORNER = 0.11f
-        const val SCREEN_CORNER = 0.07f
+        const val BEZEL = 0.025f
+        const val THICK = 5.0f / 75.2f
+        const val CORNER = 0.13f
+        const val HINGE_CORNER = 0.025f
+        const val SCREEN_CORNER = 0.09f
 
         /** Local pixels the moving half overdraws past the crease to hide anti-aliased seams. */
         const val CREASE_OVERLAP = 2f
 
-        // Surfaces in virtual pixels, Pixel 9 Pro Fold proportions.
+        // Pixel 11 Pro Fold: cover 1080×2342 (19.5:9), inner 2076×2152, half size for the preview.
+        // Closed body is 155.2 × 76.0 × 10.1 mm. Open slab is 5.0 mm, which is THICK in panel widths.
         const val COVER_W = 540f
-        const val COVER_H = 1212f
+        const val COVER_H = 1170f
         const val INNER_W = 1038f
         const val INNER_H = 1076f
 
         // Heights in panel widths (the leaf is 1.0 wide).
-        val COVER_WH = COVER_H / (COVER_W / (1f - 2f * BEZEL))
+        const val BODY_H = 155.2f / 75.2f
+        const val COVER_WH = BODY_H - 0.07f
+        const val COVER_INSET = (1f - COVER_WH * COVER_W / COVER_H) * 0.5f
         val INNER_WH = INNER_H / (INNER_W / (2f * (1f - BEZEL)))
-        val BODY_H = max(COVER_WH, INNER_WH) + 2f * BEZEL
 
         val PLANE_H = max(COVER_H / COVER_W, INNER_H / (INNER_W * 0.5f))
         val COVER_SPEC = SurfaceSpec(COVER_W.toInt(), COVER_H.toInt(), 0, false, COVER_H / COVER_W, PLANE_H)
         val INNER_SPEC = SurfaceSpec(INNER_W.toInt(), INNER_H.toInt(), 0, true, INNER_H / (INNER_W * 0.5f), PLANE_H)
 
-        val BODY_COLOR = Color.rgb(34, 37, 44)
-        val EDGE_COLOR = Color.rgb(92, 98, 110)
+        val BODY_COLOR = Color.rgb(24, 24, 26)
+        val EDGE_COLOR = Color.rgb(150, 150, 154)
 
         fun lerp(a: Float, b: Float, t: Float) = a + (b - a) * t
         fun smooth(t: Float): Float { val c = t.coerceIn(0f, 1f); return c * c * (3f - 2f * c) }

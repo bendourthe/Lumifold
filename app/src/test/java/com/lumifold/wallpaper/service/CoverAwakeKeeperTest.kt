@@ -27,16 +27,18 @@ class CoverAwakeKeeperTest {
 
     @Test
     fun holdsOnlyForAVisibleInteractiveCoverDisplay() {
-        val base = { enabled: Boolean, visible: Boolean, inner: Boolean, preview: Boolean, interactive: Boolean, angle: Float ->
-            CoverAwakeKeeper.shouldHold(enabled, visible, inner, preview, interactive, angle)
+        val base = { enabled: Boolean, visible: Boolean, inner: Boolean, preview: Boolean, interactive: Boolean, angle: Float, closing: Boolean ->
+            CoverAwakeKeeper.shouldHold(enabled, visible, inner, preview, interactive, angle, closing)
         }
-        assertTrue(base(true, true, false, false, true, 0f))
-        assertTrue(base(true, true, false, false, true, 85f))
-        assertFalse("disabled", base(false, true, false, false, true, 0f))
-        assertFalse("hidden", base(true, false, false, false, true, 0f))
-        assertFalse("inner display", base(true, true, true, false, true, 0f))
-        assertFalse("picker preview", base(true, true, false, true, true, 0f))
-        assertFalse("screen off", base(true, true, false, false, false, 0f))
-        assertFalse("cover faces away", base(true, true, false, false, true, 130f))
+        assertTrue(base(true, true, false, false, true, 0f, false))
+        assertTrue(base(true, true, false, false, true, 85f, false))
+        assertFalse("disabled", base(false, true, false, false, true, 0f, false))
+        assertFalse("hidden", base(true, false, false, false, true, 0f, false))
+        assertFalse("inner display while opening", base(true, true, true, false, true, 40f, false))
+        assertTrue("inner display while closing", base(true, true, true, false, true, 40f, true))
+        assertFalse("still open while closing", base(true, true, true, false, true, 150f, true))
+        assertFalse("picker preview", base(true, true, false, true, true, 0f, false))
+        assertFalse("screen off", base(true, true, false, false, false, 0f, false))
+        assertFalse("cover faces away", base(true, true, false, false, true, 130f, false))
     }
 }

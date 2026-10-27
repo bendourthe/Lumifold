@@ -15,6 +15,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import com.lumifold.wallpaper.service.FoldWallpaperService
+import com.lumifold.wallpaper.service.ScreenCaptureService
 import com.lumifold.wallpaper.ui.theme.LumifoldTheme
 
 class MainActivity : ComponentActivity(), SensorEventListener {
@@ -28,6 +29,7 @@ class MainActivity : ComponentActivity(), SensorEventListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        stopService(Intent(this, ScreenCaptureService::class.java))
         sensorManager = getSystemService(SensorManager::class.java)
         hingeSensor = sensorManager?.getDefaultSensor(Sensor.TYPE_HINGE_ANGLE)
 

@@ -55,7 +55,7 @@ class WallpaperShader private constructor(
         })
         shader.setFloatUniform("uVidSize", frame.width.toFloat(), frame.height.toFloat())
         val video = item.source as WallpaperSource.Video
-        shader.setFloatUniform("uFocusX", video.focusX)
+        shader.setFloatUniform("uFocus", video.focusX, video.focusY)
         val f = video.framing
         shader.setFloatUniform(
             "uFrame", f?.innerHeight ?: 0f, f?.coverHeight ?: 0f, f?.coverCenterX ?: 0f, if (f != null) 1f else 0f
@@ -78,6 +78,16 @@ class WallpaperShader private constructor(
             shader.setInputShader("L$k", bs)
         }
         shader.setFloatUniform("uTexSize", base.width.toFloat(), base.height.toFloat())
+        shader.setFloatUniform("uFocus", photo.focusX, photo.focusY)
+        shader.setFloatUniform("uFit", if (photo.fit) 1f else 0f)
+        val place = photo.place
+        shader.setFloatUniform(
+            "uPlace",
+            place?.coverEdgeU ?: 0f,
+            place?.coverSpanU ?: 0f,
+            place?.innerCenterU ?: 0f,
+            place?.innerSpanU ?: 0f
+        )
         shader.setInputShader("uStars", BitmapShader(p.aux ?: NO_STARS, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP).apply {
             filterMode = BitmapShader.FILTER_MODE_LINEAR
             if (p.aux == null) setLocalMatrix(Matrix().apply { setScale(base.width.toFloat(), base.height.toFloat()) })
@@ -137,7 +147,7 @@ class WallpaperShader private constructor(
         shader.setFloatUniform("uPlaneH", spec.planeHeight)
         shader.setFloatUniform("uSurfH", spec.surfaceHeight)
         shader.setFloatUniform("uIntensity", intensity)
-        shader.setFloatUniform("uTime", timeSec)
+        shader.setFloatUniform("uTime", timeSec * MOTION_TIME_SCALE)
         shader.setFloatUniform("uEffect", if (foldEffect) effect.shaderIndex.toFloat() else NO_FOLD_INDEX)
         if (item.source is WallpaperSource.Photo) {
             shader.setFloatUniform("uMotion", if (motion) 1f else 0f)
@@ -168,14 +178,30 @@ class WallpaperShader private constructor(
         /** Effect index the shader treats as "fold effect off". */
         private const val NO_FOLD_INDEX = 99f
 
+        /** Slows depth, nebula, and generative motion so a loop feels like a wallpaper, not a clip. */
+        private const val MOTION_TIME_SCALE = 0.25f
+
+        /** Longest side of a photo pyramid. 4K keeps the cover crop near one pixel per screen pixel. */
+        private const val MAX_PHOTO_EDGE = 3840
+
         private val NO_STARS: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF000000.toInt()) }
 
-        /** Decodes a photo into a pyramid of [width] x [height]. Call off the main thread. */
-        fun buildPyramid(resources: Resources, photo: WallpaperSource.Photo, width: Int, height: Int): BlurPyramid {
+        /** Decodes a photo into a pyramid. [width] and [height] are the live plane size; photos keep their own frame. */
+        @Suppress("UNUSED_PARAMETER")
+        fun buildPyramid(
+            resources: Resources,
+            photo: WallpaperSource.Photo,
+            width: Int,
+            height: Int,
+            maxEdge: Int = MAX_PHOTO_EDGE
+        ): BlurPyramid {
             if (photo.globe == null) {
-                return BlurPyramid.fromResource(resources, photo.resId, width, height, photo.focusX, photo.focusY).also {
-                    if (photo.starsResId != 0) it.attachAux(resources, photo.starsResId, photo.focusX, photo.focusY)
-                    if (photo.depthResId != 0) it.attachDepth(resources, photo.depthResId, photo.focusX, photo.focusY)
+                val edge = maxEdge.coerceIn(480, MAX_PHOTO_EDGE)
+                // Keep the whole frame. The shader crops each display around the subject, so the
+                // cover no longer shows whatever happened to fall on the right edge.
+                return BlurPyramid.fromFullFrame(resources, photo.resId, edge).also {
+                    if (photo.starsResId != 0) it.attachFitted(resources, photo.starsResId, edge, depth = false)
+                    if (photo.depthResId != 0) it.attachFitted(resources, photo.depthResId, edge / 2, depth = true)
                 }
             }
             // Globe maps keep their own size and aspect: the shader samples them by longitude and latitude.

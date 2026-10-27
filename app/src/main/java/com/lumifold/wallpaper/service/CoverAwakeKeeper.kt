@@ -80,8 +80,17 @@ class CoverAwakeKeeper(private val context: Context) {
             onInnerDisplay: Boolean,
             isPreview: Boolean,
             interactive: Boolean,
-            hingeAngle: Float
-        ): Boolean = enabled && visible && !onInnerDisplay && !isPreview && interactive &&
-            hingeAngle < MAX_HOLD_ANGLE
+            hingeAngle: Float,
+            closing: Boolean = false
+        ): Boolean {
+            if (!enabled || !visible || isPreview || !interactive) return false
+            // While closing, hold through the handoff so the cover is already awake when Android
+            // switches to it. While opening, hold only on the cover, until the inner screen is up.
+            val limit = if (closing) CLOSE_HOLD_ANGLE else MAX_HOLD_ANGLE
+            return hingeAngle < limit && (!onInnerDisplay || closing)
+        }
+
+        /** Start keeping the cover awake once a close passes this angle. */
+        const val CLOSE_HOLD_ANGLE = 100f
     }
 }

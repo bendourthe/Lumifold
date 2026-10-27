@@ -43,10 +43,18 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
         aux = decodeCropped(resources, resId, width, height, focusX, focusY)
     }
 
+    /** Decodes [resId] fitted to the full frame, not cropped to the plane. */
+    fun attachFitted(resources: Resources, resId: Int, maxEdge: Int, depth: Boolean) {
+        val fitted = decodeFitted(resources, resId, maxEdge)
+        if (depth) this.depth = fitted else aux = fitted
+    }
+
     companion object {
 
-        /**
-         * Decodes [resId] center-cropped around ([focusX], [focusY]) to [targetWidth] x
+        fun fromFullFrame(resources: Resources, resId: Int, maxEdge: Int): BlurPyramid =
+            fromBitmap(decodeFitted(resources, resId, maxEdge))
+
+        /** Decodes [resId] center-cropped around ([focusX], [focusY]) to [targetWidth] x
          * [targetHeight], then builds [FoldShaders.PYRAMID_LEVELS] levels. Call off the main thread.
          */
         fun fromResource(
@@ -116,6 +124,32 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
                 Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
             )
             return out
+        }
+
+        /** Whole frame, longest side at most [maxEdge]. The shader crops each display afterward. */
+        private fun decodeFitted(resources: Resources, resId: Int, maxEdge: Int): Bitmap {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeResource(resources, resId, bounds)
+            var sample = 1
+            while (max(bounds.outWidth, bounds.outHeight) / (sample * 2) > maxEdge) sample *= 2
+            val decoded = BitmapFactory.decodeResource(
+                resources, resId,
+                BitmapFactory.Options().apply {
+                    inSampleSize = sample
+                    inPreferredConfig = Bitmap.Config.ARGB_8888
+                }
+            ) ?: error("Cannot decode wallpaper resource $resId")
+            val longEdge = max(decoded.width, decoded.height)
+            if (longEdge <= maxEdge) return decoded
+            val scale = maxEdge.toFloat() / longEdge
+            val fitted = Bitmap.createScaledBitmap(
+                decoded,
+                max(1, (decoded.width * scale).roundToInt()),
+                max(1, (decoded.height * scale).roundToInt()),
+                true
+            )
+            if (fitted !== decoded) decoded.recycle()
+            return fitted
         }
 
         /** Separable [1 4 6 4 1] / 16 kernel with clamped edges, applied [passes] times. */

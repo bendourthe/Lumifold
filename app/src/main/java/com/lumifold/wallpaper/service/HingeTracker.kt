@@ -28,7 +28,7 @@ class HingeTracker(
     fun start() {
         val s = sensor ?: return
         if (!registered) {
-            registered = sensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_GAME)
+            registered = sensorManager.registerListener(this, s, SensorManager.SENSOR_DELAY_FASTEST)
         }
     }
 
@@ -51,7 +51,7 @@ class HingeTracker(
      * Critically damped spring that follows the hinge. It keeps velocity between frames, so the
      * sensor's 1 degree steps read as one continuous motion, and it never overshoots.
      */
-    class Spring(private val omega: Float = 22f) {
+    class Spring(private val omega: Float = 70f) {
         var position = Float.NaN
             private set
         private var velocity = 0f
