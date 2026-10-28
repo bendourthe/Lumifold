@@ -33,6 +33,7 @@ import com.lumifold.wallpaper.render.FoldOptics
 import com.lumifold.wallpaper.render.SurfaceSpec
 import com.lumifold.wallpaper.render.VideoFrames
 import com.lumifold.wallpaper.render.WallpaperShader
+import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import kotlin.math.abs
 import kotlin.math.min
@@ -629,8 +630,12 @@ class FoldWallpaperService : WallpaperService() {
     }
 
     companion object {
-        // Wallpaper and Accessibility services share the main thread and the app process.
-        private var backgroundEngine: FoldEngine? = null
+        // Wallpaper and Accessibility services share the main thread and the app process. Weak, so
+        // this static field never keeps a destroyed engine and its context alive.
+        private var backgroundRef: WeakReference<FoldEngine>? = null
+        private var backgroundEngine: FoldEngine?
+            get() = backgroundRef?.get()
+            set(value) { backgroundRef = value?.let { WeakReference(it) } }
 
         internal fun captureBackground(bounds: Rect, onResult: (Bitmap?) -> Unit) {
             val engine = backgroundEngine

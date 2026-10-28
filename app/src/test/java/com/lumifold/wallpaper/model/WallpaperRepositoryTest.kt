@@ -39,7 +39,7 @@ class WallpaperRepositoryTest {
                             s.url.startsWith("https://github.com/bendourthe/lumifold/releases/download/") ||
                             s.url.startsWith("https://svs.gsfc.nasa.gov/")
                     )
-                    assertTrue(s.posterResId != 0 && s.sizeMb > 0f)
+                    assertTrue(s.posterResId != 0 && s.previewResId != 0 && s.sizeMb > 0f)
                 }
             }
         }

@@ -1,6 +1,7 @@
 package com.lumifold.wallpaper.model
 
 import androidx.annotation.DrawableRes
+import androidx.annotation.RawRes
 
 enum class WallpaperCategory(val label: String) {
     ABSTRACT("Abstract"),
@@ -117,7 +118,9 @@ sealed interface WallpaperSource {
         val sizeMb: Float,
         val focusX: Float = 0.5f,
         val focusY: Float = 0.5f,
-        val framing: VideoFraming? = null
+        val framing: VideoFraming? = null,
+        /** The small loop bundled for grid tiles and previews, cut from the same footage. */
+        @RawRes val previewResId: Int = 0
     ) : WallpaperSource
 }
 

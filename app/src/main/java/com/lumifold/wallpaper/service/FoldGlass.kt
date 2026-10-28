@@ -243,6 +243,14 @@ class FoldGlass(private val context: Context) {
         var captureBounds: Rect? = null
         private val paint = Paint()
         private val surfaceBounds = Rect()
+        private var spec: SurfaceSpec? = null
+
+        /** The surface spec for this size and panel, rebuilt only when either changes. */
+        private fun specFor(w: Int, h: Int): SurfaceSpec {
+            spec?.let { if (it.width == w && it.height == h && it.isInner == inner) return it }
+            val plane = if (inner) h / (w * 0.5f) else h / w.toFloat()
+            return SurfaceSpec(w, h, 0, inner, plane, plane.coerceAtLeast(0.5f)).also { spec = it }
+        }
 
         override fun onDraw(canvas: Canvas) {
             val w = width.toFloat()
@@ -259,10 +267,7 @@ class FoldGlass(private val context: Context) {
             val bounds = if (captured != null) captureBounds
                 else surfaceBounds.apply { set(0, 0, width, height) }
             if (ws != null && ws.isReady && bounds != null) {
-                val cw = bounds.width().toFloat()
-                val ch = bounds.height().toFloat()
-                val plane = if (inner) ch / (cw * 0.5f) else ch / cw
-                val spec = SurfaceSpec(bounds.width(), bounds.height(), 0, inner, plane, plane.coerceAtLeast(0.5f))
+                val spec = specFor(bounds.width(), bounds.height())
                 ws.bind(
                     spec,
                     Math.toRadians(angle.toDouble()).toFloat(),
@@ -279,8 +284,8 @@ class FoldGlass(private val context: Context) {
                 }
                 canvas.save()
                 canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
-                canvas.clipRect(0f, 0f, cw, ch)
-                canvas.drawRect(0f, 0f, cw, ch, paint)
+                canvas.clipRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat())
+                canvas.drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), paint)
                 canvas.restore()
             }
         }

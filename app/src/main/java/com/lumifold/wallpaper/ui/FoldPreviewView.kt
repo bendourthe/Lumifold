@@ -102,6 +102,15 @@ class FoldPreviewView(context: Context) : View(context) {
     private var dragStartX = 0f
     private var dragStartAngle = 0f
     private var eyeWorld = Vec(0.5f, 0f, 6f)
+    private var camera: Camera3? = null
+    private var cameraOpen = Float.NaN
+
+    /** The camera for this view size and opening, rebuilt only when either changes. */
+    private fun cameraFor(open: Float): Camera3 {
+        camera?.let { if (it.w == width.toFloat() && it.h == height.toFloat() && cameraOpen == open) return it }
+        cameraOpen = open
+        return Camera3(width.toFloat(), height.toFloat(), open).also { camera = it }
+    }
 
     fun setWallpaper(next: WallpaperItem) {
         val edge = photoEdge()
@@ -336,10 +345,21 @@ class FoldPreviewView(context: Context) : View(context) {
             MotionEvent.ACTION_MOVE -> {
                 updateAngle(dragStartAngle + (dragStartX - event.x) / width * 260f)
             }
-            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+            MotionEvent.ACTION_UP -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+                performClick()
+            }
+            MotionEvent.ACTION_CANCEL -> {
                 parent?.requestDisallowInterceptTouchEvent(false)
             }
         }
+        return true
+    }
+
+    /** A tap, or an accessibility click, takes manual control of the model like a drag does. */
+    override fun performClick(): Boolean {
+        super.performClick()
+        setAutoPlay(false)
         return true
     }
 
@@ -356,8 +376,7 @@ class FoldPreviewView(context: Context) : View(context) {
         if (isAutoPlaying && !VideoPreviewSlots.scrolling) updateAngle(timelineAngle(SystemClock.uptimeMillis() - playStartMs))
 
         val a = Math.toRadians(angle.toDouble()).toFloat()
-        val open = smooth(angle / 180f)
-        val cam = Camera3(width.toFloat(), height.toFloat(), open)
+        val cam = cameraFor(smooth(angle / 180f))
         eyeWorld = cam.eye
 
         drawShadow(canvas, cam, a)

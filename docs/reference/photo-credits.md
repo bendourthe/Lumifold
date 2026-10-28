@@ -120,7 +120,7 @@ These four photographs keep their original pixels. The app crops each one for th
 
 ## Video Loops
 
-Clips are downloaded when a video wallpaper is first applied, then kept in app storage. Every clip except `colosseum` downloads from the [media-v1 release](https://github.com/bendourthe/lumifold/releases/tag/media-v1) as a modified version of the source named in its row: `tools/live_loops.py` slows it, loops it seamlessly and re-encodes it (the four Sun clips come from `tools/sun_encode.py`). Each hosted file keeps the license of its source, and files from CC BY-SA sources are shared under the same CC BY-SA version. `colosseum` still downloads its Commons original because its license field below is unconfirmed. Black Hole is the NASA 4K orbit from SVS 14619, the full disk and shadow with no latitude grid. Each clip is cropped per display so the subject stays on the cover and on the inner screen. Posters bundled as `wpv_<id>.jpg` are a frame from each clip.
+Clips are downloaded when a video wallpaper is first applied, then kept in app storage. Every clip downloads from the [media-v1 release](https://github.com/bendourthe/lumifold/releases/tag/media-v1) as a modified version of the source named in its row: `tools/live_loops.py` slows it, loops it seamlessly and re-encodes it (the four Sun clips come from `tools/sun_encode.py`). Each hosted file keeps the license of its source, and files from CC BY-SA sources are shared under the same CC BY-SA version. Black Hole is the NASA 4K orbit from SVS 14619, the full disk and shadow with no latitude grid. Each clip is cropped per display so the subject stays on the cover and on the inner screen. Posters bundled as `wpv_<id>.jpg` are a frame from each clip.
 
 | Wallpaper | Category | Source file | Author | License |
 | --- | --- | --- | --- | --- |
@@ -166,7 +166,7 @@ Clips are downloaded when a video wallpaper is first applied, then kept in app s
 | `prismatic_spring` | Landscapes | [Grand Prismatic Spring (Midway Geyser Basin, Yellowstone National Park) 2021-08-10, video2.webm](https://commons.wikimedia.org/wiki/File:Grand_Prismatic_Spring_(Midway_Geyser_Basin,_Yellowstone_National_Park)_2021-08-10,_video2.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `canary_spring` | Landscapes | [Canary Spring (Mammoth Hot Springs, Yellowstone National Park) 2021-08-09.webm](https://commons.wikimedia.org/wiki/File:Canary_Spring_(Mammoth_Hot_Springs,_Yellowstone_National_Park)_2021-08-09.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `chicago_day_night` | City | [Chicago Day and Night.webm](https://commons.wikimedia.org/wiki/File:Chicago_Day_and_Night.webm) | Wikimedia Commons | CC BY 3.0 |
-| `colosseum` | Landmarks | [Colosseum, Rome 113323.webm](https://commons.wikimedia.org/wiki/File:Colosseum,_Rome_113323.webm) | Wikimedia Commons | Commons |
+| `colosseum` | Landmarks | [Colosseum, Rome 113323.webm](https://commons.wikimedia.org/wiki/File:Colosseum,_Rome_113323.webm) | Quahadi | CC BY 4.0 |
 | `iss_city_lights` | City | [Ocean Moon Glint and City Night Lights in 4K.webm](https://commons.wikimedia.org/wiki/File:Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm) | NASA | Public domain |
 | `iss_night_pass` | City | [La Tierra de noche desde el espacio.ogv](https://commons.wikimedia.org/wiki/File:La_Tierra_de_noche_desde_el_espacio.ogv) | Crew Earth Observations team | Public domain |
 | `kuala_lumpur_street` | City | [Bukit Bintang in 2024.webm](https://commons.wikimedia.org/wiki/File:Bukit_Bintang_in_2024.webm) | Renek78 | CC0 |

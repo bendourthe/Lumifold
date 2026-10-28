@@ -12,6 +12,7 @@ import android.media.MediaPlayer
 import android.os.Handler
 import android.util.Log
 import com.lumifold.wallpaper.model.WallpaperItem
+import com.lumifold.wallpaper.model.WallpaperSource
 import com.lumifold.wallpaper.service.VideoCache
 import java.io.Closeable
 import java.io.File
@@ -25,18 +26,18 @@ sealed interface ClipSource {
 
     companion object {
         /** The small loop bundled for [item], or 0. It is cut from the same footage as the full clip. */
-        fun bundledId(context: Context, item: WallpaperItem): Int =
-            context.resources.getIdentifier("wpl_${item.id}", "raw", context.packageName)
+        fun bundledId(item: WallpaperItem): Int =
+            (item.source as? WallpaperSource.Video)?.previewResId ?: 0
 
         /** Full clip when it is on the phone, otherwise the bundled loop, otherwise null. */
         fun best(context: Context, item: WallpaperItem): ClipSource? {
             if (VideoCache.isCached(context, item)) return Downloaded(VideoCache.file(context, item))
-            return bundledId(context, item).takeIf { it != 0 }?.let { Bundled(it) }
+            return bundledId(item).takeIf { it != 0 }?.let { Bundled(it) }
         }
 
         /** Bundled loop first: grid thumbnails stay light and start at once. */
         fun light(context: Context, item: WallpaperItem): ClipSource? =
-            bundledId(context, item).takeIf { it != 0 }?.let { Bundled(it) } ?: best(context, item)
+            bundledId(item).takeIf { it != 0 }?.let { Bundled(it) } ?: best(context, item)
     }
 }
 

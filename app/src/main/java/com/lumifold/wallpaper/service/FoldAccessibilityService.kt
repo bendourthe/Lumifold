@@ -33,6 +33,7 @@ import android.view.accessibility.AccessibilityWindowInfo
 import androidx.core.content.ContextCompat
 import com.lumifold.wallpaper.model.WallpaperRepository as Repo
 import com.lumifold.wallpaper.render.FoldOptics
+import java.lang.ref.WeakReference
 import java.util.concurrent.Executors
 import kotlin.math.abs
 
@@ -454,7 +455,10 @@ class FoldAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "LumifoldGlass"
-        @Volatile var instance: FoldAccessibilityService? = null
-            private set
+        // Weak, so this static field never keeps a destroyed service and its context alive.
+        @Volatile private var instanceRef: WeakReference<FoldAccessibilityService>? = null
+        var instance: FoldAccessibilityService?
+            get() = instanceRef?.get()
+            private set(value) { instanceRef = value?.let { WeakReference(it) } }
     }
 }
