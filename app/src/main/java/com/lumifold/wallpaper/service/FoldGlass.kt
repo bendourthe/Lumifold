@@ -113,7 +113,7 @@ class FoldGlass(private val context: Context) {
         val service = FoldAccessibilityService.instance ?: return
         capturing = true
         val token = ++generation
-        captureUntil = SystemClock.uptimeMillis() + 500L
+        captureUntil = SystemClock.uptimeMillis() + CAPTURE_WINDOW_MS
         captureDeadline = Runnable {
             if (token == generation && capturing && wanted) {
                 capturing = false
@@ -124,7 +124,7 @@ class FoldGlass(private val context: Context) {
                 Log.d(TAG, "Screenshot deadline; retaining live shading")
                 renderView()
             }
-        }.also { main.postDelayed(it, 500L) }
+        }.also { main.postDelayed(it, CAPTURE_WINDOW_MS) }
         captureRequest = Runnable {
             if (token == generation && wanted && capturing) requestCapture(service, token)
         }.also { main.post(it) }
@@ -294,6 +294,12 @@ class FoldGlass(private val context: Context) {
 
     private companion object {
         const val TAG = "LumifoldGlass"
+
+        /**
+         * How long a fold keeps retrying the screenshot: as long as a held hinge keeps the effect
+         * on screen. After a panel switch, two-pane apps such as Settings take about 1.8 s to settle.
+         */
+        const val CAPTURE_WINDOW_MS = FoldMotion.IDLE_MS
         val SCREEN = WallpaperItem(
             id = "screen_fold",
             title = "Screen",

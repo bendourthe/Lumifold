@@ -558,9 +558,8 @@ class FoldWallpaperService : WallpaperService() {
                 if (ws != null && ws.isReady && s != null) {
                     val angle = effectAngle(s)
                     both?.shownDegrees = angle
-                    // The overlay copies this flat surface beneath transparent Home icons.
-                    val wallpaperFold = foldEffect && (isPreview || FoldAccessibilityService.instance?.coversUnlockedScreen != true)
-                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, wallpaperFold,
+                    // The overlay stays off while the wallpaper shows, so the wallpaper always folds itself.
+                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, foldEffect,
                         symmetricInner = symmetricInner)
                     paint.shader = ws.shader
                     canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
@@ -638,6 +637,9 @@ class FoldWallpaperService : WallpaperService() {
         private var backgroundEngine: FoldEngine?
             get() = backgroundRef?.get()
             set(value) { backgroundRef = value?.let { WeakReference(it) } }
+
+        /** Whether the wallpaper is on screen behind the launcher, drawing the fold effect itself. */
+        internal val isWallpaperShowing: Boolean get() = backgroundEngine != null
 
         internal fun captureBackground(bounds: Rect, onResult: (Bitmap?) -> Unit) {
             val engine = backgroundEngine

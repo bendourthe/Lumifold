@@ -61,6 +61,8 @@ class FoldAccessibilityService : AccessibilityService() {
     private var touchWatch: View? = null
     private var previousHinge = Float.NaN
     private var closingHinge = false
+    private var wasActive = false
+    private var overWallpaper = false
     private val prefs by lazy { Repo.getPrefs(this) }
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == Repo.KEY_FOLD_EFFECT_ENABLED) updateAwake()
@@ -206,9 +208,15 @@ class FoldAccessibilityService : AccessibilityService() {
         val metrics = DisplayMetrics().also { display.getRealMetrics(it) }
         val inner = FoldOptics.isInnerDisplay(metrics.widthPixels, metrics.heightPixels)
         val now = SystemClock.uptimeMillis()
+        val active = motion.isActive(now)
+        // Over Home the wallpaper draws the effect live; a screenshot on top would double it and
+        // freeze a video wallpaper. Decided once per fold, because the wallpaper hides for a
+        // moment while the panels switch.
+        if (active && !wasActive) overWallpaper = FoldWallpaperService.isWallpaperShowing
+        wasActive = active
         // The overlay itself emits window events. It must not be mistaken for a foreground app.
-        val show = Repo.isFoldEffectEnabled(this) && motion.isActive(now)
-        traceRoute("panel=${metrics.widthPixels}x${metrics.heightPixels} inner=$inner enabled=${Repo.isFoldEffectEnabled(this)} active=${motion.isActive(now)} show=$show")
+        val show = Repo.isFoldEffectEnabled(this) && active && !overWallpaper
+        traceRoute("panel=${metrics.widthPixels}x${metrics.heightPixels} inner=$inner enabled=${Repo.isFoldEffectEnabled(this)} active=$active wallpaper=$overWallpaper show=$show")
         glass?.update(show, motion.degrees(inner, now), inner, Repo.getOpeningEffect(this), Repo.getIntensity(this))
         if (motion.isActive(now)) main.postDelayed(frame, 16L)
     }

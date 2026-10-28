@@ -25,7 +25,7 @@ class FoldMotionTest {
         assertTrue(motion.degrees(true, 20) < 180f)
         motion.sample(35f, 200)
         assertTrue(motion.isActive(200))
-        assertTrue(motion.degrees(false, 200) in 1f..89f)
+        assertTrue(settled(motion, inner = false, from = 200) in 1f..89f)
         motion.sample(0f, 300)
         assertEquals(0f, motion.degrees(false, 300), 0f)
         assertFalse(motion.isActive(300))
@@ -142,6 +142,66 @@ class FoldMotionTest {
         val done = 100 + FoldMotion.HOLD_MS + FoldMotion.FINISH_MS
         assertEquals(180f, motion.degrees(true, done), 1e-3f)
         assertEquals(0f, motion.degrees(false, done), 1e-3f)
+    }
+
+    @Test fun closingHandsTheFullEffectToTheCoverAtTheCloseSwitch() {
+        val closing = FoldMotion()
+        closing.sample(175f, 0)
+        closing.sample(44f, 100)
+        // The cover lights below about 45 degrees and must start at full effect, not mid-fade.
+        assertTrue(settled(closing, inner = false, from = 100) > 85f)
+        // The inner screen reaches full effect at the same handover angle.
+        closing.sample(47f, 400)
+        assertTrue(settled(closing, inner = true, from = 400) < 95f)
+
+        val opening = FoldMotion()
+        opening.sample(0f, 0)
+        opening.sample(44f, 100)
+        // Opening still hands over at 90 degrees, so 44 is halfway on the cover.
+        assertEquals(45f, settled(opening, inner = false, from = 100), 1f)
+    }
+
+    @Test fun closingStretchesTheInnerEffectOverTheRangeItIsLit() {
+        val closing = FoldMotion()
+        closing.sample(175f, 0)
+        closing.sample(120f, 100)
+        val opening = FoldMotion()
+        opening.sample(0f, 0)
+        opening.sample(120f, 100)
+        assertTrue(settled(closing, inner = true, from = 100) > settled(opening, inner = true, from = 100) + 10f)
+    }
+
+    @Test fun foldingBackAfterAParkedFinishShowsTheClosingEffect() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(100f, 100)
+        val done = 100 + FoldMotion.IDLE_MS
+        assertFalse(motion.isActive(done))
+        // One sensor step back is jitter, not a new fold.
+        motion.sample(95f, done + 100)
+        assertFalse(motion.isActive(done + 100))
+        motion.sample(85f, done + 200)
+        assertTrue(motion.isActive(done + 200))
+        // The close started on the inner screen, so the cover lights with the full effect.
+        motion.sample(44f, done + 400)
+        assertTrue(settled(motion, inner = false, from = done + 400) > 85f)
+    }
+
+    @Test fun jitterAtAParkedPoseDoesNotRestartTheEffect() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(100f, 100)
+        val done = 100 + FoldMotion.IDLE_MS
+        for ((i, angle) in listOf(95f, 100f, 95f, 100f).withIndex()) {
+            motion.sample(angle, done + 100L * (i + 1))
+            assertFalse(motion.isActive(done + 100L * (i + 1)))
+        }
+    }
+
+    private fun settled(motion: FoldMotion, inner: Boolean, from: Long): Float {
+        var shown = 0f
+        for (now in from..from + 300 step 16) shown = motion.degrees(inner, now)
+        return shown
     }
 
     @Test fun finishedEffectStaysFinishedUntilTheHingeReachesRest() {
