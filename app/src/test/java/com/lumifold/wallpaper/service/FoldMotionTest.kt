@@ -198,6 +198,26 @@ class FoldMotionTest {
         }
     }
 
+    @Test fun aSlowPanelSwitchRestartsTheHold() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(90f, 100)
+        // Held at 90 while Android switches panels; the inner screen shows 1.5 s later.
+        val shown = 100 + 1500L
+        motion.panelShown(shown)
+        assertEquals(90f, motion.degrees(true, shown + FoldMotion.HOLD_MS - 50), 1f)
+        assertTrue(motion.isActive(shown + FoldMotion.IDLE_MS - 50))
+    }
+
+    @Test fun showingAPanelDoesNotRestartAFinishedFold() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(60f, 100)
+        val done = 100 + FoldMotion.IDLE_MS
+        motion.panelShown(done + 10)
+        assertFalse(motion.isActive(done + 10))
+    }
+
     private fun settled(motion: FoldMotion, inner: Boolean, from: Long): Float {
         var shown = 0f
         for (now in from..from + 300 step 16) shown = motion.degrees(inner, now)

@@ -38,6 +38,14 @@ class FoldMotion {
         if (anchor.isNaN() || abs(angle - anchor) >= 0.6f) anchor = angle
     }
 
+    /**
+     * A panel switch can take a second or two while the hinge is held still. The hold starts again
+     * when the new panel shows, so its effect is not already finishing when it appears.
+     */
+    fun panelShown(now: Long) {
+        if (isActive(now)) lastMove = now
+    }
+
     fun isActive(now: Long): Boolean {
         latchFinished(now)
         return !finished && angle > 1f && angle < 174f && age(now, lastMove) < IDLE_MS

@@ -14,6 +14,7 @@ object WallpaperRepository {
     const val KEY_DYNAMIC_MOTION_ENABLED = "pref_dynamic_motion_enabled"
     const val KEY_FOLD_EFFECT_ENABLED = "pref_fold_effect_enabled"
     const val KEY_SYMMETRIC_INNER = "pref_symmetric_inner"
+    const val KEY_FULL_SWIPE = "pref_full_swipe"
     const val KEY_PAUSE_ON_SAVER = "pref_pause_motion_on_saver"
     const val KEY_MEASURED_OPEN_SWITCH = "pref_measured_open_switch"
     const val KEY_MEASURED_CLOSE_SWITCH = "pref_measured_close_switch"
@@ -1324,6 +1325,13 @@ object WallpaperRepository {
 
     fun setSymmetricInner(context: Context, enabled: Boolean) {
         getPrefs(context).edit { putBoolean(KEY_SYMMETRIC_INNER, enabled) }
+    }
+
+    /** The inner screen's effect covers both halves and clears from right to left. */
+    fun isFullSwipe(context: Context): Boolean = getPrefs(context).getBoolean(KEY_FULL_SWIPE, true)
+
+    fun setFullSwipe(context: Context, enabled: Boolean) {
+        getPrefs(context).edit { putBoolean(KEY_FULL_SWIPE, enabled) }
     }
 
     fun isPauseOnSaver(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_ON_SAVER, true)

@@ -63,6 +63,7 @@ class FoldAccessibilityService : AccessibilityService() {
     private var closingHinge = false
     private var wasActive = false
     private var overWallpaper = false
+    private var lastInner: Boolean? = null
     private val prefs by lazy { Repo.getPrefs(this) }
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == Repo.KEY_FOLD_EFFECT_ENABLED) updateAwake()
@@ -208,6 +209,10 @@ class FoldAccessibilityService : AccessibilityService() {
         val metrics = DisplayMetrics().also { display.getRealMetrics(it) }
         val inner = FoldOptics.isInnerDisplay(metrics.widthPixels, metrics.heightPixels)
         val now = SystemClock.uptimeMillis()
+        if (inner != lastInner) {
+            lastInner = inner
+            motion.panelShown(now)
+        }
         val active = motion.isActive(now)
         // Over Home the wallpaper draws the effect live; a screenshot on top would double it and
         // freeze a video wallpaper. Decided once per fold, because the wallpaper hides for a

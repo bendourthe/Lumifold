@@ -144,6 +144,7 @@ fun LumifoldScreen(
     var motion by remember(refreshKey) { mutableStateOf(WallpaperRepository.isDynamicMotionEnabled(context)) }
     var foldEffect by remember(refreshKey) { mutableStateOf(WallpaperRepository.isFoldEffectEnabled(context)) }
     var symmetricInner by remember { mutableStateOf(WallpaperRepository.isSymmetricInner(context)) }
+    var fullSwipe by remember { mutableStateOf(WallpaperRepository.isFullSwipe(context)) }
     var pauseOnSaver by remember { mutableStateOf(WallpaperRepository.isPauseOnSaver(context)) }
     val pause = remember(refreshKey, pauseOnSaver) { MotionPolicy.currentPause(context) }
     val gridState = rememberLazyGridState()
@@ -204,10 +205,10 @@ fun LumifoldScreen(
                     WallpaperRepository.setDynamicMotionEnabled(context, it)
                 },
                 pause = pause,
-                pauseOnSaver = pauseOnSaver,
-                onPauseOnSaver = {
-                    pauseOnSaver = it
-                    WallpaperRepository.setPauseOnSaver(context, it)
+                fullSwipe = fullSwipe,
+                onFullSwipe = {
+                    fullSwipe = it
+                    WallpaperRepository.setFullSwipe(context, it)
                 },
                 symmetricInner = symmetricInner,
                 onSymmetricInner = {
@@ -311,7 +312,12 @@ fun LumifoldScreen(
                     hingeAngle = hingeAngle,
                     hasHingeSensor = hasHingeSensor,
                     measuredOpen = measured.first,
-                    measuredClose = measured.second
+                    measuredClose = measured.second,
+                    pauseOnSaver = pauseOnSaver,
+                    onPauseOnSaver = {
+                        pauseOnSaver = it
+                        WallpaperRepository.setPauseOnSaver(context, it)
+                    }
                 )
             }
 
@@ -481,7 +487,9 @@ private fun SettingsPage(
     hingeAngle: FloatState,
     hasHingeSensor: Boolean,
     measuredOpen: Float,
-    measuredClose: Float
+    measuredClose: Float,
+    pauseOnSaver: Boolean,
+    onPauseOnSaver: (Boolean) -> Unit
 ) {
     Surface(color = MaterialTheme.colorScheme.background, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -497,7 +505,8 @@ private fun SettingsPage(
             }
             TuningCard(
                 effect, intensity, onIntensity, onIntensityDone,
-                hingeAngle, hasHingeSensor, measuredOpen, measuredClose
+                hingeAngle, hasHingeSensor, measuredOpen, measuredClose,
+                pauseOnSaver, onPauseOnSaver
             )
             Spacer(Modifier.height(24.dp))
         }
@@ -633,8 +642,8 @@ private fun QuickToggles(
     motion: Boolean,
     onMotion: (Boolean) -> Unit,
     pause: MotionPolicy.Pause,
-    pauseOnSaver: Boolean,
-    onPauseOnSaver: (Boolean) -> Unit,
+    fullSwipe: Boolean,
+    onFullSwipe: (Boolean) -> Unit,
     symmetricInner: Boolean,
     onSymmetricInner: (Boolean) -> Unit
 ) {
@@ -660,10 +669,10 @@ private fun QuickToggles(
     }
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         QuickToggle(
-            title = "Battery Saver",
-            status = if (pauseOnSaver) "Pauses live effect" else "Live effect keeps running",
-            checked = pauseOnSaver,
-            onChange = onPauseOnSaver,
+            title = "Full swipe",
+            status = if (fullSwipe) "Sweeps the inner screen" else "Moving half only",
+            checked = fullSwipe,
+            onChange = onFullSwipe,
             modifier = Modifier.weight(1f)
         )
         QuickToggle(
@@ -703,7 +712,9 @@ private fun TuningCard(
     hingeAngle: FloatState,
     hasHingeSensor: Boolean,
     measuredOpen: Float,
-    measuredClose: Float
+    measuredClose: Float,
+    pauseOnSaver: Boolean,
+    onPauseOnSaver: (Boolean) -> Unit
 ) {
     Surface(
         shape = RoundedCornerShape(24.dp),
@@ -738,6 +749,14 @@ private fun TuningCard(
                     }
                 }
             }
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
+            SwitchRow(
+                title = "Pause on Battery Saver",
+                body = if (pauseOnSaver) "On. The live effect pauses while Android Battery Saver is on."
+                    else "Off. The live effect keeps running with Battery Saver on.",
+                checked = pauseOnSaver,
+                onChange = onPauseOnSaver
+            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
             AppGlassRow()
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))

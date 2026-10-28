@@ -331,7 +331,8 @@ class BothScreens(
                 cfg.intensity,
                 cfg.motion,
                 cfg.foldEffect,
-                symmetricInner = Repo.isSymmetricInner(context)
+                symmetricInner = Repo.isSymmetricInner(context),
+                fullSwipe = Repo.isFullSwipe(context)
             )
             paint.shader = ws.shader
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)

@@ -75,6 +75,7 @@ class FoldWallpaperService : WallpaperService() {
         private var motionPref = true
         private var foldEffect = true
         private var symmetricInner = false
+        private var fullSwipe = true
         private var coverAwakeEnabled = true
 
         /** Living motion after the battery rules. */
@@ -240,6 +241,7 @@ class FoldWallpaperService : WallpaperService() {
             motionPref = Repo.isDynamicMotionEnabled(ctx)
             foldEffect = Repo.isFoldEffectEnabled(ctx)
             symmetricInner = Repo.isSymmetricInner(ctx)
+            fullSwipe = Repo.isFullSwipe(ctx)
             coverAwakeEnabled = Repo.isCoverAwakeEnabled(ctx)
             updateMotion()
             both?.update(coverAwakeEnabled && !isPreview, hinge.angle)
@@ -313,6 +315,7 @@ class FoldWallpaperService : WallpaperService() {
             updateVideoPlayback()
             if (isVisible) {
                 hinge.start()
+                foldMotion.panelShown(SystemClock.uptimeMillis())
                 spring.clear()
                 anchorAngle = Float.NaN
                 settle = settleTarget()
@@ -560,7 +563,7 @@ class FoldWallpaperService : WallpaperService() {
                     both?.shownDegrees = angle
                     // The overlay stays off while the wallpaper shows, so the wallpaper always folds itself.
                     ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, foldEffect,
-                        symmetricInner = symmetricInner)
+                        symmetricInner = symmetricInner, fullSwipe = fullSwipe)
                     paint.shader = ws.shader
                     canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
                     drawnSpec = s

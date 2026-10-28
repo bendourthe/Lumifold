@@ -139,10 +139,12 @@ class WallpaperShader private constructor(
         eyeX: Float = if (spec.isInner) 0f else 0.5f,
         eyeY: Float = spec.planeHeight * 0.5f,
         eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat(),
-        symmetricInner: Boolean = false
+        symmetricInner: Boolean = false,
+        fullSwipe: Boolean = false
     ) {
         shader.setFloatUniform("uEye", eyeX, eyeY, eyeZ)
         shader.setFloatUniform("uSymInner", if (symmetricInner) 1f else 0f)
+        shader.setFloatUniform("uSwipe", if (fullSwipe) 1f else 0f)
         shader.setFloatUniform("uSize", spec.width.toFloat(), spec.height.toFloat())
         shader.setFloatUniform("uRot", spec.rotation.toFloat())
         shader.setFloatUniform("uInner", if (spec.isInner) 1f else 0f)

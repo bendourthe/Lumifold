@@ -454,7 +454,8 @@ class FoldPreviewView(context: Context) : View(context) {
                     else -> raw
                 }.let { if (spec.isInner) it.coerceAtLeast(90f) else it.coerceAtMost(90f) }
                 ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
-                    symmetricInner = WallpaperRepository.isSymmetricInner(context))
+                    symmetricInner = WallpaperRepository.isSymmetricInner(context),
+                    fullSwipe = WallpaperRepository.isFullSwipe(context))
                 screenPaint.shader = ws.shader
                 path.reset()
                 path.addRoundRect(rect, radius, radius, Path.Direction.CW)
@@ -753,7 +754,8 @@ class FoldPreviewView(context: Context) : View(context) {
                 val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
                 ws.bind(
                     spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
-                    symmetricInner = WallpaperRepository.isSymmetricInner(context)
+                    symmetricInner = WallpaperRepository.isSymmetricInner(context),
+                    fullSwipe = WallpaperRepository.isFullSwipe(context)
                 )
                 screenPaint.shader = ws.shader
                 drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), screenPaint)

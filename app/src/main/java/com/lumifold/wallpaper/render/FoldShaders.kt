@@ -100,10 +100,14 @@ uniform float uTime;
 uniform float uEffect;
 uniform float3 uEye;
 uniform float uSymInner;
+uniform float uSwipe;
 
 const float PI = 3.14159265;
 const float SIGMA_MAX = 0.17;
 const float DUO_SIGMA = 0.09;
+// Strongest blur and dimming of the Full swipe.
+const float SWIPE_SIGMA = 0.07;
+const float SWIPE_FADE = 0.55;
 
 float hash12(float2 p) {
     float3 p3 = fract(float3(p.xyx) * 0.1031);
@@ -1066,6 +1070,18 @@ half4 main(float2 fragCoord) {
 
     if (fx >= 90) {
         // Fold effect off: the wallpaper as a flat picture.
+        s = 0.0;
+    } else if (uSwipe > 0.5) {
+        // Full swipe, both screens. The picture stays in place. At the panel switch the outer
+        // third is dimmed, the middle third fades from dimmed to lit, and the blur fades from the
+        // middle third's outer edge to the far edge. The inner screen's outer edge is its left,
+        // the cover's is its right. Opening slides this profile off toward the outer edge
+        // (cover: 0 to 90 degrees; inner: 90 to flat); closing plays it back.
+        float x = n.x / nsz.x;
+        float p = inner ? clamp((a - 0.5 * PI) / (0.5 * PI), 0.0, 1.0) : clamp(1.0 - a / (0.5 * PI), 0.0, 1.0);
+        float t = (inner ? x : 1.0 - x) + p;
+        sigma = SWIPE_SIGMA * I * clamp((1.0 - t) * 1.5, 0.0, 1.0);
+        dark = SWIPE_FADE * clamp((2.0 / 3.0 - t) * 3.0, 0.0, 1.0);
         s = 0.0;
     } else if (fx == 0) {
         // Duo Frost. The picture stays on the glass and both edges stay on the panel. A ray that
