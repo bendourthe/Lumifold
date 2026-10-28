@@ -1073,7 +1073,7 @@ object WallpaperRepository {
         photo(
             "sphere_moon", "The Sphere", WallpaperCategory.LANDMARKS, R.drawable.wp_sphere_moon,
             "The Sphere in Las Vegas showing the Moon at night.",
-            MotionStyle.DEPTH, focusX = 0.50f, focusY = 0.55f, depthResId = R.drawable.wpd_sphere_moon
+            MotionStyle.DEPTH, focusX = 0.68f, focusY = 0.55f, depthResId = R.drawable.wpd_sphere_moon
         ),
         photo(
             "colosseum_rome", "Colosseum", WallpaperCategory.LANDMARKS, R.drawable.wp_colosseum_rome,
