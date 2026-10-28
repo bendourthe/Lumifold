@@ -137,9 +137,11 @@ class WallpaperShader private constructor(
         foldEffect: Boolean = true,
         eyeX: Float = if (spec.isInner) 0f else 0.5f,
         eyeY: Float = spec.planeHeight * 0.5f,
-        eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat()
+        eyeZ: Float = FoldOptics.VIEW_DISTANCE.toFloat(),
+        symmetricInner: Boolean = false
     ) {
         shader.setFloatUniform("uEye", eyeX, eyeY, eyeZ)
+        shader.setFloatUniform("uSymInner", if (symmetricInner) 1f else 0f)
         shader.setFloatUniform("uSize", spec.width.toFloat(), spec.height.toFloat())
         shader.setFloatUniform("uRot", spec.rotation.toFloat())
         shader.setFloatUniform("uInner", if (spec.isInner) 1f else 0f)

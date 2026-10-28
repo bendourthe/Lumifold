@@ -68,6 +68,27 @@ object FoldOptics {
         return Pair(vx + (px - vx) * k, vy + (y - vy) * k)
     }
 
+    /**
+     * Duo Frost on the inner display. Both halves tilt toward the viewer about the crease by half
+     * the remaining opening, and each pixel shows the picture behind it along the ray from an eye
+     * above the crease. The map is scaled so each outer edge stays on the picture's edge, so no
+     * ray misses the picture. [x] runs from -1 (left edge) through 0 (crease) to 1 (right edge).
+     */
+    fun projectInnerHalf(
+        x: Double,
+        y: Double,
+        angleRad: Double,
+        planeHeight: Double,
+        viewDistance: Double = VIEW_DISTANCE
+    ): Pair<Double, Double> {
+        val tilt = sin((PI - angleRad.coerceIn(0.0, PI)) * 0.5)
+        val u = kotlin.math.abs(x).coerceIn(0.0, 1.0)
+        // Projection factor at this point over the factor at the outer edge.
+        val scale = (viewDistance - tilt) / (viewDistance - u * tilt)
+        val vy = planeHeight * 0.5
+        return Pair(x * scale, vy + (y - vy) * scale)
+    }
+
     fun isInnerDisplay(naturalWidth: Int, naturalHeight: Int): Boolean {
         if (naturalWidth <= 0 || naturalHeight <= 0) return false
         val aspect = max(naturalWidth, naturalHeight).toFloat() / min(naturalWidth, naturalHeight)

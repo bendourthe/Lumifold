@@ -99,6 +99,7 @@ uniform float uIntensity;
 uniform float uTime;
 uniform float uEffect;
 uniform float3 uEye;
+uniform float uSymInner;
 
 const float PI = 3.14159265;
 const float SIGMA_MAX = 0.17;
@@ -1072,15 +1073,28 @@ half4 main(float2 fragCoord) {
         float span = 0.5 * PI;
         float prog = inner ? clamp((PI - a) / span, 0.0, 1.0) : clamp(a / span, 0.0, 1.0);
         float motion = smoothstep(0.0, 0.75, prog);
-        float pinch = 1.0 - abs(c);
-        float u2 = pow(clamp(u, 0.0, 1.0), 1.0 + 1.6 * pinch);
-        q = moving ? float2(inner ? -u2 : u2, yPlane) : qFlat;
-        if (moving) {
-            sigma = DUO_SIGMA * I * motion * pow(d, 1.5);
-            float dg = clamp((d - 0.2) / 0.8, 0.0, 1.0);
+        if (inner && uSymInner > 0.5) {
+            // Optional symmetric fold: both halves fold about the crease and show the picture
+            // behind them along the viewing ray, scaled so each outer edge stays on the picture
+            // (FoldOptics.projectInnerHalf). The iPhone Duo moves only one half.
+            float dist = moving ? u : xStat;
+            float tilt = sin((PI - a) * 0.5);
+            float scale = (uEye.z - tilt) / (uEye.z - clamp(dist, 0.0, 1.0) * tilt);
+            q = float2((moving ? -dist : dist) * scale, uEye.y + (yPlane - uEye.y) * scale);
+            sigma = DUO_SIGMA * I * motion * pow(dist, 1.5);
+            float dg = clamp((dist - 0.2) / 0.8, 0.0, 1.0);
             dark = 1.3 * motion * pow(dg, 1.35);
         } else {
-            dark = 0.1 * motion;
+            float pinch = 1.0 - abs(c);
+            float u2 = pow(clamp(u, 0.0, 1.0), 1.0 + 1.6 * pinch);
+            q = moving ? float2(inner ? -u2 : u2, yPlane) : qFlat;
+            if (moving) {
+                sigma = DUO_SIGMA * I * motion * pow(d, 1.5);
+                float dg = clamp((d - 0.2) / 0.8, 0.0, 1.0);
+                dark = 1.3 * motion * pow(dg, 1.35);
+            } else {
+                dark = 0.1 * motion;
+            }
         }
     } else if (fx == 1) {
         q = mix(qFlat, qPersp, 0.6);

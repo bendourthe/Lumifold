@@ -11,12 +11,9 @@ object WallpaperRepository {
     const val KEY_OPENING_EFFECT = "pref_opening_effect"
     const val KEY_EFFECT_INTENSITY = "pref_effect_intensity"
     const val KEY_DYNAMIC_MOTION_ENABLED = "pref_dynamic_motion_enabled"
-    const val KEY_COVER_AWAKE = "pref_cover_awake"
     const val KEY_FOLD_EFFECT_ENABLED = "pref_fold_effect_enabled"
+    const val KEY_SYMMETRIC_INNER = "pref_symmetric_inner"
     const val KEY_PAUSE_ON_SAVER = "pref_pause_motion_on_saver"
-    const val KEY_PAUSE_BELOW_LEVEL = "pref_pause_motion_below_level"
-    const val KEY_PAUSE_LEVEL = "pref_pause_motion_level"
-    const val DEFAULT_PAUSE_LEVEL = 20
     const val KEY_MEASURED_OPEN_SWITCH = "pref_measured_open_switch"
     const val KEY_MEASURED_CLOSE_SWITCH = "pref_measured_close_switch"
     const val KEY_INNER_W = "pref_inner_natural_w"
@@ -1292,32 +1289,23 @@ object WallpaperRepository {
         getPrefs(context).edit().putBoolean(KEY_FOLD_EFFECT_ENABLED, enabled).apply()
     }
 
+    // Off matches the iPhone Duo: on the inner screen only the left half moves.
+    fun isSymmetricInner(context: Context): Boolean =
+        getPrefs(context).getBoolean(KEY_SYMMETRIC_INNER, false)
+
+    fun setSymmetricInner(context: Context, enabled: Boolean) {
+        getPrefs(context).edit().putBoolean(KEY_SYMMETRIC_INNER, enabled).apply()
+    }
+
     fun isPauseOnSaver(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_ON_SAVER, true)
 
     fun setPauseOnSaver(context: Context, enabled: Boolean) {
         getPrefs(context).edit().putBoolean(KEY_PAUSE_ON_SAVER, enabled).apply()
     }
 
-    fun isPauseBelowLevel(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_BELOW_LEVEL, false)
-
-    fun setPauseBelowLevel(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_PAUSE_BELOW_LEVEL, enabled).apply()
-    }
-
-    fun getPauseLevel(context: Context): Int =
-        getPrefs(context).getInt(KEY_PAUSE_LEVEL, DEFAULT_PAUSE_LEVEL).coerceIn(5, 80)
-
-    fun setPauseLevel(context: Context, level: Int) {
-        getPrefs(context).edit().putInt(KEY_PAUSE_LEVEL, level.coerceIn(5, 80)).apply()
-    }
-
-    // On asks Android to power both panels from just after closed until just before fully open.
-    fun isCoverAwakeEnabled(context: Context): Boolean =
-        getPrefs(context).getBoolean(KEY_COVER_AWAKE, false)
-
-    fun setCoverAwakeEnabled(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_COVER_AWAKE, enabled).apply()
-    }
+    // Holding the cover until Android's 90-degree switch is what makes the cover effect visible,
+    // so it is built into the fold effect rather than offered as a separate choice.
+    fun isCoverAwakeEnabled(context: Context): Boolean = isFoldEffectEnabled(context)
 
     /** Hinge angle at which the system last switched cover to inner, or NaN if never seen. */
     fun getMeasuredOpenSwitch(context: Context): Float =

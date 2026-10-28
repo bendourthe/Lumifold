@@ -75,6 +75,84 @@ class FoldOpticsTest {
     }
 
     @Test
+    fun innerHalvesAreUndistortedWhenFlat() {
+        val h = 2.07
+        for (x in listOf(-1.0, -0.4, 0.0, 0.6, 1.0)) {
+            val p = FoldOptics.projectInnerHalf(x, 0.3, PI, h)
+            assertEquals(x, p.first, 1e-9)
+            assertEquals(0.3, p.second, 1e-9)
+        }
+    }
+
+    @Test
+    fun innerOuterEdgesStayOnThePictureEdges() {
+        val h = 2.07
+        for (deg in listOf(90.0, 120.0, 150.0, 175.0)) {
+            for (y in listOf(0.0, 0.7, h)) {
+                val left = FoldOptics.projectInnerHalf(-1.0, y, rad(deg), h)
+                val right = FoldOptics.projectInnerHalf(1.0, y, rad(deg), h)
+                assertEquals(-1.0, left.first, 1e-9)
+                assertEquals(1.0, right.first, 1e-9)
+                assertEquals(y, left.second, 1e-9)
+                assertEquals(y, right.second, 1e-9)
+            }
+        }
+    }
+
+    @Test
+    fun innerHalvesMirrorEachOther() {
+        val h = 2.07
+        for (x in listOf(0.1, 0.5, 0.9)) {
+            val left = FoldOptics.projectInnerHalf(-x, 0.4, rad(110.0), h)
+            val right = FoldOptics.projectInnerHalf(x, 0.4, rad(110.0), h)
+            assertEquals(-right.first, left.first, 1e-12)
+            assertEquals(right.second, left.second, 1e-12)
+        }
+    }
+
+    @Test
+    fun innerRaysNeverLeaveThePicture() {
+        val h = 2.07
+        for (deg in 90..180 step 5) {
+            for (i in -10..10) {
+                val x = i / 10.0
+                for (y in listOf(0.0, 0.5, h * 0.5, h)) {
+                    val p = FoldOptics.projectInnerHalf(x, y, rad(deg.toDouble()), h)
+                    assertTrue(kotlin.math.abs(p.first) <= kotlin.math.abs(x) + 1e-12)
+                    assertTrue(kotlin.math.abs(p.second - h * 0.5) <= kotlin.math.abs(y - h * 0.5) + 1e-12)
+                }
+            }
+        }
+    }
+
+    @Test
+    fun foldedInnerCreaseMagnifiesAndKeepsOrder() {
+        val h = 2.07
+        val crease = FoldOptics.projectInnerHalf(0.0, 0.2, rad(90.0), h)
+        assertEquals(0.0, crease.first, 1e-12)
+        // Far from the viewer, the crease shows less of the picture, so content looks larger.
+        assertTrue(crease.second > 0.2)
+        var previous = -1.0
+        for (i in 0..20) {
+            val x = i / 20.0
+            val p = FoldOptics.projectInnerHalf(x, 0.2, rad(90.0), h)
+            assertTrue(p.first >= previous)
+            previous = p.first
+        }
+    }
+
+    @Test
+    fun innerProjectionKeepsStraightLinesStraight() {
+        // The anchored-picture illusion is a projective map: a picture row stays a straight line.
+        val h = 2.07
+        val a = FoldOptics.projectInnerHalf(0.1, 0.3, rad(100.0), h)
+        val b = FoldOptics.projectInnerHalf(0.5, 0.3, rad(100.0), h)
+        val c = FoldOptics.projectInnerHalf(0.9, 0.3, rad(100.0), h)
+        val cross = (b.first - a.first) * (c.second - a.second) - (b.second - a.second) * (c.first - a.first)
+        assertEquals(0.0, cross, 1e-12)
+    }
+
+    @Test
     fun displayClassification() {
         assertTrue(FoldOptics.isInnerDisplay(2076, 2152)) // Pixel 9 Pro Fold inner
         assertTrue(FoldOptics.isInnerDisplay(2208, 1840)) // Pixel Fold inner

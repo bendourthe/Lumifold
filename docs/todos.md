@@ -8,10 +8,10 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 88 | 107 | -19 |
+| Tasks Completed | 90 | 109 | -19 |
 | Wallpaper Designs | 230 (52 generative, 64 video, 114 photographs) in 10 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
 | Opening Effects | 12, plus an off switch | 12 | Met |
-| Unit Tests | 71 | 38 | +33 |
+| Unit Tests | 74 | 38 | +36 |
 | Min SDK Target | 33 (Android 13) | 33 | Met |
 | Target SDK | 35 (Android 15) | 35 | Met |
 
@@ -138,6 +138,8 @@
 - [x] T105 [US5] Preserve Home's wallpaper beneath icons during the fold: detect transparent pixels in application-window captures, copy the visible Lumifold wallpaper surface once with PixelCopy, and composite the layers before applying the existing shader; reject stale panel sizes; 71 unit tests and eight native Android bitmap assertions pass, the installed trace confirms successful wallpaper composition, and the user confirms the wallpaper remains visible
 - [ ] T106 [US5] Keep the inner-screen effect consistent before and after capture: the shared-shading repair is installed, with 71 unit tests and eight hardware-rendered assertions passing; the physical test still reports left-only inner distortion and handoff too late for normal-speed visibility, so overall acceptance remains open
 - [x] T107 [US5] Keep the cover lit until Android's 90-degree handoff when an app, not Home, is open: the Accessibility service applies the wallpaper's CoverAwakeKeeper rule to unlocked screens, re-arms it from a 1x1 ACTION_OUTSIDE touch watcher so it never outlasts the screen timeout, and re-checks on window events because face or fingerprint unlock delivered no USER_PRESENT; 71 unit tests pass, installation succeeded, Android requested the inner panel at 90 degrees over Settings instead of 5 degrees, and the user confirmed the cover now behaves like Home
+- [x] T108 [US5] Offer a symmetric inner fold as the "Mirror effect" setting on the home page, off by default: both halves tilt about the crease and show the shared picture along the viewing ray, scaled so each outer edge stays on the picture (FoldOptics.projectInnerHalf, six new unit tests, 77 total); the user saw the symmetric fold on the phone and asked that it stay optional because the iPhone Duo moves one half; GPU renders confirm the default inner effect is byte-identical to the previous build and the option matches the tested render, and the toggle displays off in Settings
+- [x] T109 [US5] Simplify settings: Fold effect, Live effect (renamed from Live motion, including its Quick Settings tile), Battery Saver and Mirror effect sit on the home page and the gear opens Advanced settings; the cover hold is built into the fold effect instead of a switch; the low-battery pause and its battery listener are removed; turning the live effect off shows the clip's still poster in the preview and on the wallpaper instead of a paused frame; 74 unit tests pass, the home row and Advanced settings were inspected on the phone, and the user confirmed the still poster. A fade-through-black at the panel switch was built and removed after the user saw no difference at normal speed
 
 Home composition repair for T105: window-only capture excludes the wallpaper layer, while the effect shader always returns opaque output. The new capture path combines transparent foreground pixels with a copy of Lumifold's own visible wallpaper surface. It uses the exact window bounds, rejects hidden or unfinished surfaces and changed panel generations, and retains the original 500 ms capture deadline. [Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy) copies the most recently queued surface buffer; this adds no continuous recording or permission. Already queued bitmap jobs finish their cleanup on service shutdown, and canceled wallpaper callbacks recycle their buffers. Shader strength and panel-power control are unchanged.
 

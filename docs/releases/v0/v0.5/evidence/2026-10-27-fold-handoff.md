@@ -79,6 +79,12 @@ The first physical run failed: the lock expired normally at 14:01:00, the screen
 
 With that build (APK SHA256 8D8C9174A7384437738688F071C62DD84267B19CD6A045CC9E9E98ECA692A2CC, 71 unit tests passing), the user unlocked with Android Settings in front and opened immediately. The hinge passed 5 degrees at 14:56:02.160 and Android requested the inner panel at 14:56:02.892, between the 80 and 100 degree samples; the hold logged on-to-off at that handoff. The user confirmed the cover now behaves as on Home. The inner-panel delay after 90 degrees and the 45-degree closing threshold are unchanged, as the policy rules above predict.
 
+## Handoff Masking Trial
+
+A fade-through-black was tried: the cover dimmed from 60 to 90 degrees, the inner screen dimmed toward the 45-degree closing switch, and a newly lit panel rose from black over 350 ms on the wallpaper, the app overlay, and the Home preview. At normal speed the user saw no difference, which matches the timing: 60 to 90 degrees passes in roughly 0.15 s and the inner panel lights near flat. The fade was removed everywhere, and a GPU render confirmed the default inner effect is again byte-identical to the original.
+
+The user also observed that closing returns to the cover near 30 degrees while opening switches at 90. This follows the policy rules above: the hold-until-90 rule is set only while opening from closed, closing always returns to the cover below 45 degrees, and the roughly 360 ms of sequential driver work carries the hinge to about 30 degrees before the cover lights. No app input changes the closing threshold.
+
 ## Capture Quality
 
 The initial v3 ring buffer retained only its final 23 seconds and missed the folds. The v4 streaming capture ran from 10:18:31 to 10:21:31 PDT; the user's subsequent cycle occurred around 10:25, outside that interval. Neither is evidence for the rendering cause. The v5 streaming capture preserved the tested cycle and supplies all timing measurements above.

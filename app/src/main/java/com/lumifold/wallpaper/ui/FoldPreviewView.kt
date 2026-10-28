@@ -157,12 +157,29 @@ class FoldPreviewView(context: Context) : View(context) {
     }
 
     fun setEffect(effect: OpeningEffect, intensity: Float, motion: Boolean, foldEffect: Boolean = true) {
+        val stopped = this.motion && !motion
         this.effect = effect
         this.intensity = intensity
         this.motion = motion
         this.foldEffect = foldEffect
         updateVideoPlayback()
+        if (stopped) showPoster()
         invalidate()
+    }
+
+    /** With the live effect off, a clip shows its still poster, as the wallpaper does, not a paused frame. */
+    private fun showPoster() {
+        val current = item ?: return
+        val source = current.source as? WallpaperSource.Video ?: return
+        loader.execute {
+            val poster = runCatching { WallpaperShader.decodePoster(resources, source) }.getOrNull() ?: return@execute
+            mainHandler.post {
+                if (motion || item?.id != current.id) return@post
+                coverShader?.setVideoFrame(poster)
+                if (innerShader !== coverShader) innerShader?.setVideoFrame(poster)
+                invalidate()
+            }
+        }
     }
 
     /**
@@ -198,7 +215,8 @@ class FoldPreviewView(context: Context) : View(context) {
         videoLoader.execute {
             val frames = runCatching {
                 VideoFrames(context, source, mainHandler, edge, onError = { retryVideoSoon() }) { frame ->
-                    if (item?.id == current.id) {
+                    // A frame already decoded when playback paused must not replace the poster.
+                    if (item?.id == current.id && motion) {
                         coverShader?.setVideoFrame(frame)
                         if (innerShader !== coverShader) innerShader?.setVideoFrame(frame)
                         invalidate()
@@ -413,7 +431,8 @@ class FoldPreviewView(context: Context) : View(context) {
                 raw <= 15f -> 0f
                 else -> raw
             }.let { if (spec.isInner) it.coerceAtLeast(90f) else it.coerceAtMost(90f) }
-            ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect)
+            ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
+                symmetricInner = WallpaperRepository.isSymmetricInner(context))
             screenPaint.shader = ws.shader
             path.reset()
             path.addRoundRect(rect, radius, radius, Path.Direction.CW)
@@ -716,7 +735,8 @@ class FoldPreviewView(context: Context) : View(context) {
         if (on && ws != null && ws.isReady) {
             val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
             ws.bind(
-                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect
+                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
+                symmetricInner = WallpaperRepository.isSymmetricInner(context)
             )
             screenPaint.shader = ws.shader
             canvas.drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), screenPaint)

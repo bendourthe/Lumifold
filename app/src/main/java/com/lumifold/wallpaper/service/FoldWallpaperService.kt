@@ -71,6 +71,7 @@ class FoldWallpaperService : WallpaperService() {
         private var intensity = Repo.DEFAULT_INTENSITY
         private var motionPref = true
         private var foldEffect = true
+        private var symmetricInner = false
         private var coverAwakeEnabled = true
 
         /** Living motion after the battery rules. */
@@ -151,10 +152,7 @@ class FoldWallpaperService : WallpaperService() {
             )
             ContextCompat.registerReceiver(
                 ctx, batteryReceiver,
-                IntentFilter().apply {
-                    addAction(Intent.ACTION_BATTERY_CHANGED)
-                    addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED)
-                },
+                IntentFilter(PowerManager.ACTION_POWER_SAVE_MODE_CHANGED),
                 ContextCompat.RECEIVER_NOT_EXPORTED
             )
             loadPreferences()
@@ -165,7 +163,24 @@ class FoldWallpaperService : WallpaperService() {
             if (next != motion) {
                 motion = next
                 updateVideoPlayback()
+                if (!motion) showPoster()
                 requestFrame()
+            }
+        }
+
+        /** With the live effect off, a clip shows its still poster rather than the frame it paused on. */
+        private fun showPoster() {
+            val target = item
+            val clip = target.source as? WallpaperSource.Video ?: return
+            loader.execute {
+                val poster = runCatching { WallpaperShader.decodePoster(resources, clip) }.getOrNull() ?: return@execute
+                mainHandler.post {
+                    val ws = shader
+                    if (motion || item.id != target.id || ws == null || ws.item.id != target.id) return@post
+                    ws.setVideoFrame(poster)
+                    both?.shareFrame(poster)
+                    requestFrame()
+                }
             }
         }
 
@@ -176,7 +191,8 @@ class FoldWallpaperService : WallpaperService() {
             video = runCatching {
                 VideoFrames(ctx, source, mainHandler) { frame ->
                     val ws = shader
-                    if (ws != null && ws.item.id == target.id) {
+                    // A frame already decoded when playback paused must not replace the poster.
+                    if (ws != null && ws.item.id == target.id && motion) {
                         ws.setVideoFrame(frame)
                         both?.shareFrame(frame)
                         requestFrame()
@@ -220,6 +236,7 @@ class FoldWallpaperService : WallpaperService() {
             intensity = Repo.getIntensity(ctx)
             motionPref = Repo.isDynamicMotionEnabled(ctx)
             foldEffect = Repo.isFoldEffectEnabled(ctx)
+            symmetricInner = Repo.isSymmetricInner(ctx)
             coverAwakeEnabled = Repo.isCoverAwakeEnabled(ctx)
             updateMotion()
             both?.update(coverAwakeEnabled && !isPreview, hinge.angle)
@@ -540,7 +557,8 @@ class FoldWallpaperService : WallpaperService() {
                     both?.shownDegrees = angle
                     // The overlay copies this flat surface beneath transparent Home icons.
                     val wallpaperFold = foldEffect && (isPreview || FoldAccessibilityService.instance?.coversUnlockedScreen != true)
-                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, wallpaperFold)
+                    ws.bind(s, Math.toRadians(angle.toDouble()).toFloat(), timeSec(), effect, intensity, motion, wallpaperFold,
+                        symmetricInner = symmetricInner)
                     paint.shader = ws.shader
                     canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
                     drawnSpec = s

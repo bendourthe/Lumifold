@@ -270,7 +270,8 @@ class FoldGlass(private val context: Context) {
                     effect,
                     intensity,
                     false,
-                    true
+                    true,
+                    symmetricInner = com.lumifold.wallpaper.model.WallpaperRepository.isSymmetricInner(context)
                 )
                 paint.shader = if (captured != null) ws.shader else (shadingMask ?: return).apply {
                     // A child shader snapshots uniforms; refresh it after binding this hinge pose.

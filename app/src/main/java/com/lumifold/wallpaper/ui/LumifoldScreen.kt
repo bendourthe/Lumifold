@@ -143,13 +143,9 @@ fun LumifoldScreen(
     // Re-read on resume: the Quick Settings tiles can change these while the app is away.
     var motion by remember(refreshKey) { mutableStateOf(WallpaperRepository.isDynamicMotionEnabled(context)) }
     var foldEffect by remember(refreshKey) { mutableStateOf(WallpaperRepository.isFoldEffectEnabled(context)) }
-    var coverAwake by remember(refreshKey) { mutableStateOf(WallpaperRepository.isCoverAwakeEnabled(context)) }
+    var symmetricInner by remember { mutableStateOf(WallpaperRepository.isSymmetricInner(context)) }
     var pauseOnSaver by remember { mutableStateOf(WallpaperRepository.isPauseOnSaver(context)) }
-    var pauseBelow by remember { mutableStateOf(WallpaperRepository.isPauseBelowLevel(context)) }
-    var pauseLevel by remember { mutableFloatStateOf(WallpaperRepository.getPauseLevel(context).toFloat()) }
-    val pause = remember(refreshKey, pauseOnSaver, pauseBelow, pauseLevel.roundToInt()) {
-        MotionPolicy.currentPause(context)
-    }
+    val pause = remember(refreshKey, pauseOnSaver) { MotionPolicy.currentPause(context) }
     val gridState = rememberLazyGridState()
     LaunchedEffect(gridState.isScrollInProgress) {
         VideoPreviewSlots.setScrolling(gridState.isScrollInProgress)
@@ -169,7 +165,8 @@ fun LumifoldScreen(
     }
     val active = WallpaperRepository.resolveWallpaper(activeId)
     val items = WallpaperRepository.getWallpapersByCategory(category, liveOnly)
-    val handoff = if (coverAwake) COVER_AWAKE_HANDOFF else STOCK_HANDOFF
+    // The cover hold is built in whenever the fold effect is on.
+    val handoff = if (foldEffect) COVER_AWAKE_HANDOFF else STOCK_HANDOFF
     if (detailId != null) lastDetailId = detailId
 
     PredictiveBackHandler(enabled = detailId != null || showSettings) { events: Flow<BackEventCompat> ->
@@ -206,7 +203,17 @@ fun LumifoldScreen(
                     motion = it
                     WallpaperRepository.setDynamicMotionEnabled(context, it)
                 },
-                pause = pause
+                pause = pause,
+                pauseOnSaver = pauseOnSaver,
+                onPauseOnSaver = {
+                    pauseOnSaver = it
+                    WallpaperRepository.setPauseOnSaver(context, it)
+                },
+                symmetricInner = symmetricInner,
+                onSymmetricInner = {
+                    symmetricInner = it
+                    WallpaperRepository.setSymmetricInner(context, it)
+                }
             )
         }
     }
@@ -301,24 +308,6 @@ fun LumifoldScreen(
                     intensity = intensity,
                     onIntensity = { intensity = it },
                     onIntensityDone = { WallpaperRepository.setIntensity(context, intensity) },
-                    pauseOnSaver = pauseOnSaver,
-                    onPauseOnSaver = {
-                        pauseOnSaver = it
-                        WallpaperRepository.setPauseOnSaver(context, it)
-                    },
-                    pauseBelow = pauseBelow,
-                    onPauseBelow = {
-                        pauseBelow = it
-                        WallpaperRepository.setPauseBelowLevel(context, it)
-                    },
-                    pauseLevel = pauseLevel,
-                    onPauseLevel = { pauseLevel = it },
-                    onPauseLevelDone = { WallpaperRepository.setPauseLevel(context, pauseLevel.roundToInt()) },
-                    coverAwake = coverAwake,
-                    onCoverAwake = {
-                        coverAwake = it
-                        WallpaperRepository.setCoverAwakeEnabled(context, it)
-                    },
                     hingeAngle = hingeAngle,
                     hasHingeSensor = hasHingeSensor,
                     measuredOpen = measured.first,
@@ -381,7 +370,7 @@ private fun Header(hingeAngle: FloatState, hasHingeSensor: Boolean, onSettings: 
             )
         }
         IconButton(onClick = onSettings) {
-            Icon(painterResource(R.drawable.ic_settings_gear), contentDescription = "Settings")
+            Icon(painterResource(R.drawable.ic_settings_gear), contentDescription = "Advanced settings")
         }
         if (hasHingeSensor) HingePill(hingeAngle)
     }
@@ -489,15 +478,6 @@ private fun SettingsPage(
     intensity: Float,
     onIntensity: (Float) -> Unit,
     onIntensityDone: () -> Unit,
-    pauseOnSaver: Boolean,
-    onPauseOnSaver: (Boolean) -> Unit,
-    pauseBelow: Boolean,
-    onPauseBelow: (Boolean) -> Unit,
-    pauseLevel: Float,
-    onPauseLevel: (Float) -> Unit,
-    onPauseLevelDone: () -> Unit,
-    coverAwake: Boolean,
-    onCoverAwake: (Boolean) -> Unit,
     hingeAngle: FloatState,
     hasHingeSensor: Boolean,
     measuredOpen: Float,
@@ -513,12 +493,11 @@ private fun SettingsPage(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 TextButton(onClick = onBack, contentPadding = PaddingValues(horizontal = 0.dp)) { Text("Back") }
-                Text("Settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
+                Text("Advanced settings", style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = 8.dp))
             }
             TuningCard(
                 effect, intensity, onIntensity, onIntensityDone,
-                pauseOnSaver, onPauseOnSaver, pauseBelow, onPauseBelow, pauseLevel, onPauseLevel, onPauseLevelDone,
-                coverAwake, onCoverAwake, hingeAngle, hasHingeSensor, measuredOpen, measuredClose
+                hingeAngle, hasHingeSensor, measuredOpen, measuredClose
             )
             Spacer(Modifier.height(24.dp))
         }
@@ -652,7 +631,11 @@ private fun QuickToggles(
     onFoldEffect: (Boolean) -> Unit,
     motion: Boolean,
     onMotion: (Boolean) -> Unit,
-    pause: MotionPolicy.Pause
+    pause: MotionPolicy.Pause,
+    pauseOnSaver: Boolean,
+    onPauseOnSaver: (Boolean) -> Unit,
+    symmetricInner: Boolean,
+    onSymmetricInner: (Boolean) -> Unit
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         QuickToggle(
@@ -663,15 +646,30 @@ private fun QuickToggles(
             modifier = Modifier.weight(1f)
         )
         QuickToggle(
-            title = "Live motion",
+            title = "Live effect",
             status = when {
                 !motion -> "Off, still images"
                 pause == MotionPolicy.Pause.BATTERY_SAVER -> "Paused by Battery Saver"
-                pause == MotionPolicy.Pause.LOW_BATTERY -> "Paused, low battery"
                 else -> "On"
             },
             checked = motion,
             onChange = onMotion,
+            modifier = Modifier.weight(1f)
+        )
+    }
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+        QuickToggle(
+            title = "Battery Saver",
+            status = if (pauseOnSaver) "Pauses live effect" else "Live effect keeps running",
+            checked = pauseOnSaver,
+            onChange = onPauseOnSaver,
+            modifier = Modifier.weight(1f)
+        )
+        QuickToggle(
+            title = "Mirror effect",
+            status = if (symmetricInner) "Both halves move" else "Left half only",
+            checked = symmetricInner,
+            onChange = onSymmetricInner,
             modifier = Modifier.weight(1f)
         )
     }
@@ -701,15 +699,6 @@ private fun TuningCard(
     intensity: Float,
     onIntensity: (Float) -> Unit,
     onIntensityDone: () -> Unit,
-    pauseOnSaver: Boolean,
-    onPauseOnSaver: (Boolean) -> Unit,
-    pauseBelow: Boolean,
-    onPauseBelow: (Boolean) -> Unit,
-    pauseLevel: Float,
-    onPauseLevel: (Float) -> Unit,
-    onPauseLevelDone: () -> Unit,
-    coverAwake: Boolean,
-    onCoverAwake: (Boolean) -> Unit,
     hingeAngle: FloatState,
     hasHingeSensor: Boolean,
     measuredOpen: Float,
@@ -748,36 +737,6 @@ private fun TuningCard(
                     }
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
-            SwitchRow(
-                title = "Pause motion in Battery Saver",
-                body = "Live motion stops while Battery Saver is on. The fold effect keeps working.",
-                checked = pauseOnSaver,
-                onChange = onPauseOnSaver
-            )
-            SwitchRow(
-                title = "Pause motion on low battery",
-                body = if (pauseBelow) "Stops live motion at ${pauseLevel.roundToInt()}% or less, unless charging." else "Stops live motion below a battery level you choose, unless charging.",
-                checked = pauseBelow,
-                onChange = onPauseBelow
-            )
-            if (pauseBelow) {
-                Slider(
-                    value = pauseLevel,
-                    onValueChange = onPauseLevel,
-                    onValueChangeFinished = onPauseLevelDone,
-                    valueRange = 5f..80f,
-                    steps = 14,
-                    colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest)
-                )
-            }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
-            SwitchRow(
-                title = "Keep cover on while opening",
-                body = "The cover stays lit while you open, until Android switches to the inner screen around 90 degrees. The phone cannot light both panels through the whole fold, so this does not turn the inner screen on early.",
-                checked = coverAwake,
-                onChange = onCoverAwake
-            )
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))
             AppGlassRow()
             HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(vertical = 6.dp))

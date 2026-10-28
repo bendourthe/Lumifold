@@ -63,7 +63,7 @@ App thumbnails are rendered once into cached bitmaps on a background thread (`Sh
 
 | Effect | Moving panel | Stationary half |
 |--------|--------------|-----------------|
-| Duo Frost | full perspective, edge blur, shade into black, coverage wedges | slight dimming |
+| Duo Frost | full perspective, edge blur, shade into black, coverage wedges | slight dimming; with "Mirror effect" on, mirrors the moving panel about the crease |
 | Fluted Glass | 16 refracting ribs, moderate blur, rib highlights | slight darkening |
 | Aperture | iris around the cover center or the crease | iris continues across |
 | Dawn | darkness spreads from the free edge, returns from the crease with a warm front | same front |

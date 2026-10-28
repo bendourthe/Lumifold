@@ -330,7 +330,8 @@ class BothScreens(
                 cfg.effect,
                 cfg.intensity,
                 cfg.motion,
-                cfg.foldEffect
+                cfg.foldEffect,
+                symmetricInner = Repo.isSymmetricInner(context)
             )
             paint.shader = ws.shader
             canvas.drawRect(0f, 0f, width.toFloat(), height.toFloat(), paint)

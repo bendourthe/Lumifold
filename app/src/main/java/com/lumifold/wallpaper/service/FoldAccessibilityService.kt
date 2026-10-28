@@ -61,7 +61,7 @@ class FoldAccessibilityService : AccessibilityService() {
     private var closingHinge = false
     private val prefs by lazy { Repo.getPrefs(this) }
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-        if (key == Repo.KEY_COVER_AWAKE) updateAwake()
+        if (key == Repo.KEY_FOLD_EFFECT_ENABLED) updateAwake()
     }
     val coversUnlockedScreen: Boolean
         get() = Settings.canDrawOverlays(this) && getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != true

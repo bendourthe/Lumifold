@@ -141,7 +141,7 @@ fun WallpaperDetailScreen(
             }
             Text(
                 when {
-                    item.isStill -> "Still image: this wallpaper has no live motion. The opening effect still follows the hinge."
+                    item.isStill -> "Still image: this wallpaper has no live effect. The opening effect still follows the hinge."
                     dynamic -> motionCaption(item)
                     else -> "Still image. The fold effect still follows the hinge."
                 },

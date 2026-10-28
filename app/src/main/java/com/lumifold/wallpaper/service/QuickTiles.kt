@@ -41,7 +41,6 @@ class MotionTileService : PreferenceTile() {
     override fun subtitle(enabled: Boolean): String = when {
         !enabled -> "Off"
         MotionPolicy.currentPause(this) == MotionPolicy.Pause.BATTERY_SAVER -> "Paused, saver"
-        MotionPolicy.currentPause(this) == MotionPolicy.Pause.LOW_BATTERY -> "Paused, low battery"
         else -> "On"
     }
 }
