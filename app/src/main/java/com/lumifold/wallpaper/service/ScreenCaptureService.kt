@@ -17,6 +17,7 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.graphics.createBitmap
 
 /**
  * Holds the one-time screen-capture grant and takes a single picture of the current screen
@@ -84,7 +85,13 @@ class ScreenCaptureService : Service() {
                 reader.surface,
                 null,
                 main
-            )
+            ) ?: run {
+                // Null once the projection has stopped: nothing can be captured.
+                reader.close()
+                busy = false
+                onMiss()
+                return
+            }
             reader.setOnImageAvailableListener({ images ->
                 val image = images.acquireLatestImage() ?: return@setOnImageAvailableListener
                 val bmp = runCatching {
@@ -93,7 +100,7 @@ class ScreenCaptureService : Service() {
                     val stride = plane.rowStride
                     val pixelStride = plane.pixelStride.coerceAtLeast(1)
                     val rowWidth = stride / pixelStride
-                    val raw = Bitmap.createBitmap(rowWidth, height, Bitmap.Config.ARGB_8888)
+                    val raw = createBitmap(rowWidth, height)
                     raw.copyPixelsFromBuffer(buffer)
                     if (rowWidth == width) raw else Bitmap.createBitmap(raw, 0, 0, width, height).also { raw.recycle() }
                 }.getOrNull()

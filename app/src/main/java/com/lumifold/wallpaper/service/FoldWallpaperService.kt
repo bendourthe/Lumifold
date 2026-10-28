@@ -24,6 +24,8 @@ import android.view.MotionEvent
 import android.view.PixelCopy
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
+import androidx.core.graphics.createBitmap
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperRepository as Repo
@@ -424,7 +426,7 @@ class FoldWallpaperService : WallpaperService() {
         private fun rememberNaturalSize(inner: Boolean, w: Int, h: Int) {
             val (kw, kh) = if (inner) Repo.KEY_INNER_W to Repo.KEY_INNER_H else Repo.KEY_COVER_W to Repo.KEY_COVER_H
             if (prefs.getInt(kw, 0) != w || prefs.getInt(kh, 0) != h) {
-                prefs.edit().putInt(kw, w).putInt(kh, h).apply()
+                prefs.edit { putInt(kw, w).putInt(kh, h) }
             }
         }
 
@@ -437,7 +439,7 @@ class FoldWallpaperService : WallpaperService() {
             val angle = hinge.angle
             if (!wasWatched || angle.isNaN()) return
             val key = if (inner) Repo.KEY_MEASURED_OPEN_SWITCH else Repo.KEY_MEASURED_CLOSE_SWITCH
-            prefs.edit().putFloat(key, angle).apply()
+            prefs.edit { putFloat(key, angle) }
         }
 
         private fun ensureShader() {
@@ -590,7 +592,7 @@ class FoldWallpaperService : WallpaperService() {
             }
             val generation = surfaceGeneration
             val wallpaperId = item.id
-            val image = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888)
+            val image = createBitmap(bounds.width(), bounds.height())
             try {
                 PixelCopy.request(holder.surface, Rect(bounds), image, { result ->
                     if (result == PixelCopy.SUCCESS && backgroundEngine === this && visible &&

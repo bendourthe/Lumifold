@@ -11,6 +11,7 @@ import android.graphics.Shader
 import android.hardware.HardwareBuffer
 import android.media.ImageReader
 import android.util.LruCache
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
 
@@ -67,7 +68,7 @@ object ShaderSnapshots {
     }
 
     private fun renderInSoftware(width: Int, height: Int, shader: Shader): Bitmap {
-        val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+        val bitmap = createBitmap(width, height)
         Canvas(bitmap).drawRect(0f, 0f, width.toFloat(), height.toFloat(), Paint().apply { this.shader = shader })
         return bitmap
     }

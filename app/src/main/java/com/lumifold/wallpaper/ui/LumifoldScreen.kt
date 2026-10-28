@@ -91,6 +91,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.path
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -810,7 +811,7 @@ private fun AppGlassRow() {
             },
             checked = allowed,
             onChange = {
-                val appUri = Uri.parse("package:${context.packageName}")
+                val appUri = "package:${context.packageName}".toUri()
                 openSettings(Intent("android.settings.MANAGE_APP_OVERLAY_PERMISSION", appUri),
                     Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, appUri))
             }

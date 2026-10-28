@@ -26,3 +26,8 @@ local.properties
 # Python bytecode caches
 __pycache__/
 *.pyc
+
+# Release signing: the key and its passwords never go into git
+keystore.properties
+*.jks
+*.keystore

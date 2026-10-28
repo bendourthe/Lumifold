@@ -31,6 +31,7 @@ import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
 import android.view.accessibility.AccessibilityWindowInfo
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.createBitmap
 import com.lumifold.wallpaper.model.WallpaperRepository as Repo
 import com.lumifold.wallpaper.render.FoldOptics
 import java.lang.ref.WeakReference
@@ -380,7 +381,7 @@ class FoldAccessibilityService : AccessibilityService() {
                     try {
                         if (images.size == 1) composed = images.single()
                         else {
-                            composed = Bitmap.createBitmap(bounds.width(), bounds.height(), Bitmap.Config.ARGB_8888)
+                            composed = createBitmap(bounds.width(), bounds.height())
                             val canvas = Canvas(composed)
                             targets.zip(images).forEach { (window, bitmap) ->
                                 canvas.drawBitmap(bitmap, window.left.toFloat(), (window.top - bounds.top).toFloat(), null)

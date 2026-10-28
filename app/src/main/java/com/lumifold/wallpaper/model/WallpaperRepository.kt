@@ -2,6 +2,7 @@ package com.lumifold.wallpaper.model
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.core.content.edit
 import com.lumifold.wallpaper.R
 
 object WallpaperRepository {
@@ -1283,14 +1284,14 @@ object WallpaperRepository {
         resolveWallpaper(getPrefs(context).getString(KEY_ACTIVE_WALLPAPER_ID, DEFAULT_WALLPAPER_ID))
 
     fun setActiveWallpaper(context: Context, wallpaperId: String) {
-        getPrefs(context).edit().putString(KEY_ACTIVE_WALLPAPER_ID, wallpaperId).apply()
+        getPrefs(context).edit { putString(KEY_ACTIVE_WALLPAPER_ID, wallpaperId) }
     }
 
     fun getOpeningEffect(context: Context): OpeningEffect =
         OpeningEffect.fromId(getPrefs(context).getString(KEY_OPENING_EFFECT, null))
 
     fun setOpeningEffect(context: Context, effect: OpeningEffect) {
-        getPrefs(context).edit().putString(KEY_OPENING_EFFECT, effect.id).apply()
+        getPrefs(context).edit { putString(KEY_OPENING_EFFECT, effect.id) }
     }
 
     fun getIntensity(context: Context): Float =
@@ -1298,22 +1299,23 @@ object WallpaperRepository {
             .coerceIn(MIN_INTENSITY, MAX_INTENSITY)
 
     fun setIntensity(context: Context, value: Float) {
-        getPrefs(context).edit()
-            .putFloat(KEY_EFFECT_INTENSITY, value.coerceIn(MIN_INTENSITY, MAX_INTENSITY)).apply()
+        getPrefs(context).edit {
+            putFloat(KEY_EFFECT_INTENSITY, value.coerceIn(MIN_INTENSITY, MAX_INTENSITY))
+        }
     }
 
     fun isDynamicMotionEnabled(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_DYNAMIC_MOTION_ENABLED, true)
 
     fun setDynamicMotionEnabled(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_DYNAMIC_MOTION_ENABLED, enabled).apply()
+        getPrefs(context).edit { putBoolean(KEY_DYNAMIC_MOTION_ENABLED, enabled) }
     }
 
     fun isFoldEffectEnabled(context: Context): Boolean =
         getPrefs(context).getBoolean(KEY_FOLD_EFFECT_ENABLED, true)
 
     fun setFoldEffectEnabled(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_FOLD_EFFECT_ENABLED, enabled).apply()
+        getPrefs(context).edit { putBoolean(KEY_FOLD_EFFECT_ENABLED, enabled) }
     }
 
     // Off matches the iPhone Duo: on the inner screen only the left half moves.
@@ -1321,13 +1323,13 @@ object WallpaperRepository {
         getPrefs(context).getBoolean(KEY_SYMMETRIC_INNER, false)
 
     fun setSymmetricInner(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_SYMMETRIC_INNER, enabled).apply()
+        getPrefs(context).edit { putBoolean(KEY_SYMMETRIC_INNER, enabled) }
     }
 
     fun isPauseOnSaver(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_ON_SAVER, true)
 
     fun setPauseOnSaver(context: Context, enabled: Boolean) {
-        getPrefs(context).edit().putBoolean(KEY_PAUSE_ON_SAVER, enabled).apply()
+        getPrefs(context).edit { putBoolean(KEY_PAUSE_ON_SAVER, enabled) }
     }
 
     // Holding the cover until Android's 90-degree switch is what makes the cover effect visible,

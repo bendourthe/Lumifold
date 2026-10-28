@@ -7,6 +7,8 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Rect
 import android.graphics.RectF
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -102,7 +104,7 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
             for (k in 1 until FoldShaders.PYRAMID_LEVELS) {
                 val w = max(1, (prev.width / 2f).roundToInt())
                 val h = max(1, (prev.height / 2f).roundToInt())
-                val half = Bitmap.createScaledBitmap(prev, w, h, true)
+                val half = prev.scale(w, h)
                 levels += binomialBlur(half, passes = 2)
                 if (half !== levels.last()) half.recycle()
                 prev = levels.last()
@@ -116,7 +118,7 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
             val cropH = h / scale
             val left = ((src.width - cropW) * fx).coerceIn(0f, src.width - cropW)
             val top = ((src.height - cropH) * fy).coerceIn(0f, src.height - cropH)
-            val out = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+            val out = createBitmap(w, h)
             Canvas(out).drawBitmap(
                 src,
                 Rect(left.toInt(), top.toInt(), (left + cropW).toInt(), (top + cropH).toInt()),
@@ -142,12 +144,7 @@ class BlurPyramid private constructor(val levels: List<Bitmap>) {
             val longEdge = max(decoded.width, decoded.height)
             if (longEdge <= maxEdge) return decoded
             val scale = maxEdge.toFloat() / longEdge
-            val fitted = Bitmap.createScaledBitmap(
-                decoded,
-                max(1, (decoded.width * scale).roundToInt()),
-                max(1, (decoded.height * scale).roundToInt()),
-                true
-            )
+            val fitted = decoded.scale(max(1, (decoded.width * scale).roundToInt()), max(1, (decoded.height * scale).roundToInt()))
             if (fitted !== decoded) decoded.recycle()
             return fitted
         }

@@ -15,6 +15,10 @@ import android.os.Looper
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
+import androidx.core.graphics.withMatrix
+import androidx.core.graphics.withSave
+import androidx.core.graphics.withScale
+import androidx.core.graphics.withTranslation
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperRepository
@@ -434,35 +438,34 @@ class FoldPreviewView(context: Context) : View(context) {
         val scale = min(width / sw, height / sh) * 0.96f
         val w = sw * scale
         val h = sh * scale
-        canvas.save()
-        canvas.translate((width - w) * 0.5f, (height - h) * 0.5f)
-        canvas.scale(scale, scale)
-        rect.set(0f, 0f, sw, sh)
-        val radius = 26f * resources.displayMetrics.density / scale
-        val ws = innerShader
-        if (ws != null && ws.isReady) {
-            val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
-            val rest = if (spec.isInner) 180f else 0f
-            val raw = hingeDegrees.takeUnless { it.isNaN() } ?: rest
-            // Same resting snap as the wallpaper, so a phone held open or shut shows a sharp picture.
-            val shown = when {
-                raw >= 165f -> 180f
-                raw <= 15f -> 0f
-                else -> raw
-            }.let { if (spec.isInner) it.coerceAtLeast(90f) else it.coerceAtMost(90f) }
-            ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
-                symmetricInner = WallpaperRepository.isSymmetricInner(context))
-            screenPaint.shader = ws.shader
-            path.reset()
-            path.addRoundRect(rect, radius, radius, Path.Direction.CW)
-            canvas.clipPath(path)
-            canvas.drawRect(rect, screenPaint)
-        } else {
-            offPaint.shader = null
-            offPaint.color = Color.rgb(16, 18, 24)
-            canvas.drawRoundRect(rect, radius, radius, offPaint)
+        canvas.withTranslation((width - w) * 0.5f, (height - h) * 0.5f) {
+            scale(scale, scale)
+            rect.set(0f, 0f, sw, sh)
+            val radius = 26f * resources.displayMetrics.density / scale
+            val ws = innerShader
+            if (ws != null && ws.isReady) {
+                val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
+                val rest = if (spec.isInner) 180f else 0f
+                val raw = hingeDegrees.takeUnless { it.isNaN() } ?: rest
+                // Same resting snap as the wallpaper, so a phone held open or shut shows a sharp picture.
+                val shown = when {
+                    raw >= 165f -> 180f
+                    raw <= 15f -> 0f
+                    else -> raw
+                }.let { if (spec.isInner) it.coerceAtLeast(90f) else it.coerceAtMost(90f) }
+                ws.bind(spec, Math.toRadians(shown.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
+                    symmetricInner = WallpaperRepository.isSymmetricInner(context))
+                screenPaint.shader = ws.shader
+                path.reset()
+                path.addRoundRect(rect, radius, radius, Path.Direction.CW)
+                clipPath(path)
+                drawRect(rect, screenPaint)
+            } else {
+                offPaint.shader = null
+                offPaint.color = Color.rgb(16, 18, 24)
+                drawRoundRect(rect, radius, radius, offPaint)
+            }
         }
-        canvas.restore()
     }
 
     // region Geometry
@@ -628,10 +631,9 @@ class FoldPreviewView(context: Context) : View(context) {
             dst[0], dst[1], rx, intArrayOf(Color.argb(150, 0, 0, 0), Color.TRANSPARENT),
             null, Shader.TileMode.CLAMP
         )
-        canvas.save()
-        canvas.scale(1f, ry / rx, dst[0], dst[1])
-        canvas.drawCircle(dst[0], dst[1], rx, shadowPaint)
-        canvas.restore()
+        canvas.withScale(1f, ry / rx, dst[0], dst[1]) {
+            drawCircle(dst[0], dst[1], rx, shadowPaint)
+        }
     }
 
     private fun drawBackLeaf(canvas: Canvas, cam: Camera3) {
@@ -646,15 +648,14 @@ class FoldPreviewView(context: Context) : View(context) {
             Vec(-hw, INNER_WH * 0.5f, 0f), Vec(hw, INNER_WH * 0.5f, 0f),
             Vec(hw, -INNER_WH * 0.5f, 0f), Vec(-hw, -INNER_WH * 0.5f, 0f)
         )
-        canvas.save()
-        canvas.concat(m)
-        val k = INNER_W / (2f * hw)
-        rect.set(INNER_W * 0.5f, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f + k, (INNER_WH * 0.5f + top) * k)
-        drawRim(canvas, rect, HINGE_CORNER * k, CORNER * k)
-        rect.set(INNER_W * 0.5f, 0f, INNER_W, INNER_H)
-        drawScreen(canvas, rect, 0f, SCREEN_CORNER * k, true, innerShader, innerSpec())
-        drawCamera(canvas, INNER_W - 42f, 34f, 7f)
-        canvas.restore()
+        canvas.withMatrix(m) {
+            val k = INNER_W / (2f * hw)
+            rect.set(INNER_W * 0.5f, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f + k, (INNER_WH * 0.5f + top) * k)
+            drawRim(this, rect, HINGE_CORNER * k, CORNER * k)
+            rect.set(INNER_W * 0.5f, 0f, INNER_W, INNER_H)
+            drawScreen(this, rect, 0f, SCREEN_CORNER * k, true, innerShader, innerSpec())
+            drawCamera(this, INNER_W - 42f, 34f, 7f)
+        }
     }
 
     private fun drawMovingLeaf(canvas: Canvas, cam: Camera3, a: Float) {
@@ -669,15 +670,14 @@ class FoldPreviewView(context: Context) : View(context) {
                 outerFace(COVER_INSET, COVER_WH * 0.5f, a), outerFace(1f - COVER_INSET, COVER_WH * 0.5f, a),
                 outerFace(1f - COVER_INSET, -COVER_WH * 0.5f, a), outerFace(COVER_INSET, -COVER_WH * 0.5f, a)
             )
-            canvas.save()
-            canvas.concat(m)
-            val k = COVER_W / (1f - 2f * COVER_INSET)
-            rect.set(-COVER_INSET * k, (COVER_WH * 0.5f - top) * k, (1f - COVER_INSET) * k, (COVER_WH * 0.5f + top) * k)
-            drawRim(canvas, rect, HINGE_CORNER * k, CORNER * k)
-            rect.set(0f, 0f, COVER_W, COVER_H)
-            drawScreen(canvas, rect, HINGE_CORNER * k, SCREEN_CORNER * k, true, coverShader, coverSpec())
-            drawCamera(canvas, COVER_W * 0.5f, 27f, 8f)
-            canvas.restore()
+            canvas.withMatrix(m) {
+                val k = COVER_W / (1f - 2f * COVER_INSET)
+                rect.set(-COVER_INSET * k, (COVER_WH * 0.5f - top) * k, (1f - COVER_INSET) * k, (COVER_WH * 0.5f + top) * k)
+                drawRim(this, rect, HINGE_CORNER * k, CORNER * k)
+                rect.set(0f, 0f, COVER_W, COVER_H)
+                drawScreen(this, rect, HINGE_CORNER * k, SCREEN_CORNER * k, true, coverShader, coverSpec())
+                drawCamera(this, COVER_W * 0.5f, 27f, 8f)
+            }
         } else if (cam.facing(n * -1f, innerFace(0.5f, 0f, a))) {
             // Inner display, left half, on the moving leaf.
             val hw = 1f - BEZEL
@@ -686,14 +686,13 @@ class FoldPreviewView(context: Context) : View(context) {
                 innerFace(hw, INNER_WH * 0.5f, a), innerFace(-hw, INNER_WH * 0.5f, a),
                 innerFace(-hw, -INNER_WH * 0.5f, a), innerFace(hw, -INNER_WH * 0.5f, a)
             )
-            canvas.save()
-            canvas.concat(m)
-            val k = INNER_W / (2f * hw)
-            rect.set(INNER_W * 0.5f - k, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f, (INNER_WH * 0.5f + top) * k)
-            drawRim(canvas, rect, CORNER * k, HINGE_CORNER * k)
-            rect.set(0f, 0f, INNER_W * 0.5f + CREASE_OVERLAP, INNER_H)
-            drawScreen(canvas, rect, SCREEN_CORNER * k, 0f, true, innerShader, innerSpec())
-            canvas.restore()
+            canvas.withMatrix(m) {
+                val k = INNER_W / (2f * hw)
+                rect.set(INNER_W * 0.5f - k, (INNER_WH * 0.5f - top) * k, INNER_W * 0.5f, (INNER_WH * 0.5f + top) * k)
+                drawRim(this, rect, CORNER * k, HINGE_CORNER * k)
+                rect.set(0f, 0f, INNER_W * 0.5f + CREASE_OVERLAP, INNER_H)
+                drawScreen(this, rect, SCREEN_CORNER * k, 0f, true, innerShader, innerSpec())
+            }
         }
     }
 
@@ -727,12 +726,11 @@ class FoldPreviewView(context: Context) : View(context) {
             val x1 = INNER_W * 0.5f + (2f * t1 - 1f) * bend * k
             val mapped = mapRect(cam, x1 - x0, INNER_H,
                 point(t0, halfHeight), point(t1, halfHeight), point(t1, -halfHeight), point(t0, -halfHeight))
-            canvas.save()
-            canvas.concat(mapped)
-            canvas.translate(-x0, 0f)
-            rect.set(x0 - 0.5f, 0f, x1 + 0.5f, INNER_H)
-            drawScreen(canvas, rect, 0f, 0f, true, innerShader, innerSpec())
-            canvas.restore()
+            canvas.withMatrix(mapped) {
+                translate(-x0, 0f)
+                rect.set(x0 - 0.5f, 0f, x1 + 0.5f, INNER_H)
+                drawScreen(this, rect, 0f, 0f, true, innerShader, innerSpec())
+            }
         }
     }
 
@@ -747,31 +745,31 @@ class FoldPreviewView(context: Context) : View(context) {
         canvas: Canvas, r: RectF, left: Float, right: Float,
         on: Boolean, ws: WallpaperShader?, spec: SurfaceSpec
     ) {
-        canvas.save()
-        path.reset()
-        path.addRoundRect(r, floatArrayOf(left, left, right, right, right, right, left, left), Path.Direction.CW)
-        canvas.clipPath(path)
-        if (on && ws != null && ws.isReady) {
-            val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
-            ws.bind(
-                spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
-                symmetricInner = WallpaperRepository.isSymmetricInner(context)
-            )
-            screenPaint.shader = ws.shader
-            canvas.drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), screenPaint)
-        } else {
-            offPaint.shader = LinearGradient(
-                r.left, r.top, r.right, r.bottom,
-                Color.rgb(16, 18, 24), Color.rgb(4, 5, 7), Shader.TileMode.CLAMP
-            )
-            canvas.drawRect(r, offPaint)
+        canvas.withSave {
+            path.reset()
+            path.addRoundRect(r, floatArrayOf(left, left, right, right, right, right, left, left), Path.Direction.CW)
+            clipPath(path)
+            if (on && ws != null && ws.isReady) {
+                val t = if (motion) (SystemClock.uptimeMillis() - startMs) / 1000f else FoldWallpaperService.STILL_TIME
+                ws.bind(
+                    spec, Math.toRadians(angle.toDouble()).toFloat(), t, effect, intensity, motion, foldEffect,
+                    symmetricInner = WallpaperRepository.isSymmetricInner(context)
+                )
+                screenPaint.shader = ws.shader
+                drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), screenPaint)
+            } else {
+                offPaint.shader = LinearGradient(
+                    r.left, r.top, r.right, r.bottom,
+                    Color.rgb(16, 18, 24), Color.rgb(4, 5, 7), Shader.TileMode.CLAMP
+                )
+                drawRect(r, offPaint)
+            }
+            // A broad softbox reflection sits on the glass, independent of the wallpaper lighting.
+            offPaint.shader = LinearGradient(0f, 0f, spec.width.toFloat(), spec.height.toFloat(),
+                intArrayOf(Color.argb(19, 230, 237, 243), Color.TRANSPARENT, Color.argb(5, 230, 237, 243)),
+                floatArrayOf(0f, 0.48f, 1f), Shader.TileMode.CLAMP)
+            drawRect(r, offPaint)
         }
-        // A broad softbox reflection sits on the glass, independent of the wallpaper lighting.
-        offPaint.shader = LinearGradient(0f, 0f, spec.width.toFloat(), spec.height.toFloat(),
-            intArrayOf(Color.argb(19, 230, 237, 243), Color.TRANSPARENT, Color.argb(5, 230, 237, 243)),
-            floatArrayOf(0f, 0.48f, 1f), Shader.TileMode.CLAMP)
-        canvas.drawRect(r, offPaint)
-        canvas.restore()
     }
 
     // endregion

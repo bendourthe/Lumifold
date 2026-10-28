@@ -18,6 +18,8 @@ import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.withTranslation
 import com.lumifold.wallpaper.R
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperCategory
@@ -55,7 +57,7 @@ class FoldGlass(private val context: Context) {
     // Compile before movement, then reuse the same effect and angle for both rendering paths.
     private val shading = runCatching {
         WallpaperShader.create(SCREEN).also {
-            it.setVideoFrame(Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.WHITE) })
+            it.setVideoFrame(createBitmap(1, 1).apply { eraseColor(Color.WHITE) })
         }
     }.onFailure { Log.w(TAG, "Fold shading unavailable", it) }.getOrNull()
     private val shadingMask = runCatching {
@@ -282,11 +284,10 @@ class FoldGlass(private val context: Context) {
                     // A child shader snapshots uniforms; refresh it after binding this hinge pose.
                     setInputShader("effect", ws.shader)
                 }
-                canvas.save()
-                canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
-                canvas.clipRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat())
-                canvas.drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), paint)
-                canvas.restore()
+                canvas.withTranslation(bounds.left.toFloat(), bounds.top.toFloat()) {
+                    clipRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat())
+                    drawRect(0f, 0f, spec.width.toFloat(), spec.height.toFloat(), paint)
+                }
             }
         }
     }

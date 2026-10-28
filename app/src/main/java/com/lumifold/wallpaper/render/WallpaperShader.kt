@@ -7,6 +7,7 @@ import android.graphics.BitmapShader
 import android.graphics.Matrix
 import android.graphics.RuntimeShader
 import android.graphics.Shader
+import androidx.core.graphics.createBitmap
 import com.lumifold.wallpaper.model.Globe
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.Scene
@@ -186,7 +187,7 @@ class WallpaperShader private constructor(
         /** Longest side of a photo pyramid. 4K keeps the cover crop near one pixel per screen pixel. */
         private const val MAX_PHOTO_EDGE = 3840
 
-        private val NO_STARS: Bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888).apply { eraseColor(0xFF000000.toInt()) }
+        private val NO_STARS: Bitmap = createBitmap(1, 1).apply { eraseColor(0xFF000000.toInt()) }
 
         /** Decodes a photo into a pyramid. [width] and [height] are the live plane size; photos keep their own frame. */
         @Suppress("UNUSED_PARAMETER")
