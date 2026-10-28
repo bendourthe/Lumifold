@@ -14,9 +14,6 @@
     <!-- Downloads video wallpapers on demand. -->
     <uses-permission android:name="android.permission.INTERNET" />
 
-    <!-- Lets the main-page switch set Continue using apps on fold. The user still has to allow it. -->
-    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
-
     <!-- Draws the fold over an open app. -->
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

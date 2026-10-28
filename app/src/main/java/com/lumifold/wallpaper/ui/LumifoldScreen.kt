@@ -73,7 +73,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.material3.OutlinedButton
@@ -562,16 +561,17 @@ private const val STRENGTH_SAMPLE_ANGLE = 55f
 private fun ShaderImage(key: String, modifier: Modifier, shader: (width: Int, height: Int) -> Shader) {
     var size by remember { mutableStateOf(IntSize.Zero) }
     val sizedKey = "$key@${size.width}x${size.height}"
-    // produceState keeps its value across key changes, so the previous image stays up until the new one is ready.
-    val bitmap by produceState(ShaderSnapshots.cached(sizedKey)?.asImageBitmap(), sizedKey) {
-        ShaderSnapshots.cached(sizedKey)?.let {
-            value = it.asImageBitmap()
-            return@produceState
+    // Not keyed, so the previous image stays up until the image for a new size is ready.
+    var bitmap by remember { mutableStateOf(ShaderSnapshots.cached(sizedKey)?.asImageBitmap()) }
+    LaunchedEffect(sizedKey) {
+        val cached = ShaderSnapshots.cached(sizedKey)
+        if (cached != null) {
+            bitmap = cached.asImageBitmap()
+        } else if (size.width > 0 && size.height > 0) {
+            bitmap = withContext(ShaderSnapshots.dispatcher) {
+                ShaderSnapshots.getOrRender(sizedKey, size.width, size.height) { shader(size.width, size.height) }
+            }.asImageBitmap()
         }
-        if (size.width == 0 || size.height == 0) return@produceState
-        value = withContext(ShaderSnapshots.dispatcher) {
-            ShaderSnapshots.getOrRender(sizedKey, size.width, size.height) { shader(size.width, size.height) }
-        }.asImageBitmap()
     }
     Box(modifier.onSizeChanged { size = it }) {
         bitmap?.let { Image(it, contentDescription = null, contentScale = ContentScale.FillBounds, modifier = Modifier.fillMaxSize()) }
