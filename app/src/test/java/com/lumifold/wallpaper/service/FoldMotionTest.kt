@@ -49,8 +49,9 @@ class FoldMotionTest {
         motion.sample(65f, 10)
         motion.sample(65.2f, 200)
         assertTrue(motion.isActive(200))
-        assertFalse(motion.isActive(1010))
-        assertEquals(180f, motion.degrees(true, 1010), 0f)
+        val settled = 10 + FoldMotion.IDLE_MS + 10
+        assertFalse(motion.isActive(settled))
+        assertEquals(180f, motion.degrees(true, settled), 0f)
     }
 
     @Test fun unrelatedSurfaceChangeDoesNotReplayOldFold() {
@@ -67,7 +68,7 @@ class FoldMotionTest {
         motion.sample(30f, 20)
         motion.sample(Float.NaN, 30)
         motion.sample(Float.POSITIVE_INFINITY, 40)
-        assertFalse(motion.isActive(1100))
+        assertFalse(motion.isActive(20 + FoldMotion.IDLE_MS + 80))
         motion.reset()
         assertEquals(180f, motion.degrees(true, 1101), 0f)
     }
@@ -85,8 +86,9 @@ class FoldMotionTest {
                 previous = shown
             }
         }
-        assertFalse(motion.isActive(2700))
-        assertEquals(0f, motion.degrees(false, 2700), 0f)
+        val settled = 1700 + FoldMotion.IDLE_MS + 100
+        assertFalse(motion.isActive(settled))
+        assertEquals(0f, motion.degrees(false, settled), 0f)
     }
 
     @Test fun changingPanelsDoesNotRewindTheCurrentPose() {
@@ -125,5 +127,39 @@ class FoldMotionTest {
         assertFalse(motion.isActive(100))
         motion.sample(0f, 200)
         assertFalse(motion.isActive(200))
+    }
+
+    @Test fun heldMidFoldKeepsTheEffectThenFinishesToEachPanelsRest() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(60f, 100)
+        // Held: the effect stays at the current pose instead of fading.
+        assertTrue(motion.degrees(false, 100 + FoldMotion.HOLD_MS - 100) > 50f)
+        assertTrue(motion.isActive(100 + FoldMotion.IDLE_MS - 50))
+        // Then it finishes: the inner screen plays forward to open, the cover back to clean.
+        val inner = motion.degrees(true, 100 + FoldMotion.HOLD_MS + FoldMotion.FINISH_MS / 2)
+        assertTrue(inner in 91f..179f)
+        val done = 100 + FoldMotion.HOLD_MS + FoldMotion.FINISH_MS
+        assertEquals(180f, motion.degrees(true, done), 1e-3f)
+        assertEquals(0f, motion.degrees(false, done), 1e-3f)
+    }
+
+    @Test fun finishedEffectStaysFinishedUntilTheHingeReachesRest() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(60f, 100)
+        val done = 100 + FoldMotion.IDLE_MS
+        assertEquals(0f, motion.degrees(false, done), 1e-3f)
+        // Continuing the same gesture after the finish does not bring the effect back.
+        motion.sample(80f, done + 100)
+        assertFalse(motion.isActive(done + 100))
+        assertEquals(0f, motion.degrees(false, done + 100), 1e-3f)
+        motion.sample(140f, done + 300)
+        assertEquals(180f, motion.degrees(true, done + 300), 1e-3f)
+        // Reaching rest ends the gesture; the next fold shows the effect again.
+        motion.sample(175f, done + 500)
+        motion.sample(150f, done + 700)
+        assertTrue(motion.isActive(done + 700))
+        assertTrue(motion.degrees(true, done + 700) < 180f)
     }
 }
