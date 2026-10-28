@@ -761,7 +761,7 @@ private fun FoldSettingRow() {
     Column(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
         Text("Android fold settings", style = MaterialTheme.typography.titleSmall)
         Text(
-            "Set Continue using apps on fold to Always. That turns the cover on as you close, instead of waiting behind the lock screen. The angle where Android swaps panels is fixed at about 90 degrees.",
+            "Set Continue using apps on fold to Always. That turns the cover on as you close, instead of waiting behind the lock screen. Android swaps panels at about 90 degrees when opening and below 45 when closing; apps cannot change these angles.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -804,9 +804,9 @@ private fun AppGlassRow() {
         SwitchRow(
             title = "Allow display over other apps",
             body = if (allowed) {
-                "Allowed. Draw the fold effect over an open app. Tap to manage this permission in Android settings."
+                "Allowed. Draws the fold effect over an open app. Tap, then select Lumifold in the Android list to manage it."
             } else {
-                "Not allowed. Tap to allow the fold effect over an open app in Android settings."
+                "Not allowed. Tap, then select Lumifold in the Android list to allow the fold effect over an open app."
             },
             checked = allowed,
             onChange = {

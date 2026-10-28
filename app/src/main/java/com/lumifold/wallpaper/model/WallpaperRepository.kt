@@ -77,7 +77,8 @@ object WallpaperRepository {
     private val SUN_FRAMING = VideoFraming(innerHeight = 1.55f, coverHeight = 2.4f, coverCenterX = 1.45f)
 
     /** Full-resolution Sun clips, re-encoded from the NASA originals. See docs/reference/photo-credits.md. */
-    private const val SUN_MEDIA = "https://github.com/bendourthe/lumifold/releases/download/media-v1"
+    // Re-encoded, seamless loops hosted as assets of the media-v1 GitHub release.
+    private const val MEDIA = "https://github.com/bendourthe/lumifold/releases/download/media-v1"
 
     private fun nebula(id: String, title: String, gasResId: Int, starsResId: Int, thumbResId: Int, depthResId: Int, description: String) =
         WallpaperItem(
@@ -241,101 +242,101 @@ object WallpaperRepository {
         // Landscapes. Live 4K clips first, then photographs. Each display holds the landmark.
         video(
             "halfdome_sunset", "Half Dome Sunset", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/4/4c/Sunset_on_Halfdome_timelapse_Yosemite_CA_2023-07-15_20-11-06_1.webm",
-            R.drawable.wpv_halfdome_sunset, 4.9f,
+            "$MEDIA/halfdome_sunset.webm",
+            R.drawable.wpv_halfdome_sunset, 9.5f,
             "Alpenglow moving across Half Dome. 4K time-lapse, Yosemite.",
             focusX = 0.46f, focusY = 0.42f
         ),
         video(
             "prismatic_spring", "Grand Prismatic", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/0/08/Grand_Prismatic_Spring_%28Midway_Geyser_Basin%2C_Yellowstone_National_Park%29_2021-08-10%2C_video2.webm",
-            R.drawable.wpv_prismatic_spring, 27.3f,
+            "$MEDIA/prismatic_spring.webm",
+            R.drawable.wpv_prismatic_spring, 36.3f,
             "Steam drifting off the Grand Prismatic Spring, Yellowstone. 4K.",
             focusX = 0.48f, focusY = 0.50f
         ),
         video(
             "canary_spring", "Canary Spring", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/5/52/Canary_Spring_%28Mammoth_Hot_Springs%2C_Yellowstone_National_Park%29_2021-08-09.webm",
-            R.drawable.wpv_canary_spring, 48.9f,
+            "$MEDIA/canary_spring.webm",
+            R.drawable.wpv_canary_spring, 58.7f,
             "The travertine terraces of Canary Spring at Mammoth Hot Springs, Yellowstone. 4K.",
             focusX = 0.55f, focusY = 0.55f
         ),
         video(
             "aurora_alaska", "Alaskan Aurora", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/c/c5/Alaskan_Aurora_Time_Lapse_%28SVS15077%29.webm",
-            R.drawable.wpv_aurora_alaska, 12.6f,
+            "$MEDIA/aurora_alaska.webm",
+            R.drawable.wpv_aurora_alaska, 28.1f,
             "Green aurora curtains rippling over the Alaskan night. NASA.", focusX = 0.35f
         ),
         video(
             "excelsior_geyser", "Excelsior Geyser", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/4/4e/Excelsior_Geyser_%28Midway_Geyser_Basin%2C_Yellowstone_National_Park%29_2021-08-10%2C_02.webm",
-            R.drawable.wpv_excelsior_geyser, 49.4f,
+            "$MEDIA/excelsior_geyser.webm",
+            R.drawable.wpv_excelsior_geyser, 44.6f,
             "Steam rolling off the turquoise Excelsior Geyser crater, Yellowstone."
         ),
         video(
             "shenandoah_sunset", "Shenandoah Sunset", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/a/a3/Sunset_at_Naked_Creek_Overlook_Shenandoah_National_Park_VA_2024-10-11.60fps.uhd4k.webm",
-            R.drawable.wpv_shenandoah_sunset, 85.1f,
+            "$MEDIA/shenandoah_sunset.webm",
+            R.drawable.wpv_shenandoah_sunset, 12.6f,
             "The sun setting over the Blue Ridge from Naked Creek Overlook, Shenandoah."
         ),
         video(
             "rhine_falls", "Rhine Falls", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/0/08/Rheinfall_%28Rhine_Falls%29.webm",
-            R.drawable.wpv_rhine_falls, 85.5f,
+            "$MEDIA/rhine_falls.webm",
+            R.drawable.wpv_rhine_falls, 63.1f,
             "The Rhine pouring over Europe's largest waterfall, Switzerland."
         ),
         video(
             "grand_canyon_clouds", "Grand Canyon Clouds", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/e/ed/B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20%2C_2025_%2855087231001%29.webm",
-            R.drawable.wpv_grand_canyon_clouds, 14.1f,
+            "$MEDIA/grand_canyon_clouds.webm",
+            R.drawable.wpv_grand_canyon_clouds, 7.5f,
             "Clouds drifting over the Grand Canyon. National Park Service."
         ),
         video(
             "longs_peak_cloud", "Longs Peak Cloud", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/a/aa/Lenticular_cloud_over_Longs_Peak%2C_Colorado_%28time_lapse%29.ogv",
-            R.drawable.wpv_longs_peak_cloud, 27.5f,
+            "$MEDIA/longs_peak_cloud.webm",
+            R.drawable.wpv_longs_peak_cloud, 5.4f,
             "A lenticular cloud hovering over Longs Peak, Rocky Mountain National Park.", focusX = 0.32f
         ),
         video(
             "dettifoss", "Dettifoss", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/1/1e/Dettifoss_waterfall_in_Northern_Iceland.webm",
-            R.drawable.wpv_dettifoss, 6.7f,
+            "$MEDIA/dettifoss.webm",
+            R.drawable.wpv_dettifoss, 12.8f,
             "Dettifoss thundering through its canyon in northern Iceland."
         ),
         video(
             "godafoss", "Godafoss", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/f/f8/Go%C3%B0afoss_waterfall_in_Northern_Iceland.webm",
-            R.drawable.wpv_godafoss, 3.0f,
+            "$MEDIA/godafoss.webm",
+            R.drawable.wpv_godafoss, 6.8f,
             "The horseshoe curtain of Godafoss in northern Iceland."
         ),
         video(
             "niagara_rainbow", "Niagara Falls", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/0/07/Rainbow_over_Niagara_Falls_in_Canada.webm",
-            R.drawable.wpv_niagara_rainbow, 24.2f,
+            "$MEDIA/niagara_rainbow.webm",
+            R.drawable.wpv_niagara_rainbow, 13.1f,
             "A rainbow over the Horseshoe Falls at Niagara."
         ),
         video(
             "iguazu_falls", "Iguazu Falls", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/7/76/Cascadas_en_Garganta_del_Diablo_en_Iguaz%C3%BA_con_gran_caudal_de_agua.webm",
-            R.drawable.wpv_iguazu_falls, 13.6f,
+            "$MEDIA/iguazu_falls.webm",
+            R.drawable.wpv_iguazu_falls, 17.9f,
             "The Devil's Throat at Iguazu Falls in full flood."
         ),
         video(
             "victoria_falls", "Victoria Falls", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/0/0a/Victoria_Falls_2019_8.webm",
-            R.drawable.wpv_victoria_falls, 4.2f,
+            "$MEDIA/victoria_falls.webm",
+            R.drawable.wpv_victoria_falls, 7.1f,
             "Victoria Falls pouring into its gorge."
         ),
         video(
             "seljalandsfoss", "Seljalandsfoss", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/7/7e/203_Seljalandsfoss_long_exposure_timelapse_Video_by_Giles_Laurent.webm",
-            R.drawable.wpv_seljalandsfoss, 15.1f,
+            "$MEDIA/seljalandsfoss.webm",
+            R.drawable.wpv_seljalandsfoss, 23.7f,
             "Seljalandsfoss in a soft long-exposure timelapse, Iceland."
         ),
         video(
             "gullfoss", "Gullfoss", WallpaperCategory.LANDSCAPES,
-            "https://upload.wikimedia.org/wikipedia/commons/8/85/Gullfoss_waterfall_in_Iceland.webm",
-            R.drawable.wpv_gullfoss, 15.7f,
+            "$MEDIA/gullfoss.webm",
+            R.drawable.wpv_gullfoss, 8.5f,
             "The two-step drop of Gullfoss, Iceland."
         ),
         photo(
@@ -383,69 +384,69 @@ object WallpaperRepository {
         ),
         video(
             "chicago_day_night", "Chicago Day and Night", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/9/99/Chicago_Day_and_Night.webm",
-            R.drawable.wpv_chicago_day_night, 53.6f,
+            "$MEDIA/chicago_day_night.webm",
+            R.drawable.wpv_chicago_day_night, 31.2f,
             "The Chicago skyline from the lakefront, passing from day into night. 4K.",
             focusX = 0.42f, focusY = 0.38f
         ),
         video(
             "eiffel_sunset", "Eiffel Sunset", WallpaperCategory.LANDMARKS,
-            "https://upload.wikimedia.org/wikipedia/commons/a/a9/Sunset_on_Eiffel_Tower_in_Paris_-_Vimeo.webm",
-            R.drawable.wpv_eiffel_sunset, 5.6f,
+            "$MEDIA/eiffel_sunset.webm",
+            R.drawable.wpv_eiffel_sunset, 12.8f,
             "The sun setting behind the Eiffel Tower, Paris.", focusX = 0.72f
         ),
         video(
             "la_night", "Los Angeles Night", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/9/92/DTLA_by_night%2C_Los_Angeles_July_2022.webm",
-            R.drawable.wpv_la_night, 30.5f,
+            "$MEDIA/la_night.webm",
+            R.drawable.wpv_la_night, 26.8f,
             "Downtown Los Angeles at night, the towers filling the frame.", focusX = 0.50f, focusY = 0.55f
         ),
         video(
             "london_waterloo", "London from Waterloo Bridge", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/f/f5/Timelapse_from_Waterloo_Bridge%2C_London.webm",
-            R.drawable.wpv_london_waterloo, 55.4f,
+            "$MEDIA/london_waterloo.webm",
+            R.drawable.wpv_london_waterloo, 36.0f,
             "The Thames, St Paul's and the City from Waterloo Bridge."
         ),
         video(
             "taj_mahal_live", "Taj Mahal", WallpaperCategory.LANDMARKS,
-            "https://upload.wikimedia.org/wikipedia/commons/d/dc/Taj_Mahal.webm",
-            R.drawable.wpv_taj_mahal_live, 4.1f,
+            "$MEDIA/taj_mahal_live.webm",
+            R.drawable.wpv_taj_mahal_live, 4.4f,
             "The Taj Mahal and its reflecting pool, Agra."
         ),
         video(
             "shanghai_lujiazui", "Shanghai Lujiazui", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/9/91/Shanghai_Bund%2C_Lujiazui_Skyline_Timelapse.webm",
-            R.drawable.wpv_shanghai_lujiazui, 18.9f,
+            "$MEDIA/shanghai_lujiazui.webm",
+            R.drawable.wpv_shanghai_lujiazui, 7.7f,
             "The Lujiazui towers across the Huangpu from the Bund."
         ),
         video(
             "hong_kong_sunset", "Hong Kong Skyline", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/d/d0/%E4%BB%8A%E6%97%A5%E4%BF%822020%E5%B9%B4%E5%98%85%E6%9C%80%E5%BE%8C%E4%B8%80%E6%97%A5%EF%BC%8C%E6%88%91%E7%89%B9%E5%88%A5%E5%8E%BB%E5%92%97%E6%B7%B1%E6%B0%B4%E5%9F%97%E5%98%89%E9%A0%93%E5%B1%B1%28%E5%96%83%E5%98%B8%E5%B1%B1%29%E7%9D%87%E4%BB%8A%E5%B9%B4%E6%9C%80%E5%BE%8C%E4%B8%80%E6%AC%A1%E6%97%A5%E8%90%BD.webm",
-            R.drawable.wpv_hong_kong_sunset, 25.4f,
+            "$MEDIA/hong_kong_sunset.webm",
+            R.drawable.wpv_hong_kong_sunset, 7.0f,
             "The Kowloon skyline at sunset, seen across the harbour."
         ),
         video(
             "machu_picchu_live", "Machu Picchu", WallpaperCategory.LANDMARKS,
-            "https://upload.wikimedia.org/wikipedia/commons/b/ba/Machu-Pichu_%28video_2011%29.webm",
-            R.drawable.wpv_machu_picchu_live, 7.2f,
+            "$MEDIA/machu_picchu_live.webm",
+            R.drawable.wpv_machu_picchu_live, 4.6f,
             "Clouds rolling over the peaks at Machu Picchu, Peru."
         ),
         video(
             "petra_monastery", "Petra Monastery", WallpaperCategory.LANDMARKS,
-            "https://upload.wikimedia.org/wikipedia/commons/1/18/The_Monastery_-_Petra%2C_Jordan_%28video_of_September_2009%29.webm",
-            R.drawable.wpv_petra_monastery, 71.1f,
+            "$MEDIA/petra_monastery.webm",
+            R.drawable.wpv_petra_monastery, 11.9f,
             "The rock-cut Monastery of Petra, Jordan."
         ),
         video(
             "toronto_skyline_live", "Toronto Skyline", WallpaperCategory.CITY,
-            "https://upload.wikimedia.org/wikipedia/commons/6/62/Toronto_Skyline2.webm",
-            R.drawable.wpv_toronto_skyline_live, 11.3f,
+            "$MEDIA/toronto_skyline_live.webm",
+            R.drawable.wpv_toronto_skyline_live, 8.0f,
             "The CN Tower and Toronto skyline at dusk."
         ),
         video(
             "statue_of_liberty", "Statue of Liberty", WallpaperCategory.LANDMARKS,
-            "https://upload.wikimedia.org/wikipedia/commons/5/50/View_of_Statue_of_Liberty_on_a_Boat.webm",
-            R.drawable.wpv_statue_of_liberty, 10.6f,
+            "$MEDIA/statue_of_liberty.webm",
+            R.drawable.wpv_statue_of_liberty, 11.4f,
             "Passing the Statue of Liberty in New York Harbor."
         ),
         photo(
@@ -471,68 +472,68 @@ object WallpaperRepository {
         // Scenes
         video(
             "deep_sea_jellyfish", "Deep-Sea Jellyfish", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/c/c0/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm/Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24%2C_2016.webm.1080p.vp9.webm",
-            R.drawable.wpv_deep_sea_jellyfish, 8.5f,
+            "$MEDIA/deep_sea_jellyfish.webm",
+            R.drawable.wpv_deep_sea_jellyfish, 6.1f,
             "A glowing jellyfish drifting in the deep sea. NOAA footage."
         ),
         video(
             "blue_jellyfish", "Blue Jellyfish", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/8/8e/Aquarium_Boka_-_species_02.webm/Aquarium_Boka_-_species_02.webm.1080p.vp9.webm",
-            R.drawable.wpv_blue_jellyfish, 8.1f,
+            "$MEDIA/blue_jellyfish.webm",
+            R.drawable.wpv_blue_jellyfish, 3.0f,
             "Jellyfish pulsing through blue water."
         ),
         video(
             "spotted_jellyfish", "Spotted Jellyfish", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/9/9b/M%C3%A9duses_constell%C3%A9es_%C3%A0_l%27aquarium_de_Monaco_en_novembre_2021_%28vid%C3%A9o%29.webm/M%C3%A9duses_constell%C3%A9es_%C3%A0_l%27aquarium_de_Monaco_en_novembre_2021_%28vid%C3%A9o%29.webm.1080p.vp9.webm",
-            R.drawable.wpv_spotted_jellyfish, 4.1f,
+            "$MEDIA/spotted_jellyfish.webm",
+            R.drawable.wpv_spotted_jellyfish, 5.7f,
             "Spotted jellyfish floating in the dark."
         ),
         video(
             "sea_nettle", "Sea Nettle", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/9/94/Chrysaora_fuscescens_%28Pacific_sea_nettle%29_swimming.webm",
-            R.drawable.wpv_sea_nettle, 10.3f,
+            "$MEDIA/sea_nettle.webm",
+            R.drawable.wpv_sea_nettle, 6.3f,
             "A Pacific sea nettle trailing its long tentacles."
         ),
         video(
             "reef", "Reef", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/4/46/Sealife-Munich-3.ogv/Sealife-Munich-3.ogv.1080p.vp9.webm",
-            R.drawable.wpv_reef, 10.4f,
+            "$MEDIA/reef.webm",
+            R.drawable.wpv_reef, 11.4f,
             "Tropical fish around a colorful reef."
         ),
         video(
             "shark", "Shark", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/1/1f/Sealife-Munich-Shark.ogv/Sealife-Munich-Shark.ogv.1080p.vp9.webm",
-            R.drawable.wpv_shark, 10.0f,
+            "$MEDIA/shark.webm",
+            R.drawable.wpv_shark, 9.3f,
             "A shark gliding through blue water."
         ),
         video(
             "candle", "Candle", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/72/Corona.Candle.webm/Corona.Candle.webm.1080p.vp9.webm",
+            "$MEDIA/candle.webm",
             R.drawable.wpv_candle, 1.5f,
             "A single candle flickering in the dark."
         ),
         video(
             "fireplace", "Fireplace", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/b/bb/Fantastic-fireplace-fire-chimney-hearth-_background_-_texture_-_motion_graphics_-_free_video_library.webm",
-            R.drawable.wpv_fireplace, 19.1f,
+            "$MEDIA/fireplace.webm",
+            R.drawable.wpv_fireplace, 6.6f,
             "Flames curling over logs in a hearth."
         ),
         video(
             "snow_streetlight", "Snow Under Lamplight", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/f/f1/Snow_under_LED_street_light_in_Tuntorp%2C_Brastad.webm",
-            R.drawable.wpv_snow_streetlight, 7.2f,
+            "$MEDIA/snow_streetlight.webm",
+            R.drawable.wpv_snow_streetlight, 9.3f,
             "Snow falling through the glow of a street light."
         ),
         video(
             "embers", "Embers", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/f/f4/Fire_%D8%A2%D8%AA%D8%B4_04.ogv/Fire_%D8%A2%D8%AA%D8%B4_04.ogv.1080p.vp9.webm",
-            R.drawable.wpv_embers, 9.4f,
+            "$MEDIA/embers.webm",
+            R.drawable.wpv_embers, 7.4f,
             "Glowing embers and soft bokeh."
         ),
         video(
             "campfire", "Campfire", WallpaperCategory.SCENES,
-            "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/71/Fire_%D8%A2%D8%AA%D8%B4_10.ogv/Fire_%D8%A2%D8%AA%D8%B4_10.ogv.1080p.vp9.webm",
-            R.drawable.wpv_campfire, 4.7f,
+            "$MEDIA/campfire.webm",
+            R.drawable.wpv_campfire, 9.6f,
             "Campfire flames up close."
         ),
         // Illustrated. Drawn scenes that move first, then paintings in depth.
@@ -645,32 +646,32 @@ object WallpaperRepository {
         // Space
         video(
             "sun_flare_304", "Solar Flare", WallpaperCategory.SPACE,
-            "$SUN_MEDIA/sun_flare_304.webm",
+            "$MEDIA/sun_flare_304.webm",
             R.drawable.wpv_sun_flare_304, 36.5f,
             "The Sun in extreme ultraviolet as a strong flare erupts. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "sun_corona_171", "Golden Corona", WallpaperCategory.SPACE,
-            "$SUN_MEDIA/sun_corona_171.webm",
+            "$MEDIA/sun_corona_171.webm",
             R.drawable.wpv_sun_corona_171, 35.8f,
             "Magnetic loops shimmering in the Sun's corona. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "sun_teal_131", "Flaring Sun", WallpaperCategory.SPACE,
-            "$SUN_MEDIA/sun_teal_131.webm",
+            "$MEDIA/sun_teal_131.webm",
             R.drawable.wpv_sun_teal_131, 37.7f,
             "The hottest flaring plasma glowing teal. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "ring_prominence", "Ring Prominence", WallpaperCategory.SPACE,
-            "$SUN_MEDIA/ring_prominence.webm",
+            "$MEDIA/ring_prominence.webm",
             R.drawable.wpv_ring_prominence, 27.8f,
             "A ring of plasma lifting off the Sun and breaking apart. NASA Solar Dynamics Observatory.", framing = SUN_FRAMING
         ),
         video(
             "solar_eruption", "Solar Eruption", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/d/d3/SDO_Video_Toolkit_%28SVS14126_-_Oct2_Eruption_2%29.webm?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=original",
-            R.drawable.wpv_solar_eruption, 2.3f,
+            "$MEDIA/solar_eruption.webm",
+            R.drawable.wpv_solar_eruption, 5.3f,
             "Plasma arcing off the limb of the Sun. NASA Solar Dynamics Observatory."
         ),
         globe(
@@ -706,50 +707,50 @@ object WallpaperRepository {
         ),
         video(
             "black_hole", "Black Hole", WallpaperCategory.SPACE,
-            "https://svs.gsfc.nasa.gov/vis/a010000/a013300/a013326/BH_Accretion_Disk_Sim_360_4k.mp4",
-            R.drawable.wpv_black_hole, 119.2f,
+            "$MEDIA/black_hole.mp4",
+            R.drawable.wpv_black_hole, 31.9f,
             "One full revolution around a black hole, slowed and looping without a cut. NASA."
         ),
         video(
             "spinning_saturn", "Spinning Saturn", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/c/cc/Video_-_Spinning_Saturn_-_Cassini_%2851784196854%29.webm",
-            R.drawable.wpv_spinning_saturn, 2.8f,
+            "$MEDIA/spinning_saturn.webm",
+            R.drawable.wpv_spinning_saturn, 1.9f,
             "Saturn turning with its rings, from Cassini images."
         ),
         video(
             "orion_flight", "Orion Flight", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/c/c8/Flight_through_Orion_Nebula_in_visible_light_%28Hubblecast_106b_excerpt%29.webm",
-            R.drawable.wpv_orion_flight, 1.8f,
+            "$MEDIA/orion_flight.webm",
+            R.drawable.wpv_orion_flight, 3.4f,
             "A slow flight into the Orion Nebula, built from Hubble images."
         ),
         video(
             "crab_nebula_live", "Crab Nebula", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/a/a1/Hubble%E2%80%99s_Inside_The_Image-_Crab_Nebula_%28SVS14287%29.webm",
-            R.drawable.wpv_crab_nebula_live, 22.1f,
+            "$MEDIA/crab_nebula_live.webm",
+            R.drawable.wpv_crab_nebula_live, 6.0f,
             "Drifting through the filaments of the Crab Nebula, Hubble."
         ),
         video(
             "jupiter_juno", "Jupiter Flyby", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/7/78/Juno%27s_Perijove-07_Jupiter_Flyby%2C_Reconstructed_in_25-Fold_Time-Lapse.webm",
-            R.drawable.wpv_jupiter_juno, 6.9f,
+            "$MEDIA/jupiter_juno.webm",
+            R.drawable.wpv_jupiter_juno, 4.9f,
             "Juno sweeping past Jupiter's clouds and the Great Red Spot."
         ),
         video(
             "earth_from_iss", "Earth from the ISS", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/4/42/Crew_Earth_Observations_%284K%29.webm",
-            R.drawable.wpv_earth_from_iss, 83.7f,
+            "$MEDIA/earth_from_iss.webm",
+            R.drawable.wpv_earth_from_iss, 25.8f,
             "Earth turning below the International Space Station, in 4K."
         ),
         video(
             "spiral_galaxy_live", "Spiral Galaxy", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/0/0d/One-sided_spiral_%28potm2607a%29.webm",
-            R.drawable.wpv_spiral_galaxy_live, 22.9f,
+            "$MEDIA/spiral_galaxy_live.webm",
+            R.drawable.wpv_spiral_galaxy_live, 14.0f,
             "A slow pan across a lopsided spiral galaxy. ESO."
         ),
         video(
             "m83_galaxy", "Southern Pinwheel", WallpaperCategory.SPACE,
-            "https://upload.wikimedia.org/wikipedia/commons/f/f1/Explore_spiral_galaxy_M83_through_Webb%E2%80%99s_infrared_eyes_ESA508223.webm",
-            R.drawable.wpv_m83_galaxy, 31.4f,
+            "$MEDIA/m83_galaxy.webm",
+            R.drawable.wpv_m83_galaxy, 28.6f,
             "Spiral galaxy M83 in Webb's infrared view."
         ),
         photo(
@@ -780,68 +781,68 @@ object WallpaperRepository {
         // Wildlife. Live footage first, then photographs.
         video(
             "flamingos", "Flamingos", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/7/7e/046_Greater_flamingos_courtship_display_in_the_Camargue_during_mating_season_%28normal_speed%29_Video_by_Giles_Laurent.webm",
-            R.drawable.wpv_flamingos, 14.8f,
+            "$MEDIA/flamingos.webm",
+            R.drawable.wpv_flamingos, 23.2f,
             "Greater flamingos in their courtship display, Camargue."
         ),
         video(
             "red_deer", "Red Deer", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/7/78/004_Red_deer_checking_if_a_female_is_ready_to_mate_Video_by_Giles_Laurent.webm",
-            R.drawable.wpv_red_deer, 34.8f,
+            "$MEDIA/red_deer.webm",
+            R.drawable.wpv_red_deer, 37.0f,
             "A red deer stag in the woods."
         ),
         video(
             "humpback_whale", "Humpback Whale", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/f/fe/032_Humpback_whale_lobtailing_in_slow_motion_Video_by_Giles_Laurent.webm",
-            R.drawable.wpv_humpback_whale, 84.1f,
+            "$MEDIA/humpback_whale.webm",
+            R.drawable.wpv_humpback_whale, 101.7f,
             "A humpback whale slapping its tail in slow motion."
         ),
         video(
             "siberian_tiger", "Siberian Tiger", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/4/47/2024-06-01_LJUBLJANA_ZOO_LJUBLJANA_-_Panthera_tigris_altaica.webm",
-            R.drawable.wpv_siberian_tiger, 91.5f,
+            "$MEDIA/siberian_tiger.webm",
+            R.drawable.wpv_siberian_tiger, 90.2f,
             "A Siberian tiger moving through the trees."
         ),
         video(
             "adelie_penguin", "Adelie Penguin", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/c/cc/Ad%C3%A9lie_penguin_%28Pygoscelis_adeliae%29_in_Antarctica.webm",
-            R.drawable.wpv_adelie_penguin, 3.5f,
+            "$MEDIA/adelie_penguin.webm",
+            R.drawable.wpv_adelie_penguin, 5.1f,
             "An Adelie penguin on the Antarctic ice."
         ),
         video(
             "plains_bison", "Plains Bison", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/a/a0/Plains_bison_in_North_Dakota.webm",
-            R.drawable.wpv_plains_bison, 6.2f,
+            "$MEDIA/plains_bison.webm",
+            R.drawable.wpv_plains_bison, 11.8f,
             "Bison grazing the North Dakota prairie."
         ),
         video(
             "forest_elephants", "Forest Elephants", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/7/7d/Forest_elephants_gathering_at_Dzanga_Bai.webm",
-            R.drawable.wpv_forest_elephants, 12.6f,
+            "$MEDIA/forest_elephants.webm",
+            R.drawable.wpv_forest_elephants, 17.6f,
             "Forest elephants gathering at Dzanga Bai."
         ),
         video(
             "penguin_colony", "Penguin Colony", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/8/8f/Life_in_the_Colony.ogv",
-            R.drawable.wpv_penguin_colony, 16.9f,
+            "$MEDIA/penguin_colony.webm",
+            R.drawable.wpv_penguin_colony, 9.6f,
             "Life in an emperor penguin colony."
         ),
         video(
             "savanna_elephant", "Savanna Elephant", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/d/df/Savanna_Elephant_%28Loxodonta_africana%29_bull_drinking_from_a_rain_puddle.webm",
-            R.drawable.wpv_savanna_elephant, 24.3f,
+            "$MEDIA/savanna_elephant.webm",
+            R.drawable.wpv_savanna_elephant, 10.7f,
             "An elephant bull drinking from a rain puddle on the savanna."
         ),
         video(
             "mountain_gorilla", "Mountain Gorilla", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/9/9b/Mountain_gorilla_%28Gorilla_beringei_beringei%29_climbing_a_tree.webm",
-            R.drawable.wpv_mountain_gorilla, 50.3f,
+            "$MEDIA/mountain_gorilla.webm",
+            R.drawable.wpv_mountain_gorilla, 25.3f,
             "A mountain gorilla climbing in the forest."
         ),
         video(
             "dolphins", "Dolphins", WallpaperCategory.WILDLIFE,
-            "https://upload.wikimedia.org/wikipedia/commons/c/ce/Common_Dolphins_in_the_Bay_of_Gibraltar_06.ogv",
-            R.drawable.wpv_dolphins, 9.4f,
+            "$MEDIA/dolphins.webm",
+            R.drawable.wpv_dolphins, 8.1f,
             "Common dolphins in the Bay of Gibraltar."
         ),
         // Textures. Drawn live motion first, then photographs.

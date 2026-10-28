@@ -65,10 +65,10 @@ def cache_name(item_id: str, url: str) -> str:
 
 def catalog():
     text = REPO.read_text(encoding="utf-8")
-    sun = re.search(r'SUN_MEDIA = "([^"]+)"', text).group(1)
+    media = re.search(r'MEDIA = "([^"]+)"', text).group(1)
     items = []
     for m in re.finditer(r'video\(\s*"([a-z0-9_]+)",\s*"[^"]*",\s*WallpaperCategory\.([A-Z]+),\s*"([^"]+)"', text):
-        url = m.group(3).replace("$SUN_MEDIA", sun)
+        url = m.group(3).replace("$MEDIA", media)
         items.append({"id": m.group(1), "category": m.group(2), "url": url})
     return items
 
