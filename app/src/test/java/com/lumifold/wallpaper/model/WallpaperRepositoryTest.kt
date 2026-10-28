@@ -76,7 +76,7 @@ class WallpaperRepositoryTest {
         val skylineIds = setOf(
             "chicago_day_night", "la_night", "london_waterloo", "shanghai_lujiazui",
             "hong_kong_sunset", "toronto_skyline_live", "toronto_night", "san_francisco",
-            "london_skyline", "manhattan_skyline", "toronto_day"
+            "london_skyline", "manhattan_skyline", "toronto_day", "paris_sunset", "tokyo_tower_night"
         )
         assertEquals(skylineIds, city.map { it.id }.toSet())
         assertTrue(city.none { it.id == "paris_from_eiffel" || it.id == "colosseum" || it.id == "eiffel_sunset" })

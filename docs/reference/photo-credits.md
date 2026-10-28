@@ -265,6 +265,11 @@ Clips are downloaded when a video wallpaper is first applied, then kept in app s
 | `bald_eagle_photo` | Wildlife | [Bald eagle in Alaska 2016-3.jpg](https://commons.wikimedia.org/wiki/File:Bald_eagle_in_Alaska_2016-3.jpg) | Andy  Morffew from Itchen Abbas, Hampshire, UK | CC BY 2.0 |
 | `red_fox_photo` | Wildlife | [Portrait of a red fox in Rautas fjällurskog.jpg](https://commons.wikimedia.org/wiki/File:Portrait_of_a_red_fox_in_Rautas_fj%C3%A4llurskog.jpg) | ClaudiaTen | CC BY-SA 4.0 |
 | `orangutan_photo` | Wildlife | [Orangutan in Paignton Zoo.jpg](https://commons.wikimedia.org/wiki/File:Orangutan_in_Paignton_Zoo.jpg) | Nilfanion | CC BY-SA 3.0 |
+| `paris_sunset` | City | [Panoramic view on the illuminated 7th arrondissement of Paris at sunset in France.jpg](https://commons.wikimedia.org/wiki/File:Panoramic_view_on_the_illuminated_7th_arrondissement_of_Paris_at_sunset_in_France.jpg) | Basile Morin | CC BY-SA 4.0 |
+| `tokyo_tower_night` | City | [Tokyo Tower, Minato City.jpg](https://commons.wikimedia.org/wiki/File:Tokyo_Tower,_Minato_City.jpg) | David Kernan | CC BY 4.0 |
+| `empire_state` | Landmarks | [View of Empire State Building from Rockefeller Center New York City dllu.jpg](https://commons.wikimedia.org/wiki/File:View_of_Empire_State_Building_from_Rockefeller_Center_New_York_City_dllu.jpg) | Dllu | CC BY-SA 4.0 |
+| `giza_pyramids` | Landmarks | [All Gizah Pyramids.jpg](https://commons.wikimedia.org/wiki/File:All_Gizah_Pyramids.jpg) | Ricardo Liberato | CC BY-SA 2.0 |
+| `sphere_moon` | Landmarks | [The Sphere as the Moon 1, view from my hotel room at Harrah's, Las Vegas, Nevada, USA (53111475018).jpg](https://commons.wikimedia.org/wiki/File:The_Sphere_as_the_Moon_1,_view_from_my_hotel_room_at_Harrah%27s,_Las_Vegas,_Nevada,_USA_(53111475018).jpg) | Cory Doctorow from Beautiful D | CC BY-SA 2.0 |
 
 ## Depth Maps
 

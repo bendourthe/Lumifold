@@ -469,6 +469,16 @@ object WallpaperRepository {
             "The City of London from Waterloo Bridge at dusk: St Paul's, the Gherkin and the Shard.",
             MotionStyle.DEPTH, focusX = 0.52f, focusY = 0.40f, depthResId = R.drawable.wpd_london_skyline
         ),
+        photo(
+            "paris_sunset", "Paris at Sunset", WallpaperCategory.CITY, R.drawable.wp_paris_sunset,
+            "Paris from Montparnasse at sunset: the lit Eiffel Tower, the 7th arrondissement and La Défense.",
+            MotionStyle.DEPTH, focusX = 0.29f, focusY = 0.45f, depthResId = R.drawable.wpd_paris_sunset
+        ),
+        photo(
+            "tokyo_tower_night", "Tokyo Tower at Night", WallpaperCategory.CITY, R.drawable.wp_tokyo_tower_night,
+            "Tokyo Tower glowing among the towers of Minato at night.",
+            MotionStyle.DEPTH, focusX = 0.49f, focusY = 0.45f, depthResId = R.drawable.wpd_tokyo_tower_night
+        ),
         // Scenes
         video(
             "deep_sea_jellyfish", "Deep-Sea Jellyfish", WallpaperCategory.SCENES,
@@ -1049,6 +1059,21 @@ object WallpaperRepository {
         photo(
             "taj_mahal", "Taj Mahal", WallpaperCategory.LANDMARKS, R.drawable.wp_taj_mahal,
             "The Taj Mahal at the end of its gardens, Agra.", MotionStyle.NONE
+        ),
+        photo(
+            "empire_state", "Empire State Building", WallpaperCategory.LANDMARKS, R.drawable.wp_empire_state,
+            "The Empire State Building lit green at dusk, seen from Rockefeller Center.",
+            MotionStyle.DEPTH, focusX = 0.50f, focusY = 0.40f, depthResId = R.drawable.wpd_empire_state
+        ),
+        photo(
+            "giza_pyramids", "Pyramids of Giza", WallpaperCategory.LANDMARKS, R.drawable.wp_giza_pyramids,
+            "The pyramids of Giza and the queens' pyramids in the desert outside Cairo.",
+            MotionStyle.DEPTH, focusX = 0.50f, focusY = 0.58f, depthResId = R.drawable.wpd_giza_pyramids
+        ),
+        photo(
+            "sphere_moon", "The Sphere", WallpaperCategory.LANDMARKS, R.drawable.wp_sphere_moon,
+            "The Sphere in Las Vegas showing the Moon at night.",
+            MotionStyle.DEPTH, focusX = 0.50f, focusY = 0.55f, depthResId = R.drawable.wpd_sphere_moon
         ),
         photo(
             "colosseum_rome", "Colosseum", WallpaperCategory.LANDMARKS, R.drawable.wp_colosseum_rome,
