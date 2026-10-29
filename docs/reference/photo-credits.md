@@ -6,8 +6,6 @@ This is a personal wallpaper library, not a Play Store release. Photographs come
 
 | Wallpaper | Source file | Author | License |
 | --- | --- | --- | --- |
-| `teton_mirror` | [Grand Teton National Park - HCP - October 31, 2022 - 250.jpg](https://commons.wikimedia.org/wiki/File%3AGrand_Teton_National_Park_-_HCP_-_October_31%2C_2022_-_250.jpg) | Vulturesong | CC0 |
-| `lofoten_aurora` | [Lofoten, Norway (Unsplash).jpg](https://commons.wikimedia.org/wiki/File%3ALofoten%2C_Norway_%28Unsplash%29.jpg) | Johannes Groll followhansi | CC0 |
 | `yosemite_falls` | [Yosemite National Park (Unsplash).jpg](https://commons.wikimedia.org/wiki/File:Yosemite_National_Park_(Unsplash).jpg) | Jason Ortego | CC0 |
 | `grand_canyon` | [Grand Canyon South Rim at Sunset.jpg](https://commons.wikimedia.org/wiki/File:Grand_Canyon_South_Rim_at_Sunset.jpg) | Mgimelfarb | CC0 |
 | `grand_teton` | [Grand Teton (Unsplash).jpg](https://commons.wikimedia.org/wiki/File:Grand_Teton_(Unsplash).jpg) | Charlie Marsh | CC0 |
@@ -24,7 +22,7 @@ This is a personal wallpaper library, not a Play Store release. Photographs come
 | `tarantula` | [30 Doradus, Tarantula Nebula.jpg](https://commons.wikimedia.org/wiki/File%3A30_Doradus%2C_Tarantula_Nebula.jpg) | NASA, ESA, ESO, D. Lennon and E. Sabbi (ESA/STScI), J. Anderson, S. E. de Mink, R. van der Marel, T. | Public domain |
 | `helix` | [Comets Kick up Dust in Helix Nebula (PIA09178).jpg](https://commons.wikimedia.org/wiki/File%3AComets_Kick_up_Dust_in_Helix_Nebula_%28PIA09178%29.jpg) | NASA/JPL-Caltech/Univ. of Ariz. | Public domain |
 | `orion_nebula` | [Orion Nebula - Hubble 2006 mosaic 18000.jpg](https://commons.wikimedia.org/wiki/File%3AOrion_Nebula_-_Hubble_2006_mosaic_18000.jpg) | NASA, ESA, M. Robberto (Space Telescope Science Institute/ESA) and the Hubble Space Telescope Orion | Public domain |
-| `cosmic_cliffs` | [“Cosmic Cliffs” in the Carina Nebula (NIRCam and MIRI Composite Image).png](https://commons.wikimedia.org/wiki/File%3A%E2%80%9CCosmic_Cliffs%E2%80%9D_in_the_Carina_Nebula_%28NIRCam_and_MIRI_Composite_Image%29.png) | Image: National Aeronautics and Space Administration (a U.S. federal government agency; https://w | Public domain |
+| `cosmic_cliffs` | ["Cosmic Cliffs" in the Carina Nebula (NIRCam and MIRI Composite Image).png](https://commons.wikimedia.org/wiki/File%3A%E2%80%9CCosmic_Cliffs%E2%80%9D_in_the_Carina_Nebula_%28NIRCam_and_MIRI_Composite_Image%29.png) | Image: National Aeronautics and Space Administration (a U.S. federal government agency; https://w | Public domain |
 | `pillars_webb` | [Pillars of Creation (NIRCam Image).tif](https://commons.wikimedia.org/wiki/File%3APillars_of_Creation_%28NIRCam_Image%29.tif) | SCIENCE: NASA, ESA, CSA, STScI IMAGE PROCESSING: Joseph DePasquale (STScI), Anton M. Koekemoer (STS | Public domain |
 
 ## Textures
@@ -97,12 +95,11 @@ Surface maps wrapped on the rotating planets and moons. Each is resized to 2048 
 
 | Wallpaper | Source file | Author | License |
 | --- | --- | --- | --- |
-| `earth_globe (day)` | [Blue Marble 2002.jpg](https://commons.wikimedia.org/wiki/File%3ABlue_Marble_2002.jpg) | NASA’s Terra satellite for the MODIS imageries, combined by Meow. Credit: NASA Goddard Space Flight  | Public domain |
+| `earth_globe (day)` | [Blue Marble 2002.jpg](https://commons.wikimedia.org/wiki/File%3ABlue_Marble_2002.jpg) | NASA's Terra satellite for the MODIS imageries, combined by Meow. Credit: NASA Goddard Space Flight  | Public domain |
 | `earth_globe (night lights)` | [Earth's City Lights by DMSP, 1994-1995 (large).jpg](https://commons.wikimedia.org/wiki/File%3AEarth%27s_City_Lights_by_DMSP%2C_1994-1995_%28large%29.jpg) | Data: Marc Imhoff/NASA GSFC, Christopher Elvidge/NOAA NGDC; Image: Craig Mayhew and Robert Simmon/NA | Public domain |
 | `moon_globe` | [CGI Moon Kit - Lroc color poles.tif](https://commons.wikimedia.org/wiki/File%3ACGI_Moon_Kit_-_Lroc_color_poles.tif) | NASA's Scientific Visualization Studio (Ernie Wright, Noah Petro) | Public domain |
 | `mars_globe` | [Mars Viking MDIM21 ClrMosaic 1km.jpg](https://commons.wikimedia.org/wiki/File%3AMars_Viking_MDIM21_ClrMosaic_1km.jpg) | NASA / Jet Propulsion Lab / USGS | Public domain |
 | `jupiter_globe` | [Jupiter Cylindrical Map - Dec 2000 PIA07782.jpg](https://commons.wikimedia.org/wiki/File%3AJupiter_Cylindrical_Map_-_Dec_2000_PIA07782.jpg) | NASA/JPL/Space Science Institute | Public domain |
-| `saturn_globe` | Band colors from [Saturn from Cassini Orbiter (2004-10-06).jpg](https://commons.wikimedia.org/wiki/File:Saturn_from_Cassini_Orbiter_(2004-10-06).jpg). The fine belts, oval storms, polar hexagon and rings are drawn in the shader from published structure, because no public-domain cylindrical map of Saturn is in the catalog | NASA/JPL/Space Science Institute | Public domain |
 | `saturn_cassini` | [Saturn from Cassini Orbiter (2004-10-06).jpg](https://commons.wikimedia.org/wiki/File:Saturn_from_Cassini_Orbiter_(2004-10-06).jpg) | NASA/JPL/Space Science Institute | Public domain |
 | `spiral_galaxy` | [m51_full-hst-4669x3240.png](https://svs.gsfc.nasa.gov/30852/) | NASA, ESA, S. Beckwith (STScI) and the Hubble Heritage Team (STScI/AURA) | Public domain |
 
@@ -112,11 +109,9 @@ These four photographs keep their original pixels. The app crops each one for th
 
 | Wallpaper | Source file | Author | License |
 | --- | --- | --- | --- |
-| `toronto` | [City Skyline from Above (Unsplash).jpg](https://commons.wikimedia.org/wiki/File:City_Skyline_from_Above_(Unsplash).jpg) | Devin McGloin | CC0 |
 | `san_francisco` | [San francisco skyline, san francisco, united states (Unsplash).jpg](https://commons.wikimedia.org/wiki/File:San_francisco_skyline,_san_francisco,_united_states_(Unsplash).jpg) | davide ragusa | CC0 |
 | `golden_gate` | [Golden Gate Bridge, San Francisco Bay 01.jpg](https://commons.wikimedia.org/wiki/File:Golden_Gate_Bridge,_San_Francisco_Bay_01.jpg) | Blake Everett | CC0 |
 | `toronto_night` | [Night skyline of Toronto, Canada 374759.jpg](https://commons.wikimedia.org/wiki/File:Night_skyline_of_Toronto,_Canada_374759.jpg) | Andrew Gosine | CC0 |
-| `new_york` | [Beautiful NYC skyline (Unsplash).jpg](https://commons.wikimedia.org/wiki/File:Beautiful_NYC_skyline_(Unsplash).jpg) | Anthony DELANOIX | CC0 |
 
 ## Video Loops
 
@@ -124,28 +119,7 @@ Clips are downloaded when a video wallpaper is first applied, then kept in app s
 
 | Wallpaper | Category | Source file | Author | License |
 | --- | --- | --- | --- | --- |
-| `canyon_clouds` | Landscapes | [B-roll Video - Time-lapse of Clouds over the Canyon - November 20, 2025 (55087231001).webm](https://commons.wikimedia.org/wiki/File:B-roll_Video_-_Time-lapse_of_Clouds_over_the_Canyon_-_November_20,_2025_(55087231001).webm) | Grand Canyon NPS | Public domain |
-| `swiftcurrent_sunrise` | Landscapes | [Sunrise at Swiftcurrent Lake (26145798446).webm](https://commons.wikimedia.org/wiki/File:Sunrise_at_Swiftcurrent_Lake_(26145798446).webm) | GlacierNPS | Public domain |
-| `alaska_aurora` | Landscapes | [Alaskan Aurora Time Lapse (SVS15077).webm](https://commons.wikimedia.org/wiki/File:Alaskan_Aurora_Time_Lapse_(SVS15077).webm) | NASA's Scientific Visualization Studio - Amentum Services, Inc./Mike Toillion | Public domain |
-| `lake_mcdonald_clouds` | Landscapes | [Lake McDonald 8 6 15 (23809254046).webm](https://commons.wikimedia.org/wiki/File:Lake_McDonald_8_6_15_(23809254046).webm) | GlacierNPS | Public domain |
-| `golden_sunset` | Landscapes | [Golden sunset filmed in January.webm](https://commons.wikimedia.org/wiki/File:Golden_sunset_filmed_in_January.webm) | Vicky Ponce | CC0 |
-| `virginia_falls` | Landscapes | [Virginia Falls (26105159061).webm](https://commons.wikimedia.org/wiki/File:Virginia_Falls_(26105159061).webm) | GlacierNPS | Public domain |
-| `turquoise_waves` | Landscapes | [Plage d'Isola Rossa - 2017 - vagues.webm](https://commons.wikimedia.org/wiki/File:Plage_d%27Isola_Rossa_-_2017_-_vagues.webm) | Benoît Prieur | CC0 |
-| `misty_river` | Landscapes | [Misty river 47 seconds.webm](https://commons.wikimedia.org/wiki/File:Misty_river_47_seconds.webm) | Digitura | CC0 |
-| `snowfall` | Landscapes | [Snow falling in Charlton MA 2025-12-14.webm](https://commons.wikimedia.org/wiki/File:Snow_falling_in_Charlton_MA_2025-12-14.webm) | Peter Cooper Jr. | CC0 |
-| `meadow_breeze` | Landscapes | [Calmly waving grass and flowers.ogv](https://commons.wikimedia.org/wiki/File:Calmly_waving_grass_and_flowers.ogv) | Pixelmaniac pictures (Leave a reply) | Public domain |
-| `desert_night` | Landscapes | [Stars and Clouds Over Headstone Rock (30230087163).webm](https://commons.wikimedia.org/wiki/File:Stars_and_Clouds_Over_Headstone_Rock_(30230087163).webm) | Joshua Tree National Park | Public domain |
-| `lightning_storm` | Landscapes | [Lightning storm over Colorado, USA.ogg](https://commons.wikimedia.org/wiki/File:Lightning_storm_over_Colorado,_USA.ogg) | NathanScientific | CC0 |
-| `lenticular_cloud` | Landscapes | [Lenticular cloud over Longs Peak, Colorado (time lapse).ogv](https://commons.wikimedia.org/wiki/File:Lenticular_cloud_over_Longs_Peak,_Colorado_(time_lapse).ogv) | Stepleton | CC0 |
-| `yellowstone_falls` | Landscapes | [Upper Falls of the Yellowstone River (24503121190).webm](https://commons.wikimedia.org/wiki/File:Upper_Falls_of_the_Yellowstone_River_(24503121190).webm) | YellowstoneNPS | Public domain |
-| `misty_lake` | Landscapes | [Misty Morning at Lake McDonald (25569241623).webm](https://commons.wikimedia.org/wiki/File:Misty_Morning_at_Lake_McDonald_(25569241623).webm) | GlacierNPS | Public domain |
-| `shanghai_bund` | City | [Shanghai Bund, Lujiazui Skyline Timelapse.webm](https://commons.wikimedia.org/wiki/File:Shanghai_Bund,_Lujiazui_Skyline_Timelapse.webm) | Yigang Yu | CC0 |
-| `shibuya_crossing` | City | [Shibuya crossing time-lapse 2019-01-05.webm](https://commons.wikimedia.org/wiki/File:Shibuya_crossing_time-lapse_2019-01-05.webm) | Asanagi | CC0 |
-| `lujiazui_night` | City | [Timelapse de nuit de la vue du quartier de Lujiazui.webm](https://commons.wikimedia.org/wiki/File:Timelapse_de_nuit_de_la_vue_du_quartier_de_Lujiazui.webm) | Tomtoom03 | CC0 |
 | `eiffel_sunset` | Landmarks | [Sunset on Eiffel Tower in Paris - Vimeo.webm](https://commons.wikimedia.org/wiki/File:Sunset_on_Eiffel_Tower_in_Paris_-_Vimeo.webm) | Mythomen | CC0 |
-| `berlin_dusk` | City | [Berlin Bundesautobahn 100 2026-03-25 mov03.webm](https://commons.wikimedia.org/wiki/File:Berlin_Bundesautobahn_100_2026-03-25_mov03.webm) | LarsMueller | CC0 |
-| `berlin_motorway` | City | [Berlin Bundesautobahn 100 2026-03-25 mov04.webm](https://commons.wikimedia.org/wiki/File:Berlin_Bundesautobahn_100_2026-03-25_mov04.webm) | LarsMueller | CC0 |
-| `helsinki_harbour` | City | [Ajax South Harbour Helsinki 20260214 02.webm](https://commons.wikimedia.org/wiki/File:Ajax_South_Harbour_Helsinki_20260214_02.webm) | Estormiz | CC0 |
 | `la_night` | City | [DTLA by night, Los Angeles July 2022.webm](https://commons.wikimedia.org/wiki/File:DTLA_by_night,_Los_Angeles_July_2022.webm) | Benoît Prieur | CC0 |
 | `deep_sea_jellyfish` | Scenes | [Jellyfish - Deepwater Exploration of the Marianas expedition - April 24, 2016.webm](https://commons.wikimedia.org/wiki/File:Jellyfish_-_Deepwater_Exploration_of_the_Marianas_expedition_-_April_24,_2016.webm) | oceanexplorergov | Public domain |
 | `blue_jellyfish` | Scenes | [Aquarium Boka - species 02.webm](https://commons.wikimedia.org/wiki/File:Aquarium_Boka_-_species_02.webm) | BuhaM | CC0 |
@@ -167,14 +141,6 @@ Clips are downloaded when a video wallpaper is first applied, then kept in app s
 | `canary_spring` | Landscapes | [Canary Spring (Mammoth Hot Springs, Yellowstone National Park) 2021-08-09.webm](https://commons.wikimedia.org/wiki/File:Canary_Spring_(Mammoth_Hot_Springs,_Yellowstone_National_Park)_2021-08-09.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `chicago_day_night` | City | [Chicago Day and Night.webm](https://commons.wikimedia.org/wiki/File:Chicago_Day_and_Night.webm) | Wikimedia Commons | CC BY 3.0 |
 | `colosseum` | Landmarks | [Colosseum, Rome 113323.webm](https://commons.wikimedia.org/wiki/File:Colosseum,_Rome_113323.webm) | Quahadi | CC BY 4.0 |
-| `iss_city_lights` | City | [Ocean Moon Glint and City Night Lights in 4K.webm](https://commons.wikimedia.org/wiki/File:Ocean_Moon_Glint_and_City_Night_Lights_in_4K.webm) | NASA | Public domain |
-| `iss_night_pass` | City | [La Tierra de noche desde el espacio.ogv](https://commons.wikimedia.org/wiki/File:La_Tierra_de_noche_desde_el_espacio.ogv) | Crew Earth Observations team | Public domain |
-| `kuala_lumpur_street` | City | [Bukit Bintang in 2024.webm](https://commons.wikimedia.org/wiki/File:Bukit_Bintang_in_2024.webm) | Renek78 | CC0 |
-| `singapore_supertrees` | City | [Supertree Grove, Gardens by the Bay, light show 19 August.webm](https://commons.wikimedia.org/wiki/File:Supertree_Grove,_Gardens_by_the_Bay,_light_show_19_August.webm) | Jeromi Mikhael | CC0 |
-| `la_crosse_lights` | City | [Rotary Lights La Crosse.webm](https://commons.wikimedia.org/wiki/File:Rotary_Lights_La_Crosse.webm) | Wikideas1 | CC0 |
-| `hong_kong_timelapse` | City | [Causeway Bay Time-lapse videos (afternoon).ogv](https://commons.wikimedia.org/wiki/File:Causeway_Bay_Time-lapse_videos_(afternoon).ogv) | 鄒延 | CC0 |
-| `amsterdam_canal` | City | [Channel cruise in Amsterdam 142945.webm](https://commons.wikimedia.org/wiki/File:Channel_cruise_in_Amsterdam_142945.webm) | Quahadi | CC0 |
-| `tartu_dusk_aerial` | City | [Drone video of Annelinn 2021.webm](https://commons.wikimedia.org/wiki/File:Drone_video_of_Annelinn_2021.webm) | Sillerkiil | CC0 |
 | `aurora_alaska` | Landscapes | [Alaskan Aurora Time Lapse (SVS15077).webm](https://commons.wikimedia.org/wiki/File%3AAlaskan_Aurora_Time_Lapse_%28SVS15077%29.webm) | Wikimedia Commons | Public domain |
 | `excelsior_geyser` | Landscapes | [Excelsior Geyser (Midway Geyser Basin, Yellowstone National Park) 2021-08-10, 02.webm](https://commons.wikimedia.org/wiki/File%3AExcelsior_Geyser_%28Midway_Geyser_Basin%2C_Yellowstone_National_Park%29_2021-08-10%2C_02.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `shenandoah_sunset` | Landscapes | [Sunset at Naked Creek Overlook Shenandoah National Park VA 2024-10-11.60fps.uhd4k.webm](https://commons.wikimedia.org/wiki/File%3ASunset_at_Naked_Creek_Overlook_Shenandoah_National_Park_VA_2024-10-11.60fps.uhd4k.webm) | Wikimedia Commons | CC BY-SA 4.0 |
@@ -239,11 +205,11 @@ Clips are downloaded when a video wallpaper is first applied, then kept in app s
 | `statue_of_liberty` | Landmarks | [View of Statue of Liberty on a Boat.webm](https://commons.wikimedia.org/wiki/File%3AView_of_Statue_of_Liberty_on_a_Boat.webm) | Wikimedia Commons | CC0 |
 | `spinning_saturn` | Space | [Video - Spinning Saturn - Cassini (51784196854).webm](https://commons.wikimedia.org/wiki/File%3AVideo_-_Spinning_Saturn_-_Cassini_%2851784196854%29.webm) | Wikimedia Commons | CC BY 2.0 |
 | `orion_flight` | Space | [Flight through Orion Nebula in visible light (Hubblecast 106b excerpt).webm](https://commons.wikimedia.org/wiki/File%3AFlight_through_Orion_Nebula_in_visible_light_%28Hubblecast_106b_excerpt%29.webm) | Wikimedia Commons | CC BY 4.0 |
-| `crab_nebula_live` | Space | [Hubble’s Inside The Image- Crab Nebula (SVS14287).webm](https://commons.wikimedia.org/wiki/File%3AHubble%E2%80%99s_Inside_The_Image-_Crab_Nebula_%28SVS14287%29.webm) | Wikimedia Commons | Public domain |
+| `crab_nebula_live` | Space | [Hubble's Inside The Image- Crab Nebula (SVS14287).webm](https://commons.wikimedia.org/wiki/File%3AHubble%E2%80%99s_Inside_The_Image-_Crab_Nebula_%28SVS14287%29.webm) | Wikimedia Commons | Public domain |
 | `jupiter_juno` | Space | [Juno's Perijove-07 Jupiter Flyby, Reconstructed in 25-Fold Time-Lapse.webm](https://commons.wikimedia.org/wiki/File%3AJuno%27s_Perijove-07_Jupiter_Flyby%2C_Reconstructed_in_25-Fold_Time-Lapse.webm) | Wikimedia Commons | CC BY 3.0 |
 | `earth_from_iss` | Space | [Crew Earth Observations (4K).webm](https://commons.wikimedia.org/wiki/File%3ACrew_Earth_Observations_%284K%29.webm) | Wikimedia Commons | Public domain |
 | `spiral_galaxy_live` | Space | [One-sided spiral (potm2607a).webm](https://commons.wikimedia.org/wiki/File%3AOne-sided_spiral_%28potm2607a%29.webm) | Wikimedia Commons | CC BY 4.0 |
-| `m83_galaxy` | Space | [Explore spiral galaxy M83 through Webb’s infrared eyes ESA508223.webm](https://commons.wikimedia.org/wiki/File%3AExplore_spiral_galaxy_M83_through_Webb%E2%80%99s_infrared_eyes_ESA508223.webm) | Wikimedia Commons | CC BY 4.0 |
+| `m83_galaxy` | Space | [Explore spiral galaxy M83 through Webb's infrared eyes ESA508223.webm](https://commons.wikimedia.org/wiki/File%3AExplore_spiral_galaxy_M83_through_Webb%E2%80%99s_infrared_eyes_ESA508223.webm) | Wikimedia Commons | CC BY 4.0 |
 | `flamingos` | Wildlife | [046 Greater flamingos courtship display in the Camargue during mating season (normal speed) Video by Giles Laurent.webm](https://commons.wikimedia.org/wiki/File%3A046_Greater_flamingos_courtship_display_in_the_Camargue_during_mating_season_%28normal_speed%29_Video_by_Giles_Laurent.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `red_deer` | Wildlife | [004 Red deer checking if a female is ready to mate Video by Giles Laurent.webm](https://commons.wikimedia.org/wiki/File%3A004_Red_deer_checking_if_a_female_is_ready_to_mate_Video_by_Giles_Laurent.webm) | Wikimedia Commons | CC BY-SA 4.0 |
 | `humpback_whale` | Wildlife | [032 Humpback whale lobtailing in slow motion Video by Giles Laurent.webm](https://commons.wikimedia.org/wiki/File%3A032_Humpback_whale_lobtailing_in_slow_motion_Video_by_Giles_Laurent.webm) | Wikimedia Commons | CC BY-SA 4.0 |

@@ -1,6 +1,6 @@
 # Lumifold -- Progress Dashboard
 
-**Branch:** `feature/duo-fold-effect-overhaul` (from `develop`)
+**Branch:** `develop` (v0.5.0 released from `feature/duo-fold-effect-overhaul`)
 
 ---
 
@@ -10,10 +10,10 @@
 |--------|---------|--------|-------|
 | Tasks Completed | 114 | 114 | Met |
 | Wallpaper Designs | 234 (52 generative, 63 video, 119 photographs) in 11 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
-| Opening Effects | 12, plus an off switch | 12 | Met |
-| Unit Tests | 76 | 38 | +38 |
+| Opening Effects | 13, plus an off switch and Full swipe | 12 | +1 |
+| Unit Tests | 68 | 38 | +30 |
 | Min SDK Target | 33 (Android 13) | 33 | Met |
-| Target SDK | 35 (Android 15) | 35 | Met |
+| Target SDK | 37 (Android 17) | 35 | +2 |
 
 ---
 
@@ -49,7 +49,7 @@
 - [x] T019 [US4] Run complete local test and check suite docs/todos.md
 - [x] T020 [US4] Merge develop into main, tag v0.1.0 release, and publish to origin CHANGELOG.md
 
-## Phase 5 -- Duo Effect Overhaul (v0.5.0) [IN PROGRESS]
+## Phase 5 -- Duo Effect Overhaul (v0.5.0) [DONE]
 
 - [x] T021 [US5] Implement the Duo model (shared image plane, cubic edge blur, brightness curves) in AGSL app/src/main/java/com/ambientfold/wallpaper/render/FoldShaders.kt
 - [x] T022 [US5] Add the unit-tested optics specification app/src/main/java/com/ambientfold/wallpaper/render/FoldOptics.kt
