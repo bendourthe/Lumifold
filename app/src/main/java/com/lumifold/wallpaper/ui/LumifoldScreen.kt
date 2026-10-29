@@ -670,35 +670,41 @@ private fun QuickToggles(
     Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
         QuickToggle(
             title = "Full swipe",
-            status = if (fullSwipe) "Sweeps the inner screen" else "Moving half only",
+            status = if (fullSwipe) "Both screens" else "Moving half only",
             checked = fullSwipe,
             onChange = onFullSwipe,
             modifier = Modifier.weight(1f)
         )
+        // Full swipe replaces the inner screen's per-effect fold, so the mirror has nothing to change.
         QuickToggle(
             title = "Mirror effect",
-            status = if (symmetricInner) "Both halves move" else "Left half only",
-            checked = symmetricInner,
+            status = when {
+                fullSwipe -> "Off with Full swipe"
+                symmetricInner -> "Both halves move"
+                else -> "Left half only"
+            },
+            checked = symmetricInner && !fullSwipe,
             onChange = onSymmetricInner,
-            modifier = Modifier.weight(1f)
+            modifier = Modifier.weight(1f),
+            enabled = !fullSwipe
         )
     }
 }
 
 @Composable
-private fun QuickToggle(title: String, status: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier) {
+private fun QuickToggle(title: String, status: String, checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier, enabled: Boolean = true) {
     Surface(
         shape = RoundedCornerShape(20.dp),
         color = if (checked) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
         border = BorderStroke(1.dp, if (checked) MaterialTheme.colorScheme.primary.copy(alpha = 0.5f) else MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
+        modifier = modifier.alpha(if (enabled) 1f else 0.5f)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 14.dp, end = 10.dp, top = 10.dp, bottom = 10.dp)) {
             Column(Modifier.weight(1f)) {
                 Text(title, style = MaterialTheme.typography.titleSmall)
                 Text(status, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
-            Switch(checked = checked, onCheckedChange = onChange, colors = SwitchDefaults.colors(uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest))
+            Switch(checked = checked, onCheckedChange = onChange, enabled = enabled, colors = SwitchDefaults.colors(uncheckedTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest))
         }
     }
 }

@@ -6,10 +6,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.graphics.Bitmap
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Rect
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -17,15 +15,12 @@ import android.os.PowerManager
 import android.os.SystemClock
 import android.service.wallpaper.WallpaperService
 import android.util.Log
-import android.util.DisplayMetrics
 import android.view.Choreographer
 import android.view.Display
 import android.view.MotionEvent
-import android.view.PixelCopy
 import android.view.SurfaceHolder
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import androidx.core.graphics.createBitmap
 import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.WallpaperItem
 import com.lumifold.wallpaper.model.WallpaperRepository as Repo
@@ -88,8 +83,6 @@ class FoldWallpaperService : WallpaperService() {
         private var spec: SurfaceSpec? = null
         private var reloadPhoto = false
         private var lastSurfaceInner: Boolean? = null
-        private var drawnSpec: SurfaceSpec? = null
-        private var surfaceGeneration = 0
 
         // When the system moves the wallpaper to the other display, that display starts from the
         // shared midpoint of the effect and eases to the hinge, wherever the switch happened.
@@ -143,7 +136,6 @@ class FoldWallpaperService : WallpaperService() {
                     BothScreens.PanelContent(shader, effect, intensity, motion, foldEffect)
                 }
                 both?.start()
-                ctx.stopService(Intent(ctx, ScreenCaptureService::class.java))
             }
             ContextCompat.registerReceiver(
                 ctx,
@@ -219,7 +211,6 @@ class FoldWallpaperService : WallpaperService() {
 
         override fun onDestroy() {
             if (backgroundEngine === this) backgroundEngine = null
-            surfaceGeneration++
             Choreographer.getInstance().removeFrameCallback(this)
             mainHandler.removeCallbacks(settleCheck)
             prefs.unregisterOnSharedPreferenceChangeListener(this)
@@ -261,8 +252,6 @@ class FoldWallpaperService : WallpaperService() {
 
         override fun onSurfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
             super.onSurfaceChanged(holder, format, width, height)
-            surfaceGeneration++
-            drawnSpec = null
             val rotation = 0
             val (nw, nh) = FoldOptics.naturalSize(width, height, rotation)
             val inner = FoldOptics.isInnerDisplay(nw, nh)
@@ -299,14 +288,11 @@ class FoldWallpaperService : WallpaperService() {
         }
 
         override fun onSurfaceDestroyed(holder: SurfaceHolder) {
-            surfaceGeneration++
-            drawnSpec = null
             super.onSurfaceDestroyed(holder)
         }
 
         override fun onVisibilityChanged(isVisible: Boolean) {
             visible = isVisible
-            surfaceGeneration++
             if (!isPreview && displayContext?.display?.displayId == Display.DEFAULT_DISPLAY) {
                 if (isVisible) backgroundEngine = this
                 else if (backgroundEngine === this) backgroundEngine = null
@@ -566,48 +552,11 @@ class FoldWallpaperService : WallpaperService() {
                         symmetricInner = symmetricInner, fullSwipe = fullSwipe)
                     paint.shader = ws.shader
                     canvas.drawRect(0f, 0f, s.width.toFloat(), s.height.toFloat(), paint)
-                    drawnSpec = s
                 } else {
-                    drawnSpec = null
                     canvas.drawColor(Color.BLACK)
                 }
             } finally {
                 runCatching { holder.unlockCanvasAndPost(canvas) }
-            }
-        }
-
-        /** Copy only our visible, fully drawn surface; never scale a previous panel's buffer. */
-        @Suppress("DEPRECATION")
-        internal fun copyBackground(bounds: Rect, onResult: (Bitmap?) -> Unit) {
-            val display = displayContext?.display
-            val metrics = DisplayMetrics().also { display?.getRealMetrics(it) }
-            val holder = surfaceHolder
-            val drawn = drawnSpec
-            val frame = Rect(holder.surfaceFrame)
-            if (backgroundEngine !== this || !visible || isPreview || display?.state != Display.STATE_ON ||
-                drawn == null || !holder.surface.isValid ||
-                drawn.width != metrics.widthPixels || drawn.height != metrics.heightPixels ||
-                frame.width() != drawn.width || frame.height() != drawn.height ||
-                bounds.isEmpty || !frame.contains(bounds)) {
-                onResult(null)
-                return
-            }
-            val generation = surfaceGeneration
-            val wallpaperId = item.id
-            val image = createBitmap(bounds.width(), bounds.height())
-            try {
-                PixelCopy.request(holder.surface, Rect(bounds), image, { result ->
-                    if (result == PixelCopy.SUCCESS && backgroundEngine === this && visible &&
-                        surfaceGeneration == generation && item.id == wallpaperId && drawnSpec == drawn) {
-                        onResult(image)
-                    } else {
-                        image.recycle()
-                        onResult(null)
-                    }
-                }, mainHandler)
-            } catch (error: IllegalArgumentException) {
-                image.recycle()
-                onResult(null)
             }
         }
 
@@ -643,11 +592,6 @@ class FoldWallpaperService : WallpaperService() {
 
         /** Whether the wallpaper is on screen behind the launcher, drawing the fold effect itself. */
         internal val isWallpaperShowing: Boolean get() = backgroundEngine != null
-
-        internal fun captureBackground(bounds: Rect, onResult: (Bitmap?) -> Unit) {
-            val engine = backgroundEngine
-            if (engine == null) onResult(null) else engine.copyBackground(bounds, onResult)
-        }
 
         /** Scene time used when living motion is off. */
         const val STILL_TIME = 42f

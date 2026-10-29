@@ -9,17 +9,11 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.graphics.ColorSpace
 import android.graphics.PixelFormat
-import android.graphics.Rect
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
 import android.os.SystemClock
-import android.provider.Settings
 import android.hardware.display.DisplayManager
 import android.util.DisplayMetrics
 import android.util.Log
@@ -29,23 +23,17 @@ import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityEvent
-import android.view.accessibility.AccessibilityWindowInfo
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.createBitmap
 import com.lumifold.wallpaper.model.WallpaperRepository as Repo
 import com.lumifold.wallpaper.render.FoldOptics
-import java.lang.ref.WeakReference
-import java.util.concurrent.Executors
 import kotlin.math.abs
 
 /**
- * Follows the hinge and applies the opening effect to the whole unlocked screen.
- * It takes one picture at the start of a fold and drops it when the hinge stops. It does not
- * record.
+ * Follows the hinge, holds the cover until Android's panel switch over apps, and dims the
+ * unlocked app on screen while folding. It takes no screenshots and reads no app content.
  */
 class FoldAccessibilityService : AccessibilityService() {
     private val main = Handler(Looper.getMainLooper())
-    private val shots = Executors.newSingleThreadExecutor()
     private var glass: FoldGlass? = null
     private var hinge: HingeTracker? = null
     private val motion = FoldMotion()
@@ -53,7 +41,6 @@ class FoldAccessibilityService : AccessibilityService() {
     private val diagnostics by lazy { applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0 }
     private var lastRoute: String? = null
     private var lastHingeLog = 0L
-    private val captureThrottle = WindowCaptureThrottle()
     // The wallpaper engine holds the cover only while the wallpaper is visible. This hold covers
     // apps, which hide it, so opening over an app keeps the cover until 90 degrees like Home.
     private var awake: CoverAwakeKeeper? = null
@@ -68,8 +55,6 @@ class FoldAccessibilityService : AccessibilityService() {
     private val prefListener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
         if (key == Repo.KEY_FOLD_EFFECT_ENABLED) updateAwake()
     }
-    val coversUnlockedScreen: Boolean
-        get() = Settings.canDrawOverlays(this) && getSystemService(KeyguardManager::class.java)?.isKeyguardLocked != true
 
     private val displays by lazy { getSystemService(DisplayManager::class.java) }
     private val frame = Runnable { render() }
@@ -96,8 +81,6 @@ class FoldAccessibilityService : AccessibilityService() {
     }
 
     override fun onServiceConnected() {
-        instance = this
-        stopService(Intent(this, ScreenCaptureService::class.java))
         hinge?.stop()
         glass?.hide()
         glass = FoldGlass(this)
@@ -214,8 +197,7 @@ class FoldAccessibilityService : AccessibilityService() {
             motion.panelShown(now)
         }
         val active = motion.isActive(now)
-        // Over Home the wallpaper draws the effect live; a screenshot on top would double it and
-        // freeze a video wallpaper. Decided once per fold, because the wallpaper hides for a
+        // Over Home the wallpaper draws the effect live, so the overlay stays off. Decided once per fold, because the wallpaper hides for a
         // moment while the panels switch.
         if (active && !wasActive) overWallpaper = FoldWallpaperService.isWallpaperShowing
         wasActive = active
@@ -239,9 +221,6 @@ class FoldAccessibilityService : AccessibilityService() {
             prefs.unregisterOnSharedPreferenceChangeListener(prefListener)
             registered = false
         }
-        if (instance === this) instance = null
-        // Already queued composition jobs own bitmaps and must run their cleanup.
-        shots.shutdown()
         super.onDestroy()
     }
 
@@ -258,221 +237,7 @@ class FoldAccessibilityService : AccessibilityService() {
         }
     }
 
-    @Suppress("DEPRECATION")
-    private fun captureLayout(): List<CaptureWindow>? = runCatching {
-        val display = displays?.getDisplay(Display.DEFAULT_DISPLAY) ?: return@runCatching null
-        if (display.state != Display.STATE_ON) return@runCatching null
-        val metrics = DisplayMetrics().also { display.getRealMetrics(it) }
-        val applications = windows.filter {
-            it.displayId == Display.DEFAULT_DISPLAY && it.type == AccessibilityWindowInfo.TYPE_APPLICATION
-        }.map {
-            val bounds = Rect().also(it::getBoundsInScreen)
-            CaptureWindow(it.id, bounds.left, bounds.top, bounds.right, bounds.bottom, it.isActive)
-        }
-        selectCaptureWindows(applications, metrics.widthPixels, metrics.heightPixels)
-    }.getOrNull()
-
-    /** Returns a main-thread cancellation action that releases incomplete captures. */
-    fun capture(
-        isCurrent: () -> Boolean,
-        onFrame: (Bitmap, Rect) -> Unit,
-        onMiss: (retryAfterMs: Long?) -> Unit
-    ): () -> Unit {
-        // Window capture excludes our overlay. Inspect metadata only, never app nodes or text.
-        if (Build.VERSION.SDK_INT < 34 || !isCurrent() || !coversUnlockedScreen ||
-            !motion.isActive(SystemClock.uptimeMillis())) {
-            onMiss(null)
-            return {}
-        }
-        val targets = captureLayout()
-        if (targets == null) {
-            if (diagnostics) Log.d(TAG, "Capture layout not ready; retaining fold shading")
-            onMiss(16L)
-            return {}
-        }
-        val delay = captureThrottle.delayMs(targets.map { it.id }, SystemClock.uptimeMillis())
-        if (delay > 0L) {
-            if (diagnostics) Log.d(TAG, "Window capture interval wait=${delay}ms")
-            onMiss(delay)
-            return {}
-        }
-        val bounds = Rect(0, targets.first().top, targets.last().right, targets.first().bottom)
-        val placement = targets.map { it.copy(active = false) }
-        val parts = mutableMapOf<Int, Bitmap>()
-        var waitingForeground: Bitmap? = null
-        var finished = false
-        var cancelled = false
-
-        fun current(): Boolean = instance === this && isCurrent() && coversUnlockedScreen &&
-            motion.isActive(SystemClock.uptimeMillis()) &&
-            captureLayout()?.map { it.copy(active = false) } == placement
-
-        fun releaseParts() {
-            parts.values.forEach { it.recycle() }
-            parts.clear()
-            waitingForeground?.recycle()
-            waitingForeground = null
-        }
-
-        fun miss(retryAfter: Long?) {
-            if (finished) return
-            finished = true
-            releaseParts()
-            onMiss(retryAfter)
-        }
-
-        fun publish(image: Bitmap?, withWallpaper: Boolean = false) {
-            if (cancelled) image?.recycle()
-            else if (image == null || !current()) {
-                image?.recycle()
-                onMiss(16L)
-            } else {
-                if (diagnostics) Log.d(TAG, "Capture assembled panes=${targets.size} size=${image.width}x${image.height} wallpaper=$withWallpaper")
-                onFrame(image, bounds)
-            }
-        }
-
-        fun complete(image: Bitmap?, needsBackground: Boolean) {
-            if (image == null || cancelled || !current() || !needsBackground) {
-                publish(image)
-                return
-            }
-            // A window screenshot contains Home icons but excludes the wallpaper underneath.
-            // Complete the image before distortion; transparent output would duplicate the icons.
-            waitingForeground = image
-            FoldWallpaperService.captureBackground(bounds) { background ->
-                val foreground = waitingForeground
-                waitingForeground = null
-                if (foreground == null) {
-                    background?.recycle()
-                } else if (background == null || !current()) {
-                    foreground.recycle()
-                    background?.recycle()
-                    if (diagnostics) Log.d(TAG, "Wallpaper unavailable for transparent window; retaining fold shading")
-                    if (!cancelled) onMiss(null)
-                } else {
-                    runCatching {
-                        shots.execute {
-                            val composed = try {
-                                compositeWindowOnWallpaper(foreground, background)
-                            } catch (error: Exception) {
-                                background.recycle()
-                                Log.w(TAG, "Wallpaper composition failed", error)
-                                null
-                            } finally { foreground.recycle() }
-                            main.post { publish(composed, withWallpaper = true) }
-                        }
-                    }.onFailure {
-                        foreground.recycle()
-                        background.recycle()
-                        onMiss(null)
-                    }
-                }
-            }
-        }
-
-        fun receive(target: CaptureWindow, image: Bitmap?) {
-            if (finished) {
-                image?.recycle()
-                return
-            }
-            if (image == null || image.width != target.width || image.height != target.height || !current()) {
-                image?.recycle()
-                miss(16L)
-                return
-            }
-            parts[target.id] = image
-            if (parts.size != targets.size) return
-            finished = true
-            val images = targets.map { parts.getValue(it.id) }
-            parts.clear()
-            // Assemble panes and inspect alpha off the UI thread, without scaling missing areas.
-            runCatching {
-                shots.execute {
-                    var composed: Bitmap? = null
-                    var needsBackground = false
-                    try {
-                        if (images.size == 1) composed = images.single()
-                        else {
-                            composed = createBitmap(bounds.width(), bounds.height())
-                            val canvas = Canvas(composed)
-                            targets.zip(images).forEach { (window, bitmap) ->
-                                canvas.drawBitmap(bitmap, window.left.toFloat(), (window.top - bounds.top).toFloat(), null)
-                            }
-                        }
-                        needsBackground = captureNeedsWallpaper(composed)
-                    } catch (error: Exception) {
-                        composed?.recycle()
-                        composed = null
-                        Log.w(TAG, "Window composition failed", error)
-                    } finally {
-                        if (images.size > 1) images.forEach { it.recycle() }
-                    }
-                    val ready = composed
-                    main.post { complete(ready, needsBackground) }
-                }
-            }.onFailure {
-                images.forEach { image -> image.recycle() }
-                onMiss(null)
-            }
-        }
-
-        for (target in targets) {
-            if (finished) break
-            val started = SystemClock.uptimeMillis()
-            captureThrottle.record(target.id, started)
-            if (diagnostics) Log.d(TAG, "Capture id=$started requested window=${target.id} bounds=$target panes=${targets.size}")
-            try {
-                takeScreenshotOfWindow(target.id, shots, object : TakeScreenshotCallback {
-                    override fun onSuccess(result: ScreenshotResult) {
-                        val callbackMs = SystemClock.uptimeMillis() - started
-                        val buffer = result.hardwareBuffer
-                        val copy = try {
-                            val hardware = Bitmap.wrapHardwareBuffer(buffer, result.colorSpace ?: ColorSpace.get(ColorSpace.Named.SRGB))
-                            try { hardware?.copy(Bitmap.Config.ARGB_8888, false) } finally { hardware?.recycle() }
-                        } catch (error: Exception) {
-                            Log.w(TAG, "Screenshot conversion failed", error)
-                            null
-                        } finally { buffer.close() }
-                        val usable = copy?.takeUnless {
-                            isBlankScreenFrame(it.width, it.height, it::getPixel)
-                        }
-                        if (copy != null && usable == null) {
-                            copy.recycle()
-                            if (diagnostics) Log.d(TAG, "Blank window screenshot rejected window=${target.id}")
-                        }
-                        main.post {
-                            if (diagnostics) Log.d(TAG, "Capture id=$started callbackMs=$callbackMs totalMs=${SystemClock.uptimeMillis() - started} size=${usable?.width}x${usable?.height}")
-                            receive(target, usable)
-                        }
-                    }
-
-                    override fun onFailure(errorCode: Int) {
-                        Log.w(TAG, "Screenshot refused: code=$errorCode id=$started elapsedMs=${SystemClock.uptimeMillis() - started}")
-                        main.post {
-                            miss(if (errorCode == ERROR_TAKE_SCREENSHOT_SECURE_WINDOW ||
-                                errorCode == ERROR_TAKE_SCREENSHOT_NO_ACCESSIBILITY_ACCESS) null else 16L)
-                        }
-                    }
-                })
-            } catch (error: Exception) {
-                Log.w(TAG, "Screenshot unavailable", error)
-                miss(null)
-            }
-        }
-        return {
-            cancelled = true
-            finished = true
-            releaseParts()
-        }
-    }
-
-    companion object {
-        private const val TAG = "LumifoldGlass"
-        // Weak, so this static field never keeps a destroyed service and its context alive.
-        @Volatile private var instanceRef: WeakReference<FoldAccessibilityService>? = null
-        var instance: FoldAccessibilityService?
-            get() = instanceRef?.get()
-            private set(value) { instanceRef = value?.let { WeakReference(it) } }
+    private companion object {
+        const val TAG = "LumifoldGlass"
     }
 }

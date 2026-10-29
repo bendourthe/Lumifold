@@ -2,5 +2,5 @@
     <string name="app_name">Lumifold</string>
     <string name="wallpaper_service_label">Lumifold Live Wallpaper</string>
     <string name="wallpaper_service_description">Frosted-glass fold effects and living wallpapers for book-style foldables.</string>
-    <string name="fold_accessibility_desc">Lets Lumifold use app window information and a temporary screenshot to apply the opening effect while you fold. Screenshots are not saved. Android grants access to window content; Lumifold uses window bounds and identifiers without reading app text.</string>
+    <string name="fold_accessibility_desc">Lets Lumifold dim the open app and keep the cover screen on while you fold. Lumifold takes no screenshots and does not read window content.</string>
 </resources>

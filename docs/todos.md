@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 113 | 113 | Met |
+| Tasks Completed | 114 | 114 | Met |
 | Wallpaper Designs | 234 (52 generative, 63 video, 119 photographs) in 11 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
 | Opening Effects | 12, plus an off switch | 12 | Met |
 | Unit Tests | 76 | 38 | +38 |
@@ -144,6 +144,7 @@
 - [x] T111 [US5] Let the wallpaper draw the fold live on Home: the screenshot overlay runs only over apps, which removed Home's double effect, the late pop to blur, and the jump when a frozen video frame gave way to the live clip; the user confirmed Home on the phone
 - [x] T112 [US5] Add Full swipe, on by default, as a home-page toggle (Battery Saver moved to Advanced settings): the picture stays in place; at the panel switch the outer third is dimmed, the middle third fades to lit, and the blur fades from the middle third to the far edge; opening slides it off toward the outer edge (cover mirrored), closing plays it back; the user confirmed it on Home
 - [x] T113 [US5] Replace screenshots over apps with a live dim sweep: the cover darkens from its right edge until fully dim at 90 degrees, the inner screen starts dim and clears from its right edge (from the hinge without Full swipe), and closing plays it back; Android blurs other apps only in uniform rectangles, so a blur gradient over apps showed hard lines and was dropped by user decision; 85 unit tests pass and the user confirmed it over apps
+- [x] T114 [US5] Remove screen capture now that apps are dimmed live: delete the per-window screenshot path, the wallpaper copy behind Home icons and the retired MediaProjection service; drop the screenshot and window-content accessibility capabilities (129 to 0 on the phone) and both foreground-service permissions; grey out Mirror effect while Full swipe is on; 68 unit tests pass, the service stayed enabled after the update, and the user confirmed the dim sweep and the cover hold over apps
 
 Home composition repair for T105: window-only capture excludes the wallpaper layer, while the effect shader always returns opaque output. The new capture path combines transparent foreground pixels with a copy of Lumifold's own visible wallpaper surface. It uses the exact window bounds, rejects hidden or unfinished surfaces and changed panel generations, and retains the original 500 ms capture deadline. [Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy) copies the most recently queued surface buffer; this adds no continuous recording or permission. Already queued bitmap jobs finish their cleanup on service shutdown, and canceled wallpaper callbacks recycle their buffers. Shader strength and panel-power control are unchanged.
 

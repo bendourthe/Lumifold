@@ -169,14 +169,3 @@ internal fun appDim(inner: Boolean, degrees: Float, fullSwipe: Boolean): AppDim 
     return AppDim(start - p * (start + DIM_BAND), dimLeft = true)
 }
 
-/** A display can report ON while its capture still contains the black handoff frame. */
-internal fun isBlankScreenFrame(width: Int, height: Int, pixelAt: (Int, Int) -> Int): Boolean {
-    if (width <= 0 || height <= 0) return true
-    // Bound work independently of the two panel resolutions, including their outermost pixels.
-    for (y in 0..31) for (x in 0..31) {
-        val pixel = pixelAt(x * (width - 1) / 31, y * (height - 1) / 31)
-        if (pixel ushr 24 != 0 &&
-            ((pixel shr 16 and 255) > 4 || (pixel shr 8 and 255) > 4 || (pixel and 255) > 4)) return false
-    }
-    return true
-}

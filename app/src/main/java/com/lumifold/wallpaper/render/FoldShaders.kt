@@ -18,16 +18,6 @@ object FoldShaders {
 
     fun videoSource(): String = COMMON + NOISE + VIDEO_CONTENT + EFFECT_MAIN
 
-    /** Turn the selected effect rendered over white into a transparent shade over live content. */
-    fun shadingMaskSource(): String = """
-uniform shader effect;
-half4 main(float2 p) {
-    half3 light = effect.eval(p).rgb;
-    half alpha = clamp(1.0 - dot(light, half3(0.2126, 0.7152, 0.0722)), 0.0, 1.0);
-    return half4(0.0, 0.0, 0.0, alpha);
-}
-"""
-
     // A video frame has no blur pyramid: frost comes from a 16-tap spiral with a per-pixel
     // rotation, which the effect stage's grain hides.
     private const val VIDEO_CONTENT = """
