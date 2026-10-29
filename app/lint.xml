@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<lint>
+    <!-- This PNG is the adaptive icon's background layer, which Android masks; it must be full-bleed. -->
+    <issue id="IconLauncherShape">
+        <ignore path="src/main/res/drawable-nodpi/ic_launcher_art.png" />
+    </issue>
+</lint>
