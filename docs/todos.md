@@ -1,6 +1,6 @@
 # Lumifold -- Progress Dashboard
 
-**Branch:** `docs/readme-polish` (from `develop`, after the v0.5.2 release)
+**Branch:** `develop` (after the v0.5.2 release)
 
 ---
 
