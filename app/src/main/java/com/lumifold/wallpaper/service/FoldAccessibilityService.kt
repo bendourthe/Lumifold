@@ -194,12 +194,14 @@ class FoldAccessibilityService : AccessibilityService() {
         val now = SystemClock.uptimeMillis()
         if (inner != lastInner) {
             lastInner = inner
-            motion.panelShown(now)
+            motion.panelShown(inner, now)
         }
         val active = motion.isActive(now)
-        // Over Home the wallpaper draws the effect live, so the overlay stays off. Decided once per fold, because the wallpaper hides for a
-        // moment while the panels switch.
+        // Over Home the wallpaper draws the effect live, so the overlay stays off. Decided when a fold
+        // starts, and only ever corrected toward off: the wallpaper hides for a moment while the
+        // panels switch, and an app cannot start showing the wallpaper mid-fold.
         if (active && !wasActive) overWallpaper = FoldWallpaperService.isWallpaperShowing
+        else if (active && !overWallpaper && FoldWallpaperService.isWallpaperShowing) overWallpaper = true
         wasActive = active
         // The overlay itself emits window events. It must not be mistaken for a foreground app.
         val show = Repo.isFoldEffectEnabled(this) && active && !overWallpaper

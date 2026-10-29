@@ -204,7 +204,7 @@ class FoldMotionTest {
         motion.sample(90f, 100)
         // Held at 90 while Android switches panels; the inner screen shows 1.5 s later.
         val shown = 100 + 1500L
-        motion.panelShown(shown)
+        motion.panelShown(inner = true, now = shown)
         assertEquals(90f, motion.degrees(true, shown + FoldMotion.HOLD_MS - 50), 1f)
         assertTrue(motion.isActive(shown + FoldMotion.IDLE_MS - 50))
     }
@@ -214,8 +214,70 @@ class FoldMotionTest {
         motion.sample(0f, 0)
         motion.sample(60f, 100)
         val done = 100 + FoldMotion.IDLE_MS
-        motion.panelShown(done + 10)
+        motion.panelShown(inner = false, now = done + 10)
         assertFalse(motion.isActive(done + 10))
+    }
+
+    @Test fun theCoverRevealsFromItsCoveredPoseWhenItLightsOnAClose() {
+        val motion = FoldMotion()
+        motion.sample(175f, 0)
+        motion.sample(100f, 400)
+        motion.sample(35f, 800)
+        val lit = 900L
+        motion.panelShown(inner = false, now = lit)
+        // Fully covered when it lights, then an automatic reveal whatever the hinge does.
+        assertEquals(90f, motion.degrees(false, lit), 0f)
+        motion.sample(30f, lit + 300)
+        val mid = motion.degrees(false, lit + FoldMotion.FINISH_MS / 2)
+        assertTrue(mid in 1f..89f)
+        assertTrue(motion.isActive(lit + FoldMotion.FINISH_MS - 50))
+        val done = lit + FoldMotion.FINISH_MS + 10
+        assertEquals(0f, motion.degrees(false, done), 0f)
+        // Held at 30 afterwards, the cover stays clear.
+        assertEquals(0f, motion.degrees(false, done + 500), 0f)
+    }
+
+    @Test fun aFastCloseStillGetsTheCoverReveal() {
+        val motion = FoldMotion()
+        motion.sample(175f, 0)
+        motion.sample(30f, 200)
+        motion.sample(0f, 260)
+        // Shut before the cover lit: it still starts covered, then reveals.
+        motion.panelShown(inner = false, now = 600)
+        assertTrue(motion.isActive(700))
+        assertEquals(90f, motion.degrees(false, 600), 0f)
+        assertEquals(0f, motion.degrees(false, 600 + FoldMotion.FINISH_MS + 10), 0f)
+    }
+
+    @Test fun reopeningCancelsTheCoverReveal() {
+        val motion = FoldMotion()
+        motion.sample(175f, 0)
+        motion.sample(35f, 400)
+        motion.panelShown(inner = false, now = 500)
+        motion.sample(50f, 700)
+        assertFalse(motion.isCloseFromInner)
+        assertTrue(motion.degrees(false, 700) < 90f)
+    }
+
+    @Test fun onlyACloseFromTheInnerScreenCountsAsOne() {
+        val fromInner = FoldMotion()
+        fromInner.sample(175f, 0)
+        fromInner.sample(40f, 300)
+        assertTrue(fromInner.isCloseFromInner)
+        val onCover = FoldMotion()
+        onCover.sample(0f, 0)
+        onCover.sample(70f, 1000)
+        onCover.sample(40f, 2000)
+        assertFalse(onCover.isCloseFromInner)
+    }
+
+    @Test fun theInnerScreenStillHoldsWhenItLightsOnAnOpen() {
+        val motion = FoldMotion()
+        motion.sample(0f, 0)
+        motion.sample(95f, 400)
+        val lit = 500L
+        motion.panelShown(inner = true, now = lit)
+        assertTrue(motion.degrees(true, lit + FoldMotion.HOLD_MS - 100) < 120f)
     }
 
     private fun settled(motion: FoldMotion, inner: Boolean, from: Long): Float {

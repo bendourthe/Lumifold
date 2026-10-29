@@ -101,6 +101,7 @@ class FoldWallpaperService : WallpaperService() {
         private var lastMoveMs = 0L
         private var settle = 0f
         private val settleCheck = Runnable { requestFrame() }
+        private val stopHinge = Runnable { if (!visible) hinge.stop() }
         private var previousHinge = Float.NaN
         private var closingHinge = false
 
@@ -213,6 +214,7 @@ class FoldWallpaperService : WallpaperService() {
             if (backgroundEngine === this) backgroundEngine = null
             Choreographer.getInstance().removeFrameCallback(this)
             mainHandler.removeCallbacks(settleCheck)
+            mainHandler.removeCallbacks(stopHinge)
             prefs.unregisterOnSharedPreferenceChangeListener(this)
             ctx.unregisterReceiver(screenReceiver)
             ctx.unregisterReceiver(batteryReceiver)
@@ -295,13 +297,17 @@ class FoldWallpaperService : WallpaperService() {
             visible = isVisible
             if (!isPreview && displayContext?.display?.displayId == Display.DEFAULT_DISPLAY) {
                 if (isVisible) backgroundEngine = this
-                else if (backgroundEngine === this) backgroundEngine = null
+                else if (backgroundEngine === this) {
+                    backgroundEngine = null
+                    wallpaperHiddenAt = SystemClock.uptimeMillis()
+                }
             }
             lastVisibleMs = SystemClock.uptimeMillis()
             updateVideoPlayback()
             if (isVisible) {
+                mainHandler.removeCallbacks(stopHinge)
                 hinge.start()
-                foldMotion.panelShown(SystemClock.uptimeMillis())
+                foldMotion.panelShown(spec?.isInner == true, SystemClock.uptimeMillis())
                 spring.clear()
                 anchorAngle = Float.NaN
                 settle = settleTarget()
@@ -309,7 +315,10 @@ class FoldWallpaperService : WallpaperService() {
                 drawFrame()
                 requestFrame()
             } else {
-                hinge.stop()
+                // A panel switch hides the wallpaper for a moment; keep following the hinge so
+                // the next panel starts from the current pose instead of the one before the switch.
+                mainHandler.removeCallbacks(stopHinge)
+                mainHandler.postDelayed(stopHinge, HINGE_LINGER_MS)
                 updateAwake()
                 Choreographer.getInstance().removeFrameCallback(this)
                 frameScheduled = false
@@ -590,11 +599,24 @@ class FoldWallpaperService : WallpaperService() {
             get() = backgroundRef?.get()
             set(value) { backgroundRef = value?.let { WeakReference(it) } }
 
-        /** Whether the wallpaper is on screen behind the launcher, drawing the fold effect itself. */
-        internal val isWallpaperShowing: Boolean get() = backgroundEngine != null
+        @Volatile private var wallpaperHiddenAt = Long.MIN_VALUE / 2
+
+        /**
+         * Whether the wallpaper is on screen behind the launcher, drawing the fold effect itself. A
+         * wallpaper hidden within [WALLPAPER_GRACE_MS] still counts: a panel switch hides it for a
+         * moment, and a fast fold can start before it shows again.
+         */
+        internal val isWallpaperShowing: Boolean
+            get() = backgroundEngine != null || SystemClock.uptimeMillis() - wallpaperHiddenAt < WALLPAPER_GRACE_MS
+
+        /** How long a hidden wallpaper still counts as showing for the overlay decision. */
+        const val WALLPAPER_GRACE_MS = 1500L
 
         /** Scene time used when living motion is off. */
         const val STILL_TIME = 42f
+
+        /** How long the hinge stays followed after the wallpaper hides, to bridge a panel switch. */
+        const val HINGE_LINGER_MS = 3000L
 
         /** Hinge travel that counts as the user moving the hinge. */
         const val SETTLE_MOVE_DEG = 3f
