@@ -1,6 +1,6 @@
 # Lumifold -- Progress Dashboard
 
-**Branch:** `feature/onboarding-and-strength` (from `develop`, after the v0.5.0 release)
+**Branch:** `develop` (after the v0.5.1 release)
 
 ---
 
@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 118 | 118 | Met |
+| Tasks Completed | 119 | 119 | Met |
 | Wallpaper Designs | 234 (52 generative, 63 video, 119 photographs) in 11 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
 | Opening Effects | 13, plus an off switch and Full swipe | 12 | +1 |
 | Unit Tests | 73 | 38 | +35 |
@@ -149,6 +149,7 @@
 - [x] T116 [US5] Rescale effect strength so 100% draws what 150% drew in v0.5.0 (STRENGTH_SCALE 1.5 at the renderers and the over-apps dimming); the user confirmed the stronger default
 - [x] T117 [US5] Give Full swipe on Home the over-apps sweep with blur, tuned on a bright abstract wallpaper (light dimming, strong blur), and keep following the hinge through panel switches; the user confirmed the effect on the phone
 - [x] T118 [US5] After a close from the inner screen, start the cover from its dimmed, covered pose and reveal it automatically over 1.2 s; keep the overlay off Home during rapid folds; the user confirmed slow, held and fast closes. The brief dimmed state while Android switches panels is the platform's and is matched rather than removed
+- [x] T119 [US5] Release v0.5.1: pull request #4 merged into develop after green CI, version 0.5.1 (code 6), changelog, README, devlog and known gaps updated, signed APK published
 
 Home composition repair for T105: window-only capture excludes the wallpaper layer, while the effect shader always returns opaque output. The new capture path combines transparent foreground pixels with a copy of Lumifold's own visible wallpaper surface. It uses the exact window bounds, rejects hidden or unfinished surfaces and changed panel generations, and retains the original 500 ms capture deadline. [Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy) copies the most recently queued surface buffer; this adds no continuous recording or permission. Already queued bitmap jobs finish their cleanup on service shutdown, and canceled wallpaper callbacks recycle their buffers. Shader strength and panel-power control are unchanged.
 

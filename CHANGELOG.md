@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-29
+
 ### Added
 - First-run setup prompt that opens the "display over other apps" and accessibility settings needed for the effect over apps, with a hint for Android's restricted-settings block on apps installed from a file.
 
