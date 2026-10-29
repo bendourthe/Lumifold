@@ -89,4 +89,6 @@ app/src/main/java/com/lumifold/wallpaper/
   ui/        MainActivity, LumifoldScreen, WallpaperDetailScreen, FoldPreviewView (3D preview), theme/
 ```
 
-Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md). Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md).
+- Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md)
+- Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md)
+- Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md)
