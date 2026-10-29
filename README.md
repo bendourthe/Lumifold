@@ -2,9 +2,17 @@
 
 Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold and later). It recreates the iPhone Duo frosted-glass opening effect, adds twelve more hinge-driven transitions, and brings every wallpaper to life with slow, natural motion. Each frame maps the real hinge angle to an AGSL shader, so the effect follows your hand instead of playing a canned animation.
 
-## What's New in 0.5.0
+## What's New in 0.5.1
 
-- **Full swipe** (on by default): when a screen lights up at the panel switch, its outer third is dimmed, the middle third fades to lit, and a blur fades across the picture; opening slides this off toward the outer edge and closing plays it back, on both screens.
+- **Guided setup**: on first launch, while "display over other apps" or accessibility is off, the app opens a prompt with a button for each, plus a hint for Android's restricted-settings block on apps installed from a file.
+- **Stronger default**: 100% now draws what 150% drew in 0.5.0, and 150% goes further.
+- **Full swipe on any wallpaper**: Home uses the same right-to-left sweep as the effect over apps, with light dimming and strong blur, so bright and abstract wallpapers show it as clearly as dark ones.
+- **Cover reveal after closing**: the cover comes up covered, matching the dimmed state Android's screen switch shows, then reveals the wallpaper by itself over 1.2 seconds, even after a fast close.
+- **Fixes**: a fast fold no longer shows the new screen frozen at its pre-switch pose, and rapid folds no longer dim the Home screen.
+
+## Highlights of 0.5.0
+
+- **Full swipe** (on by default): a soft front crosses each screen from right to left, covering the cover with dimming and blur by 90 degrees and clearing the inner screen by flat; closing plays it back, and the picture never moves.
 - **Effect over apps**: with an app open, a soft dimming sweep follows the fold on both screens, drawn live without screenshots, and the cover stays on until about 90 degrees like it does on Home.
 - **Each screen matches its own range**: the inner screen's effect spans 90 degrees to flat when opening, and a close hands over to the cover near 45 degrees with the full effect on both sides of the switch.
 - **Hold and finish**: a hinge held still keeps the effect for 2 seconds, then finishes it over 1.2 seconds; folding back the other way starts a new fold.
@@ -53,4 +61,4 @@ app/src/main/java/com/lumifold/wallpaper/
   ui/        MainActivity, LumifoldScreen, WallpaperDetailScreen, FoldPreviewView (3D preview), theme/
 ```
 
-Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.0-known-gaps.md). Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md).
+Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.1-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.1-known-gaps.md). Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md).
