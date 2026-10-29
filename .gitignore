@@ -19,6 +19,7 @@ local.properties
 # Local agent and editor state
 .nexus/
 .nexus-hub/
+.vscode/
 
 # Kotlin compiler daemon sessions and error logs
 .kotlin/

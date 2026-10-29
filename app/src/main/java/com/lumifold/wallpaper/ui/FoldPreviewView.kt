@@ -310,6 +310,15 @@ class FoldPreviewView(context: Context) : View(context) {
         super.onDetachedFromWindow()
     }
 
+    /**
+     * Each frame posts the next one from [onDraw], so a frame posted while the window was hidden
+     * (screen off, lock screen) is lost and the preview stays frozen. Showing again restarts it.
+     */
+    override fun onVisibilityAggregated(isVisible: Boolean) {
+        super.onVisibilityAggregated(isVisible)
+        if (isVisible) invalidate()
+    }
+
     fun setAngleManually(degrees: Float) {
         setAutoPlay(false)
         updateAngle(degrees)

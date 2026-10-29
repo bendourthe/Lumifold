@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.2] - 2026-10-29
+
+### Changed
+- The README shows the Lumifold logo, app screenshots, the in-app 3D fold preview as an animation, and an illustration of the dimming sweep over apps.
+
+### Fixed
+- The 3D preview on the home page no longer stays frozen after the screen turns off and the phone is unlocked.
+
 ## [0.5.1] - 2026-10-29
 
 ### Added
