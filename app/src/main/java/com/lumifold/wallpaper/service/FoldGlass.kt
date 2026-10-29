@@ -62,7 +62,7 @@ class FoldGlass(private val context: Context) {
         if (!wanted) return
         val glass = view ?: attach() ?: return
         glass.dim = appDim(latestInner, latestAngle, WallpaperRepository.isFullSwipe(context))
-        glass.alpha = (APP_DIM * latestIntensity).coerceAtMost(MAX_APP_DIM)
+        glass.alpha = (APP_DIM * latestIntensity * WallpaperRepository.STRENGTH_SCALE).coerceAtMost(MAX_APP_DIM)
         glass.invalidate()
     }
 
@@ -143,9 +143,9 @@ class FoldGlass(private val context: Context) {
     }
 }
 
-/** Dimming over an app at 100% effect strength, and the most any strength may reach. */
+/** Dimming over an app per unit of rendering strength, and the most any strength may reach. */
 private const val APP_DIM = 0.6f
-private const val MAX_APP_DIM = 0.85f
+private const val MAX_APP_DIM = 0.92f
 
 /** Half-width of the soft edge between dimmed and lit, in panel widths. */
 internal const val DIM_BAND = 0.15f

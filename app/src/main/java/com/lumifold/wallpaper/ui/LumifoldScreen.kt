@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
+import android.content.Context
 import android.content.Intent
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.view.accessibility.AccessibilityManager
@@ -50,6 +51,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilledTonalIconButton
@@ -157,6 +159,14 @@ fun LumifoldScreen(
     var category by rememberSaveable { mutableStateOf<WallpaperCategory?>(null) }
     var liveOnly by rememberSaveable { mutableStateOf<Boolean?>(null) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var setupSeen by remember { mutableStateOf(WallpaperRepository.isOverAppsSetupSeen(context)) }
+    val access = rememberOverAppsAccess()
+    if (!setupSeen && !(access.overlay && access.accessibility)) {
+        OverAppsSetupDialog(access) {
+            WallpaperRepository.setOverAppsSetupSeen(context)
+            setupSeen = true
+        }
+    }
     var detailId by rememberSaveable { mutableStateOf<String?>(null) }
     var lastDetailId by remember { mutableStateOf<String?>(null) }
     var backProgress by remember { mutableFloatStateOf(0f) }
@@ -803,29 +813,9 @@ private fun FoldSettingRow() {
 @Composable
 private fun AppGlassRow() {
     val context = LocalContext.current
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    fun accessibilityEnabled(): Boolean = context.getSystemService(AccessibilityManager::class.java)
-        ?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
-        ?.any { it.resolveInfo.serviceInfo.name == FoldAccessibilityService::class.java.name &&
-            it.resolveInfo.serviceInfo.packageName == context.packageName } == true
-    var allowed by remember(context) { mutableStateOf(Settings.canDrawOverlays(context)) }
-    var accessible by remember(context) { mutableStateOf(accessibilityEnabled()) }
-    DisposableEffect(lifecycle, context) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                allowed = Settings.canDrawOverlays(context)
-                accessible = accessibilityEnabled()
-            }
-        }
-        lifecycle.addObserver(observer)
-        onDispose { lifecycle.removeObserver(observer) }
-    }
-    fun openSettings(primary: Intent, fallback: Intent) {
-        // Per-app routes are available on Pixel; retain public routes for other Android builds.
-        runCatching { context.startActivity(primary.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .recoverCatching { context.startActivity(fallback.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onFailure { Toast.makeText(context, "Open Android Settings to manage this permission.", Toast.LENGTH_LONG).show() }
-    }
+    val access = rememberOverAppsAccess()
+    val allowed = access.overlay
+    val accessible = access.accessibility
     Column(Modifier.fillMaxWidth()) {
         SwitchRow(
             title = "Allow display over other apps",
@@ -835,22 +825,96 @@ private fun AppGlassRow() {
                 "Not allowed. Tap, then select Lumifold in the Android list to allow the fold effect over an open app."
             },
             checked = allowed,
-            onChange = {
-                val appUri = "package:${context.packageName}".toUri()
-                openSettings(Intent("android.settings.MANAGE_APP_OVERLAY_PERMISSION", appUri),
-                    Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, appUri))
-            }
+            onChange = { openOverlaySettings(context) }
         )
         SwitchRow(
             title = "Lumifold accessibility",
             body = if (accessible) "Enabled. Tap, then select Lumifold in Android Accessibility to manage this service."
                 else "Disabled. Tap, then select Lumifold in Android Accessibility to enable effects over apps.",
             checked = accessible,
-            onChange = {
-                runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
-                    .onFailure { Toast.makeText(context, "Open Android Settings, then Accessibility and Lumifold.", Toast.LENGTH_LONG).show() }
-            }
+            onChange = { openAccessibilitySettings(context) }
         )
+    }
+}
+
+/** Whether the two permissions the effect over apps needs are on, re-read whenever the app resumes. */
+private class OverAppsAccess(overlay: Boolean, accessibility: Boolean) {
+    var overlay by mutableStateOf(overlay)
+    var accessibility by mutableStateOf(accessibility)
+}
+
+@Composable
+private fun rememberOverAppsAccess(): OverAppsAccess {
+    val context = LocalContext.current
+    val lifecycle = LocalLifecycleOwner.current.lifecycle
+    val access = remember(context) { OverAppsAccess(Settings.canDrawOverlays(context), isAccessibilityOn(context)) }
+    DisposableEffect(lifecycle, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                access.overlay = Settings.canDrawOverlays(context)
+                access.accessibility = isAccessibilityOn(context)
+            }
+        }
+        lifecycle.addObserver(observer)
+        onDispose { lifecycle.removeObserver(observer) }
+    }
+    return access
+}
+
+private fun isAccessibilityOn(context: Context): Boolean = context.getSystemService(AccessibilityManager::class.java)
+    ?.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK)
+    ?.any { it.resolveInfo.serviceInfo.name == FoldAccessibilityService::class.java.name &&
+        it.resolveInfo.serviceInfo.packageName == context.packageName } == true
+
+private fun openOverlaySettings(context: Context) {
+    val appUri = "package:${context.packageName}".toUri()
+    // Per-app routes are available on Pixel; retain public routes for other Android builds.
+    runCatching { context.startActivity(Intent("android.settings.MANAGE_APP_OVERLAY_PERMISSION", appUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        .recoverCatching { context.startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, appUri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        .onFailure { Toast.makeText(context, "Open Android Settings to manage this permission.", Toast.LENGTH_LONG).show() }
+}
+
+private fun openAccessibilitySettings(context: Context) {
+    runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        .onFailure { Toast.makeText(context, "Open Android Settings, then Accessibility and Lumifold.", Toast.LENGTH_LONG).show() }
+}
+
+/**
+ * First-run prompt for the effect over apps. It stays until both permissions are on or the user
+ * answers "Not now"; Advanced settings keep the same switches afterwards.
+ */
+@Composable
+private fun OverAppsSetupDialog(access: OverAppsAccess, onNotNow: () -> Unit) {
+    val context = LocalContext.current
+    AlertDialog(
+        onDismissRequest = {},
+        title = { Text("Set up the effect over apps") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    "On Home the wallpaper draws the fold effect. To show it while an app is open, and to keep the cover on until about 90 degrees there too, turn on these two Android settings. Lumifold takes no screenshots and does not read what is on screen.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                SetupStep("1. Display over other apps", access.overlay) { openOverlaySettings(context) }
+                SetupStep("2. Lumifold accessibility", access.accessibility) { openAccessibilitySettings(context) }
+                Text(
+                    "If Android says the accessibility setting is restricted: open Android Settings, Apps, Lumifold, tap the three-dot menu, choose Allow restricted settings, then try step 2 again.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onNotNow) { Text("Not now") } }
+    )
+}
+
+@Composable
+private fun SetupStep(title: String, done: Boolean, onTurnOn: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(title, style = MaterialTheme.typography.titleSmall, modifier = Modifier.weight(1f))
+        if (done) Text("On", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        else OutlinedButton(onClick = onTurnOn) { Text("Turn on") }
     }
 }
 

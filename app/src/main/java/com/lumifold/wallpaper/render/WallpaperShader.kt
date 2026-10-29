@@ -13,6 +13,7 @@ import com.lumifold.wallpaper.model.OpeningEffect
 import com.lumifold.wallpaper.model.Scene
 import kotlin.math.PI
 import com.lumifold.wallpaper.model.WallpaperItem
+import com.lumifold.wallpaper.model.WallpaperRepository
 import com.lumifold.wallpaper.model.WallpaperSource
 
 /** One display surface as the fold shader sees it. */
@@ -151,7 +152,7 @@ class WallpaperShader private constructor(
         shader.setFloatUniform("uAngle", angleRad)
         shader.setFloatUniform("uPlaneH", spec.planeHeight)
         shader.setFloatUniform("uSurfH", spec.surfaceHeight)
-        shader.setFloatUniform("uIntensity", intensity)
+        shader.setFloatUniform("uIntensity", intensity * WallpaperRepository.STRENGTH_SCALE)
         shader.setFloatUniform("uTime", timeSec * MOTION_TIME_SCALE)
         shader.setFloatUniform("uEffect", if (foldEffect) effect.shaderIndex.toFloat() else NO_FOLD_INDEX)
         if (item.source is WallpaperSource.Photo) {

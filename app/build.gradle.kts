@@ -19,8 +19,8 @@ android {
         applicationId = "com.lumifold.wallpaper"
         minSdk = 33 // AGSL RuntimeShader; every Pixel Fold model ships Android 13 or later
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "0.5.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

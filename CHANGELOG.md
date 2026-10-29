@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-10-29
+
+### Added
+- First-run setup prompt that opens the "display over other apps" and accessibility settings needed for the effect over apps, with a hint for Android's restricted-settings block on apps installed from a file.
+
+### Changed
+- Effect strength: 100% now draws what 150% drew in 0.5.0, and higher settings go stronger.
+- Full swipe on Home uses the same sweep as the effect over apps, with blur: the cover is covered from its right edge until fully covered at 90 degrees, and the inner screen lights fully covered and clears from right to left by flat. Covered areas dim lightly and blur strongly, so the effect reads on bright and dark wallpapers alike.
+- After a close from the inner screen, the cover comes up in the dimmed state Android's switch brings it up in and reveals the wallpaper on its own over 1.2 seconds, instead of waiting for the hinge.
+
+### Fixed
+- A fast fold no longer shows the next screen at the pose from before the panel switch for a second or two: the wallpaper keeps following the hinge through the switch.
+- During rapid folds, the overlay no longer darkens the Home screen as if an app were open.
+
 ## [0.5.0] - 2026-10-28
 
 This entry covers every change since 0.1.0; the 0.2.0 and 0.3.0 tags were cut without changelog entries.
