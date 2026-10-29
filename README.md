@@ -13,7 +13,12 @@
 
 Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold and later). It recreates the iPhone Duo frosted-glass opening effect, adds twelve more hinge-driven transitions, and brings every wallpaper to life with slow, natural motion. Each frame maps the real hinge angle to an AGSL shader, so the effect follows your hand instead of playing a canned animation.
 
-## What's New in 0.5.1
+## What's New in 0.5.2
+
+- **Preview fix**: the 3D preview on the home page keeps animating after the screen turns off and the phone is unlocked, instead of staying frozen until the app is reopened.
+- **Illustrated README**: the logo, app screenshots, the 3D fold preview and an illustration of the effect over apps.
+
+## Highlights of 0.5.1
 
 - **Guided setup**: on first launch, while "display over other apps" or accessibility is off, the app opens a prompt with a button for each, plus a hint for Android's restricted-settings block on apps installed from a file.
 - **Stronger default**: 100% now draws what 150% drew in 0.5.0, and 150% goes further.
@@ -94,4 +99,4 @@ app/src/main/java/com/lumifold/wallpaper/
   ui/        MainActivity, LumifoldScreen, WallpaperDetailScreen, FoldPreviewView (3D preview), theme/
 ```
 
-Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.1-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.1-known-gaps.md). Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md).
+Architecture details: [docs/handbooks/architecture.md](docs/handbooks/architecture.md). Known limits of this release: [docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md](docs/releases/v0/v0.5/development/v0.5.2-known-gaps.md). Photo sources and licenses: [docs/reference/photo-credits.md](docs/reference/photo-credits.md).
