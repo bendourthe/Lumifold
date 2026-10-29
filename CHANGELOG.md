@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- The README describes the app in one Features section with a short What's New, shows the logo and the fold preview in rounded frames, and shows the effect over apps on the 3D phone model.
+
 ## [0.5.2] - 2026-10-29
 
 ### Changed

@@ -1,6 +1,6 @@
 # Lumifold -- Progress Dashboard
 
-**Branch:** `develop` (after the v0.5.2 release)
+**Branch:** `docs/readme-polish` (from `develop`, after the v0.5.2 release)
 
 ---
 
@@ -8,7 +8,7 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 122 | 122 | Met |
+| Tasks Completed | 123 | 123 | Met |
 | Wallpaper Designs | 234 (52 generative, 63 video, 119 photographs) in 11 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
 | Opening Effects | 13, plus an off switch and Full swipe | 12 | +1 |
 | Unit Tests | 73 | 38 | +35 |
@@ -153,6 +153,7 @@
 - [x] T120 [US5] Illustrate the README: logo, five app screenshots and the 3D fold preview captured on the phone (status bar cropped), a fold-stages strip, and a computed illustration of the over-apps sweep in docs/assets/readme/; ignore .vscode/
 - [x] T121 [US5] Restart the 3D preview's frame loop when the view shows again: a frame posted while the window was hidden (screen off, lock screen) was lost and the preview stayed frozen after unlocking; reproduced and verified on the phone
 - [x] T122 [US5] Release v0.5.2: README visuals (#7) and the preview fix (#8) merged into develop after green CI, version 0.5.2 (code 7), changelog, README, devlog and known gaps updated, signed APK published
+- [x] T123 [US5] Polish the README: rounded logo, the fold preview cropped inside its card with rounded corners, one Features section with a short What's New, and the effect over apps rendered on the 3D phone model (a Python port of FoldPreviewView's geometry with FoldGlass.appDim)
 
 Home composition repair for T105: window-only capture excludes the wallpaper layer, while the effect shader always returns opaque output. The new capture path combines transparent foreground pixels with a copy of Lumifold's own visible wallpaper surface. It uses the exact window bounds, rejects hidden or unfinished surfaces and changed panel generations, and retains the original 500 ms capture deadline. [Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy) copies the most recently queued surface buffer; this adds no continuous recording or permission. Already queued bitmap jobs finish their cleanup on service shutdown, and canceled wallpaper callbacks recycle their buffers. Shader strength and panel-power control are unchanged.
 
