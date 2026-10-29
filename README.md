@@ -1,4 +1,15 @@
-# Lumifold
+<p align="center">
+  <img src="app/src/main/res/drawable-nodpi/ic_launcher_art.png" width="120" alt="Lumifold logo: a half-open foldable phone with a glowing hinge">
+</p>
+
+<h1 align="center">Lumifold</h1>
+
+<p align="center">Hinge-driven live wallpapers for book-style Android foldables<br>
+<a href="https://github.com/bendourthe/lumifold/releases/latest">Download the latest APK</a></p>
+
+<p align="center">
+  <img src="docs/assets/readme/fold-preview.gif" width="360" alt="The in-app 3D preview: the phone closes to its cover screen and opens flat again, with the Full swipe effect following the hinge">
+</p>
 
 Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold and later). It recreates the iPhone Duo frosted-glass opening effect, adds twelve more hinge-driven transitions, and brings every wallpaper to life with slow, natural motion. Each frame maps the real hinge angle to an AGSL shader, so the effect follows your hand instead of playing a canned animation.
 
@@ -10,6 +21,18 @@ Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold an
 - **Cover reveal after closing**: the cover comes up covered, matching the dimmed state Android's screen switch shows, then reveals the wallpaper by itself over 1.2 seconds, even after a fast close.
 - **Fixes**: a fast fold no longer shows the new screen frozen at its pre-switch pose, and rapid folds no longer dim the Home screen.
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/assets/readme/app-home.jpg" width="160" alt="Home page with the Fold effect, Live effect, Full swipe and Mirror effect toggles above the 3D preview"><br><sub>Home page</sub></td>
+    <td align="center"><img src="docs/assets/readme/app-effects.jpg" width="160" alt="Grid of the thirteen opening effects with rendered previews"><br><sub>Opening effects</sub></td>
+    <td align="center"><img src="docs/assets/readme/app-gallery.jpg" width="160" alt="Wallpaper gallery filtered by category and by live or still designs"><br><sub>Wallpaper gallery</sub></td>
+    <td align="center"><img src="docs/assets/readme/app-detail.jpg" width="160" alt="Wallpaper detail page with a live preview and a Dynamic or Static choice"><br><sub>Wallpaper detail</sub></td>
+    <td align="center"><img src="docs/assets/readme/app-settings.jpg" width="160" alt="Advanced settings with effect strength, Pause on Battery Saver, the over-apps permissions and diagnostics"><br><sub>Advanced settings</sub></td>
+  </tr>
+</table>
+
 ## Highlights of 0.5.0
 
 - **Full swipe** (on by default): a soft front crosses each screen from right to left, covering the cover with dimming and blur by 90 degrees and clearing the inner screen by flat; closing plays it back, and the picture never moves.
@@ -19,6 +42,11 @@ Live wallpaper for book-style Android foldables (Pixel Fold, Pixel 9 Pro Fold an
 - **234 designs**, including 63 real video loops downloaded on demand, and a signed release build.
 
 ## Features
+
+<p align="center">
+  <img src="docs/assets/readme/fold-stages.jpg" width="720" alt="Three stages of a fold in the 3D preview: closed on the cover screen, opening with the inner screen still covered, and fully open">
+  <br><sub>Closed on the cover, opening with Full swipe still covering the inner screen, and fully open</sub>
+</p>
 
 - **Duo Frost**: the iPhone Duo model, following Apple's own demo as reverse-engineered by [juejin](https://juejin.cn/post/7688737629098999843) and the [Empirical Health](https://www.empirical.health/blog/why-iphone-duo-fold-animation-works/) reconstruction. Both displays sample one fixed picture behind the glass; as a panel lifts, blur and shade grow toward its free edge until it falls into black, and rays that miss the picture show black wedges.
 - **Thirteen opening effects**: Duo Frost, Shattered Glass, Fluted Glass, Crystal, Prism Edge, Aperture, Dawn, Window, Ripple, Mosaic, Color Bloom, Zoom Burst and Silk Wave. A critically damped spring smooths the hinge so the effect glides through the sensor's steps.
@@ -37,6 +65,11 @@ Android decides which display is on, not the wallpaper. On Android 16 and later,
 ## Effect Over Apps
 
 On Home, the wallpaper draws the effect itself. Over an app, the optional Lumifold accessibility service and the "display over other apps" permission draw a dimming sweep above the app while the hinge moves. The app offers to set both up on first launch, and Advanced settings keep the switches. Lumifold takes no screenshots and does not read window content. Android can blur another app only in uniform rectangles, whose hard edges would cut across the sweep, so apps are dimmed rather than blurred.
+
+<p align="center">
+  <img src="docs/assets/readme/over-apps-sweep.gif" width="640" alt="Illustration of the dimming sweep over an app: the cover darkens from its right edge until 90 degrees, then the inner screen starts dark and clears from right to left by flat">
+  <br><sub>Illustration computed from the app's dimming formula, with Full swipe on at the default strength; the screens show Lumifold's own pages</sub>
+</p>
 
 ## Build
 
