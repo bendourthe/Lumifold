@@ -28,7 +28,7 @@ Android decides which display is on, not the wallpaper. On Android 16 and later,
 
 ## Effect Over Apps
 
-On Home, the wallpaper draws the effect itself. Over an app, the optional Lumifold accessibility service and the "display over other apps" permission (both in Advanced settings) draw a dimming sweep above the app while the hinge moves. Lumifold takes no screenshots and does not read window content. Android can blur another app only in uniform rectangles, whose hard edges would cut across the sweep, so apps are dimmed rather than blurred.
+On Home, the wallpaper draws the effect itself. Over an app, the optional Lumifold accessibility service and the "display over other apps" permission draw a dimming sweep above the app while the hinge moves. The app offers to set both up on first launch, and Advanced settings keep the switches. Lumifold takes no screenshots and does not read window content. Android can blur another app only in uniform rectangles, whose hard edges would cut across the sweep, so apps are dimmed rather than blurred.
 
 ## Build
 

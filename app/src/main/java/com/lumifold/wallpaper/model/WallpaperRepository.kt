@@ -15,6 +15,7 @@ object WallpaperRepository {
     const val KEY_FOLD_EFFECT_ENABLED = "pref_fold_effect_enabled"
     const val KEY_SYMMETRIC_INNER = "pref_symmetric_inner"
     const val KEY_FULL_SWIPE = "pref_full_swipe"
+    const val KEY_OVER_APPS_SETUP_SEEN = "pref_over_apps_setup_seen"
     const val KEY_PAUSE_ON_SAVER = "pref_pause_motion_on_saver"
     const val KEY_MEASURED_OPEN_SWITCH = "pref_measured_open_switch"
     const val KEY_MEASURED_CLOSE_SWITCH = "pref_measured_close_switch"
@@ -27,6 +28,9 @@ object WallpaperRepository {
     const val DEFAULT_INTENSITY = 1.0f
     const val MIN_INTENSITY = 0.25f
     const val MAX_INTENSITY = 1.5f
+
+    /** Rendering strength per unit of the slider, so 100% draws what 150% drew before v0.5.1. */
+    const val STRENGTH_SCALE = 1.5f
 
     // Pixel 9 Pro Fold natural sizes, used until the wallpaper has seen both displays.
     const val DEFAULT_INNER_W = 2076
@@ -1332,6 +1336,13 @@ object WallpaperRepository {
 
     fun setFullSwipe(context: Context, enabled: Boolean) {
         getPrefs(context).edit { putBoolean(KEY_FULL_SWIPE, enabled) }
+    }
+
+    /** Whether the first-run prompt for the effect over apps was answered with "Not now". */
+    fun isOverAppsSetupSeen(context: Context): Boolean = getPrefs(context).getBoolean(KEY_OVER_APPS_SETUP_SEEN, false)
+
+    fun setOverAppsSetupSeen(context: Context) {
+        getPrefs(context).edit { putBoolean(KEY_OVER_APPS_SETUP_SEEN, true) }
     }
 
     fun isPauseOnSaver(context: Context): Boolean = getPrefs(context).getBoolean(KEY_PAUSE_ON_SAVER, true)

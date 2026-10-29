@@ -14,12 +14,16 @@ class FoldMotion {
     private var closing = false
     private var turn = Float.NaN
     private var closingFromInner = false
+    private var closedFromInnerAt = Long.MIN_VALUE
+    private var revealAt = Long.MIN_VALUE
 
     fun sample(degrees: Float, now: Long) {
         if (!degrees.isFinite()) return
         latchFinished(now)
         angle = degrees.coerceIn(0f, 180f)
         if (angle <= 1f || angle >= 174f) {
+            if (angle <= 1f && closing && closingFromInner) closedFromInnerAt = now
+            if (angle >= 174f) revealAt = Long.MIN_VALUE
             finished = false
             startRun(angle >= 174f, angle)
         } else if (turn.isNaN() || (if (closing) angle < turn else angle > turn)) {
@@ -28,6 +32,7 @@ class FoldMotion {
             // Folding back the other way is a new fold: it shows the effect again, even after a
             // parked finish, with the mapping for its own direction.
             finished = false
+            if (closing) revealAt = Long.MIN_VALUE
             startRun(!closing, turn)
         }
         if (smoothed.isNaN()) {
@@ -41,18 +46,40 @@ class FoldMotion {
     /**
      * A panel switch can take a second or two while the hinge is held still. The hold starts again
      * when the new panel shows, so its effect is not already finishing when it appears.
+     *
+     * The cover is the exception on a close from the inner screen, including one that has already
+     * shut: it lights late, below about 45 degrees, in the dimmed state Android's switch brings it up
+     * in. It starts from its fully covered pose, which matches that state, and reveals the wallpaper
+     * over [FINISH_MS] on its own, whatever the hinge does, then stays clear.
      */
-    fun panelShown(now: Long) {
-        if (isActive(now)) lastMove = now
+    fun panelShown(inner: Boolean, now: Long) {
+        if (!inner && ((isCloseFromInner && angle > 1f) || age(now, closedFromInnerAt) < RECENT_CLOSE_MS)) {
+            revealAt = now
+            return
+        }
+        if (!isActive(now)) return
+        lastMove = now
     }
 
+    /** Whether this fold is a close that started on the inner screen, which the cover joins late. */
+    val isCloseFromInner: Boolean get() = closing && closingFromInner
+
+    private fun revealing(now: Long) = revealAt != Long.MIN_VALUE && now < revealAt + FINISH_MS
+
     fun isActive(now: Long): Boolean {
+        if (revealing(now)) return true
         latchFinished(now)
         return !finished && angle > 1f && angle < 174f && age(now, lastMove) < IDLE_MS
     }
 
     fun degrees(inner: Boolean, now: Long): Float {
         val rest = if (inner) 180f else 0f
+        if (!inner && revealAt != Long.MIN_VALUE) {
+            if (now < revealAt + FINISH_MS) return 90f * (1f - smooth((now - revealAt) / FINISH_MS.toFloat()))
+            revealAt = Long.MIN_VALUE
+            if (angle > 1f && angle < 174f) finished = true
+            return rest
+        }
         latchFinished(now)
         if (angle.isNaN() || finished) return rest
         // The hardware reads about 175 degrees when flat. Preserve the original Frost curve.
@@ -81,6 +108,8 @@ class FoldMotion {
         closing = false
         turn = Float.NaN
         closingFromInner = false
+        closedFromInnerAt = Long.MIN_VALUE
+        revealAt = Long.MIN_VALUE
     }
 
     /**
@@ -126,6 +155,9 @@ class FoldMotion {
 
         /** Android hands a closing fold from the inner screen to the cover below about 45 degrees. */
         const val CLOSE_SWITCH = 45f
+
+        /** A close from the inner screen that shut this recently still gets the cover's reveal. */
+        const val RECENT_CLOSE_MS = 1500L
 
         /** Travel back from a run's furthest angle that counts as folding the other way (two sensor steps). */
         const val REVERSE_DEG = 10f

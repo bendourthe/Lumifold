@@ -95,9 +95,12 @@ uniform float uSwipe;
 const float PI = 3.14159265;
 const float SIGMA_MAX = 0.17;
 const float DUO_SIGMA = 0.09;
-// Strongest blur and dimming of the Full swipe.
-const float SWIPE_SIGMA = 0.07;
-const float SWIPE_FADE = 0.55;
+// Full swipe: blur and dimming where the panel is covered (lighter than FoldGlass's APP_DIM, since a
+// wallpaper is darker than an app and the blur carries the effect here),
+// and the half-width of its soft front in panel widths (FoldGlass's DIM_BAND).
+const float SWIPE_SIGMA = 0.12;
+const float SWIPE_FADE = 0.35;
+const float SWIPE_BAND = 0.15;
 
 float hash12(float2 p) {
     float3 p3 = fract(float3(p.xyx) * 0.1031);
@@ -1062,16 +1065,18 @@ half4 main(float2 fragCoord) {
         // Fold effect off: the wallpaper as a flat picture.
         s = 0.0;
     } else if (uSwipe > 0.5) {
-        // Full swipe, both screens. The picture stays in place. At the panel switch the outer
-        // third is dimmed, the middle third fades from dimmed to lit, and the blur fades from the
-        // middle third's outer edge to the far edge. The inner screen's outer edge is its left,
-        // the cover's is its right. Opening slides this profile off toward the outer edge
-        // (cover: 0 to 90 degrees; inner: 90 to flat); closing plays it back.
+        // Full swipe, both screens, with the same sweep as the overlay over apps (FoldGlass.appDim):
+        // a soft front crosses the panel from its right edge to its left. The cover is covered
+        // behind the front, blurred and dimmed, until it is fully covered at 90 degrees; the inner
+        // screen lights fully covered and clears ahead of the front by flat. Closing plays it
+        // back. The picture stays in place.
         float x = n.x / nsz.x;
-        float p = inner ? clamp((a - 0.5 * PI) / (0.5 * PI), 0.0, 1.0) : clamp(1.0 - a / (0.5 * PI), 0.0, 1.0);
-        float t = (inner ? x : 1.0 - x) + p;
-        sigma = SWIPE_SIGMA * I * clamp((1.0 - t) * 1.5, 0.0, 1.0);
-        dark = SWIPE_FADE * clamp((2.0 / 3.0 - t) * 3.0, 0.0, 1.0);
+        float p = inner ? clamp((a - 0.5 * PI) / (0.5 * PI), 0.0, 1.0) : clamp(a / (0.5 * PI), 0.0, 1.0);
+        float front = 1.0 + SWIPE_BAND - p * (1.0 + 2.0 * SWIPE_BAND);
+        float behind = smoothstep(front - SWIPE_BAND, front + SWIPE_BAND, x);
+        float w = inner ? 1.0 - behind : behind;
+        sigma = SWIPE_SIGMA * I * w;
+        dark = SWIPE_FADE * w;
         s = 0.0;
     } else if (fx == 0) {
         // Duo Frost. The picture stays on the glass and both edges stay on the panel. A ray that

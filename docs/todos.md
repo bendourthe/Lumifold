@@ -1,6 +1,6 @@
 # Lumifold -- Progress Dashboard
 
-**Branch:** `develop` (v0.5.0 released from `feature/duo-fold-effect-overhaul`)
+**Branch:** `feature/onboarding-and-strength` (from `develop`, after the v0.5.0 release)
 
 ---
 
@@ -8,10 +8,10 @@
 
 | Metric | Current | Target | Delta |
 |--------|---------|--------|-------|
-| Tasks Completed | 114 | 114 | Met |
+| Tasks Completed | 118 | 118 | Met |
 | Wallpaper Designs | 234 (52 generative, 63 video, 119 photographs) in 11 categories; at least 10 live and 10 still each | 200 (10 live and 10 still per category) | Met |
 | Opening Effects | 13, plus an off switch and Full swipe | 12 | +1 |
-| Unit Tests | 68 | 38 | +30 |
+| Unit Tests | 73 | 38 | +35 |
 | Min SDK Target | 33 (Android 13) | 33 | Met |
 | Target SDK | 37 (Android 17) | 35 | +2 |
 
@@ -145,6 +145,10 @@
 - [x] T112 [US5] Add Full swipe, on by default, as a home-page toggle (Battery Saver moved to Advanced settings): the picture stays in place; at the panel switch the outer third is dimmed, the middle third fades to lit, and the blur fades from the middle third to the far edge; opening slides it off toward the outer edge (cover mirrored), closing plays it back; the user confirmed it on Home
 - [x] T113 [US5] Replace screenshots over apps with a live dim sweep: the cover darkens from its right edge until fully dim at 90 degrees, the inner screen starts dim and clears from its right edge (from the hinge without Full swipe), and closing plays it back; Android blurs other apps only in uniform rectangles, so a blur gradient over apps showed hard lines and was dropped by user decision; 85 unit tests pass and the user confirmed it over apps
 - [x] T114 [US5] Remove screen capture now that apps are dimmed live: delete the per-window screenshot path, the wallpaper copy behind Home icons and the retired MediaProjection service; drop the screenshot and window-content accessibility capabilities (129 to 0 on the phone) and both foreground-service permissions; grey out Mirror effect while Full swipe is on; 68 unit tests pass, the service stayed enabled after the update, and the user confirmed the dim sweep and the cover hold over apps
+- [x] T115 [US5] Prompt on first launch for the two Android settings the effect over apps needs, with a restricted-settings hint; the prompt and the Advanced settings switches share one permission check; 68 unit tests pass and the release-signed build installed (the prompt itself shows only while a permission is off, so it was not seen on the phone)
+- [x] T116 [US5] Rescale effect strength so 100% draws what 150% drew in v0.5.0 (STRENGTH_SCALE 1.5 at the renderers and the over-apps dimming); the user confirmed the stronger default
+- [x] T117 [US5] Give Full swipe on Home the over-apps sweep with blur, tuned on a bright abstract wallpaper (light dimming, strong blur), and keep following the hinge through panel switches; the user confirmed the effect on the phone
+- [x] T118 [US5] After a close from the inner screen, start the cover from its dimmed, covered pose and reveal it automatically over 1.2 s; keep the overlay off Home during rapid folds; the user confirmed slow, held and fast closes. The brief dimmed state while Android switches panels is the platform's and is matched rather than removed
 
 Home composition repair for T105: window-only capture excludes the wallpaper layer, while the effect shader always returns opaque output. The new capture path combines transparent foreground pixels with a copy of Lumifold's own visible wallpaper surface. It uses the exact window bounds, rejects hidden or unfinished surfaces and changed panel generations, and retains the original 500 ms capture deadline. [Android PixelCopy](https://developer.android.com/reference/android/view/PixelCopy) copies the most recently queued surface buffer; this adds no continuous recording or permission. Already queued bitmap jobs finish their cleanup on service shutdown, and canceled wallpaper callbacks recycle their buffers. Shader strength and panel-power control are unchanged.
 
