@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Half-open book foldable seen from above, for themed icons -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M52,72 L36.5,40.5 Q35.5,38 38,37.5 L50.5,35.5 Q52.5,35.2 53,37.5 L53,70 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M56,72 L71.5,40.5 Q72.5,38 70,37.5 L57.5,35.5 Q55.5,35.2 55,37.5 L55,70 Z" />
+</vector>

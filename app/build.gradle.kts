@@ -1,24 +1,44 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
+}
+
+// Release signing reads keystore.properties at the repository root (git-ignored). Without it the
+// release build stays unsigned. The key itself lives outside the repository.
+val keystoreProperties = rootProject.file("keystore.properties").takeIf { it.exists() }?.let { file ->
+    Properties().apply { file.inputStream().use { load(it) } }
 }
 
 android {
-    namespace = "com.ambientfold.wallpaper"
-    compileSdk = 35
+    namespace = "com.lumifold.wallpaper"
+    compileSdk = 37
 
     defaultConfig {
-        applicationId = "com.ambientfold.wallpaper"
-        minSdk = 31 // Android 12 (S) required for RenderEffect and AGSL
-        targetSdk = 35
-        versionCode = 4
-        versionName = "0.4.0"
+        applicationId = "com.lumifold.wallpaper"
+        minSdk = 33 // AGSL RuntimeShader; every Pixel Fold model ships Android 13 or later
+        targetSdk = 37
+        versionCode = 5
+        versionName = "0.5.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (keystoreProperties != null) {
+            create("release") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (keystoreProperties != null) signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
@@ -30,11 +50,8 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     buildFeatures {
-        viewBinding = true
+        compose = true
     }
     testOptions {
         unitTests.isReturnDefaultValues = true
@@ -43,10 +60,10 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.window)
-    testImplementation("junit:junit:4.13.2")
+    implementation(libs.androidx.activity.compose)
+    implementation(platform(libs.androidx.compose.bom))
+    implementation(libs.androidx.compose.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.material3)
+    testImplementation(libs.junit)
 }
